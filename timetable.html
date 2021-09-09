@@ -53,7 +53,7 @@
     <div id="woche">
         <div class="tag" id="stunden">
             <div class="reihe" id="wochenAnzeige">
-                <input type="date" id="datumPicker" onchange="stundenPlanAnzeigen();">
+                <input type="date" id="datumPicker" onblur="displayTimeTable();">
                 <button type="button" onclick="wocheNeuLaden();">Neu Laden</button>
             </div>
             <div class="reihe">08:00 - 09:30</div>
@@ -65,7 +65,13 @@
         <div id="variablerInhalt"></div>
     </div>
     <script>
-        const startZeitEnum = Object.freeze({
+
+        if (!localStorage.getItem("jwt")) {
+            window.location.href = "/setup";
+        }
+
+
+        const startTimeEnum = Object.freeze({
             800: 0,
             945: 1,
             1130: 2,
@@ -73,7 +79,7 @@
             1515: 4
         });
 
-        var stundenPlan = JSON.parse(localStorage.getItem("stundenPlan")) || {};
+        var timeTable = JSON.parse(localStorage.getItem("timeTable")) || {};
 
         function getWeekFromDay(datum) {
             let curr = new Date(datum);
@@ -92,17 +98,18 @@
             console.log("reload");
             let el = document.getElementById("variablerInhalt");
 
+            // Why tf does this not work??
             while (el.firstChild) el.removeChild(el.firstChild);
-            let woche = getWeekFromDay(document.getElementById("datumPicker").value);
-            woche.forEach(async element => {
+            let week = getWeekFromDay(document.getElementById("datumPicker").value);
+            week.forEach(async element => {
                 await getTag(element);
-                tagAnhaengen(element)
+                addDay(element)
             })
-            stundenPlanAnzeigen(document.getElementById("datumPicker").value);
+            displayTimeTable(document.getElementById("datumPicker").value);
         }
-        function tagAnhaengen(datum) {
-            if (!stundenPlan[datum]) {
-                throw new Error("Um einen Tag anzuhängern muss er im Stundenplan existieren");
+        function addDay(datum) {
+            if (!timeTable[datum]) {
+                throw new Error("To add a day to the Interface, it has to be present in the timeTable Object");
                 return;
             }
             const woche = document.getElementById("variablerInhalt");
@@ -120,7 +127,7 @@
 
                 let reihe = document.createElement("div");
                 reihe.setAttribute("class", "reihe");
-                stundenPlan[datum].forEach(element => {
+                timeTable[datum].forEach(element => {
                     if (element["stunde"] === i) {
                         reihe.innerHTML = `${element["fach"]}
                         <p class="raumNr">${element["raum"]} - ${element["lehrer"]}</p>
@@ -159,18 +166,18 @@
                     var arr = [null, null, null, null, null];
                     for (var i = 0; i < data.length; i++) {
                         const startZeit = data[i]['startZeit'];
-                        const stunde = startZeitEnum[startZeit];
+                        const stunde = startTimeEnum[startZeit];
                         arr[stunde] = data[i];
                     }
 
                     data.forEach(element => {
-                        element["stunde"] = startZeitEnum[element["startZeit"]];
+                        element["stunde"] = startTimeEnum[element["startZeit"]];
                         delete element["startZeit"];
                     })
 
-                    stundenPlan[datum] = data;
+                    timeTable[datum] = data;
                     resolve();
-                    localStorage.setItem("stundenPlan", JSON.stringify(stundenPlan));
+                    localStorage.setItem("timeTable", JSON.stringify(timeTable));
 
 
                 });
@@ -181,7 +188,7 @@
             })
         }
 
-        function stundenPlanAnzeigen() {
+        function displayTimeTable() {
             let datumPicker = document.getElementById("datumPicker");
             let wochenAnzeige = document.getElementById("wochenAnzeige");
             let week = getWeekFromDay(datumPicker.value);
@@ -189,11 +196,11 @@
             document.getElementById("variablerInhalt").innerHTML = "";
             datumPicker.value = week[0];
             week.forEach(async element => {
-                if (!stundenPlan[element]) {
+                if (!timeTable[element]) {
                     await getTag(element);
-                    tagAnhaengen(element);
+                    addDay(element);
                 } else {
-                    tagAnhaengen(element);
+                    addDay(element);
                 }
             })
         }

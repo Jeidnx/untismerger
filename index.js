@@ -4,14 +4,10 @@ const schoolDomain = 'neilo.webuntis.com';
 const WebUntisLib = require('webuntis');
 const multer = require('multer');
 const upload = multer();
-
-// Server
-// Import any 3rd party libraries used
 const express = require('express');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const app = express();
-const https = require('https');
 const http = require('http');
 const jwtSecret = 'juwslsjklfidsuaofnsfdklfdskljf';
 
@@ -118,25 +114,13 @@ const classIdEnum = Object.freeze({
 	'BS10I3': 2661
 });
 
-// Set app port
-/*
-const options = {
-	key: fs.readFileSync(
-		'/etc/letsencrypt/live/servername.redirectme.net/privkey.pem'
-	),
-	cert: fs.readFileSync(
-		'/etc/letsencrypt/live/servername.redirectme.net/fullchain.pem'
-	)
-};*/
-//https.createServer(options, app).listen(443);
 http.createServer(app).listen(80);
 
-///app.set('port', process.env.PORT || 3600);
 app.use(express.urlencoded({ extended: true }));
 
 // Home route
 app.get('/', (req, res) => {
-	res.status(200).send(fs.readFileSync('timetable2.html', 'utf-8'));
+	res.status(200).send(fs.readFileSync('timetable.html', 'utf-8'));
 });
 app.get('/setup', (req, res) => {
 	res.status(200).send(fs.readFileSync('setup.html', 'utf-8'));
@@ -148,7 +132,6 @@ app.post('/getTimeTable', (req, res) => {
 	}
 	jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
 		if (err) {
-			console.log('invalid jwt');
 			res.status(406).send('Invalid jwt');
 			return;
 		}
@@ -215,13 +198,11 @@ app.post('/getTimeTable', (req, res) => {
 	});
 });
 app.post('/getClasses', (req, res) => {
-	console.log(req.body);
 	if (!req.body['jwt']) {
 		res.status(406).send('Missing args');
 		return;
 	}
 	jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
-		console.log(decoded);
 		const untis = new WebUntisLib.WebUntisSecretAuth(
 			schoolName,
 			decoded['username'],
@@ -241,8 +222,6 @@ app.post('/getClasses', (req, res) => {
 });
 
 app.post('/setup', upload.none(), (req, res) => {
-	console.log(req.body);
-
 	if (
 		!req.body['username'] ||
 		!req.body['secret'] ||
@@ -256,16 +235,16 @@ app.post('/setup', upload.none(), (req, res) => {
 		return;
 	}
 
-	const efgs = ['DS', 'sn2', 'sn1', 'Ku'];
-	let asdf = [];
+	const potentialCourses = ['DS', 'sn2', 'sn1', 'Ku'];
+	let selectedCourses = [];
 
-	efgs.forEach((element) => {
+	potentialCourses.forEach((element) => {
 		if (req.body[element] == 'on') {
-			asdf.push(element);
+			selectedCourses.push(element);
 		}
 	});
 
-	asdf.push(req.body['naWi'], req.body['sp'], req.body['ek']);
+	selectedCourses.push(req.body['naWi'], req.body['sp'], req.body['ek']);
 	var untis = new WebUntisLib.WebUntisSecretAuth(
 		schoolName,
 		req.body['username'],
@@ -280,7 +259,7 @@ app.post('/setup', upload.none(), (req, res) => {
 				secret: req.body['secret'],
 				lk: classIdEnum[req.body['lk']],
 				fachRichtung: classIdEnum[req.body['fachRichtung']],
-				sonstiges: asdf
+				sonstiges: selectedCourses
 			};
 			res.send(jwt.sign(obj, jwtSecret));
 			return;

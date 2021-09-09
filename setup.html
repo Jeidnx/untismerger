@@ -92,7 +92,7 @@
 
             if (response.status === 200) {
                 localStorage.setItem("jwt", result);
-                //window.location.href = "/";
+                window.location.href = "/";
             } else {
                 console.log(response);
                 document.getElementById("return1").innerHTML = result;
