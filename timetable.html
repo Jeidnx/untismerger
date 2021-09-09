@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=#, initial-scale=1.0">
+    <title>timeTable</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+
+        .tag {
+            display: flex;
+            height: 100vh;
+            width: 18vw;
+            flex-direction: column;
+            justify-self: flex-start;
+            flex-wrap: nowrap;
+        }
+
+        #stunden {
+            width: 10vw;
+        }
+
+        .raumNr {
+            font-size: 12px;
+        }
+
+        .reihe {
+            height: 10vh;
+            border-color: aqua;
+            border-style: solid;
+            text-align: center;
+        }
+
+        #woche,
+        #variablerInhalt {
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: flex-start;
+            flex-direction: row;
+            flex-wrap: nowrap;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="woche">
+        <div class="tag" id="stunden">
+            <div class="reihe" id="wochenAnzeige">
+                <input type="date" id="datumPicker" onchange="stundenPlanAnzeigen();">
+                <button type="button" onclick="wocheNeuLaden();">Neu Laden</button>
+            </div>
+            <div class="reihe">08:00 - 09:30</div>
+            <div class="reihe"> 09:45 - 11:15</div>
+            <div class="reihe"> 11:30 - 13:00</div>
+            <div class="reihe"> 13:30 - 15:00</div>
+            <div class="reihe"> 15:15 - 16:45</div>
+        </div>
+        <div id="variablerInhalt"></div>
+    </div>
+    <script>
+        const startZeitEnum = Object.freeze({
+            800: 0,
+            945: 1,
+            1130: 2,
+            1330: 3,
+            1515: 4
+        });
+
+        var stundenPlan = JSON.parse(localStorage.getItem("stundenPlan")) || {};
+
+        function getWeekFromDay(datum) {
+            let curr = new Date(datum);
+            let week = [];
+
+            for (let i = 1; i <= 5; i++) {
+                let first = curr.getDate() - curr.getDay() + i;
+                let day = new Date(curr.setDate(first)).toISOString().slice(0, 10);
+                week.push(day);
+            }
+            return week;
+
+        }
+
+        function wocheNeuLaden() {
+            console.log("reload");
+            let el = document.getElementById("variablerInhalt");
+
+            while (el.firstChild) el.removeChild(el.firstChild);
+            let woche = getWeekFromDay(document.getElementById("datumPicker").value);
+            woche.forEach(async element => {
+                await getTag(element);
+                tagAnhaengen(element)
+            })
+            stundenPlanAnzeigen(document.getElementById("datumPicker").value);
+        }
+        function tagAnhaengen(datum) {
+            if (!stundenPlan[datum]) {
+                throw new Error("Um einen Tag anzuhängern muss er im Stundenplan existieren");
+                return;
+            }
+            const woche = document.getElementById("variablerInhalt");
+            let tag = document.createElement("div");
+            tag.setAttribute("class", "tag");
+            tag.setAttribute("datum", datum);
+            let ersteReihe = document.createElement("div");
+            ersteReihe.setAttribute("class", "reihe");
+            ersteReihe.innerHTML = datum;
+            tag.appendChild(ersteReihe);
+
+
+            for (let i = 0; i < 5; i++) {
+
+
+                let reihe = document.createElement("div");
+                reihe.setAttribute("class", "reihe");
+                stundenPlan[datum].forEach(element => {
+                    if (element["stunde"] === i) {
+                        reihe.innerHTML = `${element["fach"]}
+                        <p class="raumNr">${element["raum"]} - ${element["lehrer"]}</p>
+                        `
+                    }
+                });
+
+                tag.appendChild(reihe);
+            }
+            woche.appendChild(tag);
+
+        }
+        async function getTag(datum) {
+            return new Promise((resolve, reject) => {
+
+
+
+                var xhr = new XMLHttpRequest();
+                xhr.addEventListener('load', () => {
+                    if (!xhr.status === 200) {
+                        reject(xhr.response);
+                        return;
+                    }
+
+                    var data = JSON.parse(xhr.response);
+
+                    for (var i = 0; i < data.length; i++) {
+                        const first = data[i]['fach'];
+                        const second = data[i + 1]['fach'];
+                        if (first === second) {
+                            data.splice(i + 1, 1);
+                        }
+                    }
+
+                    // Sortiert die Daten anhand der Zeit
+                    var arr = [null, null, null, null, null];
+                    for (var i = 0; i < data.length; i++) {
+                        const startZeit = data[i]['startZeit'];
+                        const stunde = startZeitEnum[startZeit];
+                        arr[stunde] = data[i];
+                    }
+
+                    data.forEach(element => {
+                        element["stunde"] = startZeitEnum[element["startZeit"]];
+                        delete element["startZeit"];
+                    })
+
+                    stundenPlan[datum] = data;
+                    resolve();
+                    localStorage.setItem("stundenPlan", JSON.stringify(stundenPlan));
+
+
+                });
+                xhr.open('POST', '/getTimeTable');
+                xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                xhr.send(`jwt=${localStorage.getItem("jwt")}&datum=${datum}`);
+
+            })
+        }
+
+        function stundenPlanAnzeigen() {
+            let datumPicker = document.getElementById("datumPicker");
+            let wochenAnzeige = document.getElementById("wochenAnzeige");
+            let week = getWeekFromDay(datumPicker.value);
+
+            document.getElementById("variablerInhalt").innerHTML = "";
+            datumPicker.value = week[0];
+            week.forEach(async element => {
+                if (!stundenPlan[element]) {
+                    await getTag(element);
+                    tagAnhaengen(element);
+                } else {
+                    tagAnhaengen(element);
+                }
+            })
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,26 @@
+{
+  "name": "untismerger",
+  "version": "1.0.0",
+  "description": "Untis Stundenplan sortierung",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jeidnx",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "jsonwebtoken": "^8.5.1",
+    "multer": "^1.4.3",
+    "webuntis": "^1.15.0"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jeidnx/untismerger.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Jeidnx/untismerger/issues"
+  },
+  "homepage": "https://github.com/Jeidnx/untismerger#readme"
+}

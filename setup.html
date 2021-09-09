@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup</title>
+</head>
+
+<body>
+    <form id="form">
+        <label for="username">Username</label>
+        <input type="text" name="username">
+        <label for="secret">Untis Key</label>
+        <input type="password" name="secret">
+        <p></p>
+        <h3 id="return1"></h3>
+        <label for="lk">Leistungskurs</label>
+        <select name="lk">
+            <option>BG12a</option>
+            <option>BG12b</option>
+            <option>BG12c</option>
+            <option>BG12d</option>
+            <option>BG12e</option>
+            <option>BG12f</option>
+        </select>
+        <p></p>
+        <label for="fachRichtung">Fach Richtung </label>
+        <select name="fachRichtung">
+            <option>BG12-2</option>
+            <option>BG12-3</option>
+            <option>BG12-4</option>
+            <option>BG12-5</option>
+            <option>BG12-6</option>
+            <option>BG12-7</option>
+        </select>
+        <p></p>
+        <label for="naWi"> Naturwissenschaft </label>
+        <select name="naWi">
+            <option>ph1</option>
+            <option>ch1</option>
+            <option>bio1</option>
+            <option>bio2</option>
+        </select>
+        <p></p>
+        <label for="ek">Ethik / Religionskurs</label>
+        <select name="ek">
+            <option>ek1</option>
+            <option>ek2</option>
+            <option>ek3</option>
+            <option>ek4</option>
+            <option>rv1</option>
+            <option>rv2</option>
+        </select>
+        <p></p>
+        <label for="sp">Sport kurs</label>
+        <select name="sp">
+            <option>sp1</option>
+            <option>sp2</option>
+            <option>sp3</option>
+            <option>sp4</option>
+            <option>sp5</option>
+            <option>sp6</option>
+        </select>
+
+        <p> Sontiges </p>
+        <label for="DS">Darstellendes Spiel</label>
+        <input type="checkbox" name="DS">
+        <label for="Ku">Kunst</label>
+        <input type="checkbox" name="Ku">
+        <label for="sn1">Spanisch 1</label>
+        <input type="checkbox" name="sn1">
+        <label for="sn2">Spanisch 2</label>
+        <input type="checkbox" name="sn2">
+        <p></p>
+        <button type="submit">Absenden</button>
+    </form>
+
+    <script>
+        formElem = document.getElementById("form");
+        formElem.onsubmit = async (e) => {
+            e.preventDefault();
+
+            let response = await fetch('/setup', {
+                method: 'POST',
+                body: new FormData(formElem)
+            });
+
+            let result = await response.text();
+            console.log(result);
+
+            if (response.status === 200) {
+                localStorage.setItem("jwt", result);
+                //window.location.href = "/";
+            } else {
+                console.log(response);
+                document.getElementById("return1").innerHTML = result;
+            }
+
+
+        }
+    </script>
+</body>
+
+</html>
