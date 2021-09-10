@@ -30,7 +30,7 @@
 	flex-wrap: nowrap;
 }
 
-#woche {
+body {
 	height: 100vh;
 	width: 100vw;
 	display: flex;
