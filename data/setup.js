@@ -1,3 +1,7 @@
+if (localStorage.getItem('jwt')) {
+	window.location.href = '/';
+}
+
 formElem = document.getElementById('form');
 formElem.onsubmit = async (e) => {
 	e.preventDefault();
