@@ -1,5 +1,5 @@
-const schoolName = 'HEMS-Darmstadt';
-const schoolDomain = 'neilo.webuntis.com';
+//const config.schoolName = 'HEMS-Darmstadt';
+//const config.schoolDomain = 'neilo.webuntis.com';
 
 const WebUntisLib = require('webuntis');
 const multer = require('multer');
@@ -8,8 +8,10 @@ const express = require('express');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const app = express();
+const https = require('https');
 const http = require('http');
 const jwtSecret = 'juwslsjklfidsuaofnsfdklfdskljf';
+const config = require('./config');
 
 const classIdEnum = Object.freeze({
 	'BBVZ10-1': 2176,
@@ -114,13 +116,26 @@ const classIdEnum = Object.freeze({
 	'BS10I3': 2661
 });
 
-http.createServer(app).listen(80);
+if (config.useHttp) {
+	http.createServer(app).listen(config.httpPort);
+}
+if (config.useHttps) {
+	const options = {
+		key: fs.readFileSync(config.sslCert.key),
+		cert: fs.readFileSync(config.sslCert.cert)
+	};
+	https.createServer(options, app).listen(config.httpsPort);
+}
 
 app.use(express.urlencoded({ extended: true }));
+console.log('running');
 
 // Home route
 app.get('/', (req, res) => {
 	res.status(200).send(fs.readFileSync('timetable.html', 'utf-8'));
+});
+app.get('/manifest.webmanifest', (req, res) => {
+	res.status(200).send(fs.readFileSync('manifest.webmanifest', 'utf-8'));
 });
 app.get('/setup', (req, res) => {
 	res.status(200).send(fs.readFileSync('setup.html', 'utf-8'));
@@ -137,10 +152,10 @@ app.post('/getTimeTable', (req, res) => {
 		}
 
 		const untis = new WebUntisLib.WebUntisSecretAuth(
-			schoolName,
+			config.schoolName,
 			decoded['username'],
 			decoded['secret'],
-			schoolDomain
+			config.schoolDomain
 		);
 		untis
 			.login()
@@ -204,10 +219,10 @@ app.post('/getClasses', (req, res) => {
 	}
 	jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
 		const untis = new WebUntisLib.WebUntisSecretAuth(
-			schoolName,
+			config.schoolName,
 			decoded['username'],
 			decoded['secret'],
-			schoolDomain
+			config.schoolDomain
 		);
 		untis.login().then(() => {
 			var out = [];
@@ -246,10 +261,10 @@ app.post('/setup', upload.none(), (req, res) => {
 
 	selectedCourses.push(req.body['naWi'], req.body['sp'], req.body['ek']);
 	var untis = new WebUntisLib.WebUntisSecretAuth(
-		schoolName,
+		config.schoolName,
 		req.body['username'],
 		req.body['secret'],
-		schoolDomain
+		config.schoolDomain
 	);
 	untis
 		.login()
