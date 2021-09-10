@@ -1,0 +1,47 @@
+* {
+	margin: 0;
+	padding: 0;
+	font-size: 1vmax;
+}
+
+.tag {
+	display: flex;
+	height: 100vh;
+	width: 18vw;
+	flex-direction: column;
+	justify-self: flex-start;
+}
+
+#stunden {
+	width: 10vw;
+}
+
+.reihe {
+	display: flex;
+	height: 16.6666666vh;
+	align-items: center;
+	justify-content: center;
+	flex-direction: column;
+	/*border-left-style: solid;
+    border-bottom-style: solid;*/
+	border-style: solid;
+	border-color: black;
+	border-width: 1px;
+	flex-wrap: nowrap;
+}
+
+#woche {
+	height: 100vh;
+	width: 100vw;
+	display: flex;
+	justify-content: flex-start;
+	flex-direction: row;
+}
+
+#variablerInhalt {
+	height: 100vh;
+	width: 90vw;
+	display: flex;
+	justify-content: flex-start;
+	flex-direction: row;
+}

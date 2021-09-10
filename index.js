@@ -12,6 +12,7 @@ const https = require('https');
 const http = require('http');
 const jwtSecret = 'juwslsjklfidsuaofnsfdklfdskljf';
 const config = require('./config');
+const mime = require('mime-types');
 
 const classIdEnum = Object.freeze({
 	'BBVZ10-1': 2176,
@@ -283,4 +284,22 @@ app.post('/setup', upload.none(), (req, res) => {
 			res.status(406).send('Ungültige Anmeldedaten');
 			return;
 		});
+});
+
+app.get('*', (req, res) => {
+	if (
+		req.path.split('/')[1] === 'data' &&
+		fs.existsSync('./data/' + req.path.split('/')[2])
+	) {
+		const path = './data/' + req.path.split('/')[2];
+		if (mime.lookup(path)) {
+			//@ts-ignore
+			res.contentType(mime.lookup(path));
+		}
+
+		res.status(200).send(fs.readFileSync(path, 'utf-8'));
+		return;
+	} else {
+		res.status(404).send('404');
+	}
 });
