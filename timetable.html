@@ -24,6 +24,7 @@
 
         #stunden {
             width: 10vw;
+
         }
 
         .raumNr {
@@ -31,16 +32,30 @@
         }
 
         .reihe {
-            height: 10vh;
-            border-color: aqua;
+            display: flex;
+            height: 16.6666666vh;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            /*border-left-style: solid;
+            border-bottom-style: solid;*/
             border-style: solid;
-            text-align: center;
+            border-color: black;
+            border-width: 1px;
         }
 
-        #woche,
-        #variablerInhalt {
+        #woche {
             height: 100vh;
             width: 100vw;
+            display: flex;
+            justify-content: flex-start;
+            flex-direction: row;
+            flex-wrap: nowrap;
+        }
+
+        #variablerInhalt {
+            height: 100vh;
+            width: 90vw;
             display: flex;
             justify-content: flex-start;
             flex-direction: row;
@@ -53,8 +68,6 @@
     <div id="woche">
         <div class="tag" id="stunden">
             <div class="reihe" id="wochenAnzeige">
-                <input type="date" id="datumPicker" onblur="displayTimeTable();">
-                <button type="button" onclick="wocheNeuLaden();">Neu Laden</button>
             </div>
             <div class="reihe">08:00 - 09:30</div>
             <div class="reihe"> 09:45 - 11:15</div>
@@ -70,6 +83,18 @@
             window.location.href = "/setup";
         }
 
+        const colorEnum = Object.freeze({
+            "Physik": "teal",
+            "Informationstechnik": "grey",
+            "Englisch": "red",
+            "Ethik": "green",
+            "Sport": "lightblue",
+            "Praktische Informatik": "orange",
+            "Mathematik": "azure",
+            "Deutsch": "lightgrey",
+            "Geschichte": "blueViolet",
+            "Politik und Wirtschaft": "lightgreen",
+        })
 
         const startTimeEnum = Object.freeze({
             800: 0,
@@ -100,12 +125,12 @@
 
             // Why tf does this not work??
             while (el.firstChild) el.removeChild(el.firstChild);
-            let week = getWeekFromDay(document.getElementById("datumPicker").value);
+            //let week = getWeekFromDay(document.getElementById("datumPicker").value);
             week.forEach(async element => {
                 await getTag(element);
                 addDay(element)
             })
-            displayTimeTable(document.getElementById("datumPicker").value);
+            //displayTimeTable(document.getElementById("datumPicker").value);
         }
         function addDay(datum) {
             if (!timeTable[datum]) {
@@ -116,10 +141,10 @@
             let tag = document.createElement("div");
             tag.setAttribute("class", "tag");
             tag.setAttribute("datum", datum);
-            let ersteReihe = document.createElement("div");
-            ersteReihe.setAttribute("class", "reihe");
-            ersteReihe.innerHTML = datum;
-            tag.appendChild(ersteReihe);
+            let firstRow = document.createElement("div");
+            firstRow.setAttribute("class", "reihe");
+            firstRow.innerHTML = datum;
+            tag.appendChild(firstRow);
 
 
             for (let i = 0; i < 5; i++) {
@@ -131,7 +156,8 @@
                     if (element["stunde"] === i) {
                         reihe.innerHTML = `${element["fach"]}
                         <p class="raumNr">${element["raum"]} - ${element["lehrer"]}</p>
-                        `
+                        `;
+                        reihe.style.backgroundColor = colorEnum[element["fach"]];
                     }
                 });
 
@@ -188,13 +214,12 @@
             })
         }
 
-        function displayTimeTable() {
-            let datumPicker = document.getElementById("datumPicker");
+        function displayTimeTable(date) {
             let wochenAnzeige = document.getElementById("wochenAnzeige");
-            let week = getWeekFromDay(datumPicker.value);
+            let week = getWeekFromDay(date);
+            wochenAnzeige.innerHTML = `${week[0]} - ${week[4]}`;
 
             document.getElementById("variablerInhalt").innerHTML = "";
-            datumPicker.value = week[0];
             week.forEach(async element => {
                 if (!timeTable[element]) {
                     await getTag(element);
@@ -204,6 +229,7 @@
                 }
             })
         }
+        displayTimeTable(new Date());
     </script>
 </body>
 
