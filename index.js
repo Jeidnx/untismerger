@@ -3,14 +3,11 @@
 
 const WebUntisLib = require('webuntis');
 const multer = require('multer');
-const upload = multer();
 const express = require('express');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
-const app = express();
 const https = require('https');
 const http = require('http');
-const jwtSecret = 'juwslsjklfidsuaofnsfdklfdskljf';
 const config = require('./config');
 const mime = require('mime-types');
 
@@ -117,6 +114,9 @@ const classIdEnum = Object.freeze({
 	'BS10I3': 2661
 });
 
+const app = express();
+const upload = multer();
+
 if (config.useHttp) {
 	http.createServer(app).listen(config.httpPort);
 }
@@ -135,9 +135,6 @@ console.log('running');
 app.get('/', (req, res) => {
 	res.status(200).send(fs.readFileSync('timetable.html', 'utf-8'));
 });
-app.get('/manifest.webmanifest', (req, res) => {
-	res.status(200).send(fs.readFileSync('manifest.webmanifest', 'utf-8'));
-});
 app.get('/setup', (req, res) => {
 	res.status(200).send(fs.readFileSync('setup.html', 'utf-8'));
 });
@@ -146,7 +143,7 @@ app.post('/getTimeTable', (req, res) => {
 		res.status(406).send('Missing args');
 		return;
 	}
-	jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
+	jwt.verify(req.body['jwt'], config.jwtSecret, (err, decoded) => {
 		if (err) {
 			res.status(406).send('Invalid jwt');
 			return;
@@ -213,29 +210,6 @@ app.post('/getTimeTable', (req, res) => {
 			.catch(console.log);
 	});
 });
-app.post('/getClasses', (req, res) => {
-	if (!req.body['jwt']) {
-		res.status(406).send('Missing args');
-		return;
-	}
-	jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
-		const untis = new WebUntisLib.WebUntisSecretAuth(
-			config.schoolName,
-			decoded['username'],
-			decoded['secret'],
-			config.schoolDomain
-		);
-		untis.login().then(() => {
-			var out = [];
-			untis.getClasses().then((classes) => {
-				classes.forEach((item, index) => {
-					out.push({ name: item['name'], id: item['id'] });
-				});
-				res.send(out);
-			});
-		});
-	});
-});
 
 app.post('/setup', upload.none(), (req, res) => {
 	if (
@@ -277,7 +251,7 @@ app.post('/setup', upload.none(), (req, res) => {
 				fachRichtung: classIdEnum[req.body['fachRichtung']],
 				sonstiges: selectedCourses
 			};
-			res.send(jwt.sign(obj, jwtSecret));
+			res.send(jwt.sign(obj, config.jwtSecret));
 			return;
 		})
 		.catch((e) => {
