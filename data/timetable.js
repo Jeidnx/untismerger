@@ -37,19 +37,6 @@ function getWeekFromDay(datum) {
 	return week;
 }
 
-function wocheNeuLaden() {
-	console.log('reload');
-	let el = document.getElementById('variablerInhalt');
-
-	// Why tf does this not work??
-	while (el.firstChild) el.removeChild(el.firstChild);
-	//let week = getWeekFromDay(document.getElementById("datumPicker").value);
-	week.forEach(async (element) => {
-		await getTag(element);
-		addDay(element);
-	});
-	//displayTimeTable(document.getElementById("datumPicker").value);
-}
 function addDay(datum) {
 	if (!timeTable[datum]) {
 		throw new Error(
@@ -88,7 +75,6 @@ async function getTag(datum) {
 		xhr.addEventListener('load', () => {
 			if (!(xhr.status === 200)) {
 				reject(xhr.response);
-				return;
 			}
 
 			var data = JSON.parse(xhr.response);
@@ -115,7 +101,7 @@ async function getTag(datum) {
 			});
 
 			timeTable[datum] = data;
-			resolve();
+			resolve(datum);
 			localStorage.setItem('timeTable', JSON.stringify(timeTable));
 		});
 		xhr.open('POST', '/getTimeTable');
@@ -124,19 +110,53 @@ async function getTag(datum) {
 	});
 }
 
-function displayTimeTable(date) {
+async function displayTimeTable(purge) {
 	let wochenAnzeige = document.getElementById('wochenAnzeige');
-	let week = getWeekFromDay(date);
+	let week = getWeekFromDay(new Date());
 	wochenAnzeige.innerHTML = `${week[0]} - ${week[4]}`;
 
 	document.getElementById('variablerInhalt').innerHTML = '';
-	week.forEach(async (element) => {
-		if (!timeTable[element]) {
-			await getTag(element);
-			addDay(element);
-		} else {
-			addDay(element);
+	if (purge) {
+		for (let i = 0; i < 5; i++) {
+			await getTag(week[i]).then(addDay).catch(console.log);
 		}
-	});
+	} else {
+		for (let i = 0; i < 5; i++) {
+			if (!timeTable[week[i]]) {
+				await getTag(week[i]).then(addDay).catch(console.log);
+			} else {
+				addDay(week[i]);
+			}
+		}
+	}
 }
-displayTimeTable(new Date());
+displayTimeTable(false);
+
+let _startY;
+const body = document.body;
+
+body.addEventListener(
+	'touchstart',
+	(e) => {
+		_startY = e.touches[0].pageY;
+	},
+	{ passive: true }
+);
+
+body.addEventListener(
+	'touchmove',
+	async (e) => {
+		const y = e.touches[0].pageY;
+		if (
+			document.scrollingElement.scrollTop === 0 &&
+			y > _startY + 40 &&
+			!body.classList.contains('refreshing')
+		) {
+			// refresh inbox.
+			body.classList.add('refreshing');
+			await displayTimeTable(true);
+			body.classList.remove('refreshing');
+		}
+	},
+	{ passive: true }
+);
