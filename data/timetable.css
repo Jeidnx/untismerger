@@ -10,7 +10,7 @@ body.refreshing .refresher {
 }
 .refresher {
 	pointer-events: none;
-	--refresh-width: 55px;
+	--refresh-width: 12vw;
 	background: #fff;
 	width: var(--refresh-width);
 	height: var(--refresh-width);
@@ -25,6 +25,31 @@ body.refreshing .refresher {
 	visibility: hidden;
 	justify-content: center;
 	align-items: center;
+}
+@keyframes spinner {
+	0% {
+		transform: translate3d(-50%, -50%, 0) rotate(0deg);
+	}
+	100% {
+		transform: translate3d(-50%, -50%, 0) rotate(360deg);
+	}
+}
+.refresher::before {
+	animation: 1.5s linear infinite spinner;
+	animation-play-state: inherit;
+	border-color: #cfd0d1;
+	border-style: solid;
+	border-width: 1vw;
+	border-bottom-color: #1c87c9;
+	border-radius: 50%;
+	content: '';
+	height: var(--refresh-width);
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate3d(-50%, -50%, 0);
+	width: var(--refresh-width);
+	will-change: transform;
 }
 
 .tag {

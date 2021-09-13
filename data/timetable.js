@@ -152,7 +152,6 @@ body.addEventListener(
 			y > _startY + 40 &&
 			!body.classList.contains('refreshing')
 		) {
-			// refresh inbox.
 			body.classList.add('refreshing');
 			await displayTimeTable(true);
 			body.classList.remove('refreshing');
@@ -160,3 +159,11 @@ body.addEventListener(
 	},
 	{ passive: true }
 );
+
+window.onkeydown = async function (gfg) {
+	if (gfg.key === 'r') {
+		body.classList.add('refreshing');
+		await displayTimeTable(true);
+		body.classList.remove('refreshing');
+	}
+};

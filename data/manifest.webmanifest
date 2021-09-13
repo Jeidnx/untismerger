@@ -2,5 +2,6 @@
 	"name": "untismerger",
 	"short_name": "Untmerg",
 	"display": "standalone",
-	"description": "Merged verschiedene Stundenpläne zusammen"
+	"description": "Merged verschiedene Stundenpläne zusammen",
+	"start_url": "../"
 }
