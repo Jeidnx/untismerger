@@ -1,6 +1,3 @@
-//const config.schoolName = 'HEMS-Darmstadt';
-//const config.schoolDomain = 'neilo.webuntis.com';
-
 const WebUntisLib = require('webuntis');
 const multer = require('multer');
 const express = require('express');
