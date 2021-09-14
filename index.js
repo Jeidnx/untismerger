@@ -1,5 +1,4 @@
 const WebUntisLib = require('webuntis');
-const multer = require('multer');
 const express = require('express');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
@@ -8,7 +7,7 @@ const http = require('http');
 const config = require('./config');
 const mime = require('mime-types');
 
-const classIdEnum = Object.freeze({
+const classIdEnum = {
 	'BBVZ10-1': 2176,
 	'BFS10a': 2181,
 	'BFS10b': 2186,
@@ -109,13 +108,13 @@ const classIdEnum = Object.freeze({
 	'FS05T': 2652,
 	'FS01T': 2657,
 	'BS10I3': 2661
-});
+};
 
 const app = express();
-const upload = multer();
 
 if (config.useHttp) {
 	http.createServer(app).listen(config.httpPort);
+	console.log(`Http Server Initialized. Listening on port: ${config.httpPort}`);
 }
 if (config.useHttps) {
 	const options = {
@@ -123,12 +122,13 @@ if (config.useHttps) {
 		cert: fs.readFileSync(config.sslCert.cert)
 	};
 	https.createServer(options, app).listen(config.httpsPort);
+	console.log(
+		`Https Server Initialized. Listening on port: ${config.httpsPort}`
+	);
 }
 
 app.use(express.urlencoded({ extended: true }));
-console.log('running');
 
-// Home route
 app.get('/', (req, res) => {
 	res.status(200).send(fs.readFileSync('timetable.html', 'utf-8'));
 });
@@ -208,7 +208,7 @@ app.post('/getTimeTable', (req, res) => {
 	});
 });
 
-app.post('/setup', upload.none(), (req, res) => {
+app.post('/setup', (req, res) => {
 	if (
 		!req.body['username'] ||
 		!req.body['secret'] ||
@@ -218,20 +218,25 @@ app.post('/setup', upload.none(), (req, res) => {
 		!req.body['sp'] ||
 		!req.body['naWi']
 	) {
-		res.status(406).send('Fehlende Argumente');
+		res.status(406).send('Missing Arguments');
 		return;
 	}
 
+	// This is trash
 	const potentialCourses = ['DS', 'sn2', 'sn1', 'Ku'];
 	let selectedCourses = [];
 
 	potentialCourses.forEach((element) => {
-		if (req.body[element] == 'on') {
+		if (req.body[element] == 'true') {
 			selectedCourses.push(element);
 		}
 	});
 
-	selectedCourses.push(req.body['naWi'], req.body['sp'], req.body['ek']);
+	if (!(req.body['naWi'] == 'false')) {
+		selectedCourses.push(req.body['naWi']);
+	}
+
+	selectedCourses.push(req.body['sp'], req.body['ek']);
 	var untis = new WebUntisLib.WebUntisSecretAuth(
 		config.schoolName,
 		req.body['username'],
@@ -241,15 +246,18 @@ app.post('/setup', upload.none(), (req, res) => {
 	untis
 		.login()
 		.then(() => {
-			let obj = {
+			let userObj = {
 				username: req.body['username'],
 				secret: req.body['secret'],
 				lk: classIdEnum[req.body['lk']],
 				fachRichtung: classIdEnum[req.body['fachRichtung']],
 				sonstiges: selectedCourses
 			};
-			res.send(jwt.sign(obj, config.jwtSecret));
+			res.send(jwt.sign(userObj, config.jwtSecret));
 			return;
+		})
+		.then(() => {
+			untis.logout();
 		})
 		.catch((e) => {
 			res.status(406).send('Ungültige Anmeldedaten');
