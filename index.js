@@ -222,22 +222,7 @@ app.post('/setup', (req, res) => {
 		return;
 	}
 
-	// This is trash
-	const potentialCourses = ['DS', 'sn2', 'sn1', 'Ku'];
-	let selectedCourses = [];
-
-	potentialCourses.forEach((element) => {
-		if (req.body[element] == 'true') {
-			selectedCourses.push(element);
-		}
-	});
-
-	if (!(req.body['naWi'] == 'false')) {
-		selectedCourses.push(req.body['naWi']);
-	}
-
-	selectedCourses.push(req.body['sp'], req.body['ek']);
-	var untis = new WebUntisLib.WebUntisSecretAuth(
+	const untis = new WebUntisLib.WebUntisSecretAuth(
 		config.schoolName,
 		req.body['username'],
 		req.body['secret'],
@@ -246,6 +231,21 @@ app.post('/setup', (req, res) => {
 	untis
 		.login()
 		.then(() => {
+			// still kinda trash, but not as much as before.
+			const potentialCourses = ['DS', 'sn2', 'sn1', 'Ku'];
+			let selectedCourses = [];
+
+			potentialCourses.forEach((element) => {
+				if (req.body[element] == 'true') {
+					selectedCourses.push(element);
+				}
+			});
+
+			if (!(req.body['naWi'] == 'false')) {
+				selectedCourses.push(req.body['naWi']);
+			}
+
+			selectedCourses.push(req.body['sp'], req.body['ek']);
 			let userObj = {
 				username: req.body['username'],
 				secret: req.body['secret'],
@@ -256,11 +256,8 @@ app.post('/setup', (req, res) => {
 			res.send(jwt.sign(userObj, config.jwtSecret));
 			return;
 		})
-		.then(() => {
-			untis.logout();
-		})
-		.catch((e) => {
-			res.status(406).send('Ungültige Anmeldedaten');
+		.catch(() => {
+			res.status(406).send('Wrong Credentials');
 			return;
 		});
 });
