@@ -52,7 +52,7 @@ body.refreshing .refresher {
 	will-change: transform;
 }
 
-.tag {
+.day {
 	display: flex;
 	height: 100vh;
 	width: 18vw;
@@ -60,11 +60,11 @@ body.refreshing .refresher {
 	justify-self: flex-start;
 }
 
-#stunden {
+#periods {
 	width: 10vw;
 }
 
-.reihe {
+.row {
 	display: flex;
 	height: 16.6666666vh;
 	align-items: center;
@@ -86,7 +86,7 @@ body {
 	flex-direction: row;
 }
 
-#variablerInhalt {
+#variableContent {
 	height: 100vh;
 	width: 90vw;
 	display: flex;

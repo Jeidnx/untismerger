@@ -2,7 +2,7 @@ if (!localStorage.getItem('jwt')) {
 	window.location.href = '/setup';
 }
 
-const colorEnum = Object.freeze({
+const colorEnum = {
 	'Physik': 'teal',
 	'Informationstechnik': 'grey',
 	'Englisch': 'red',
@@ -13,7 +13,7 @@ const colorEnum = Object.freeze({
 	'Deutsch': 'lightgrey',
 	'Geschichte': 'blueViolet',
 	'Politik und Wirtschaft': 'lightgreen'
-});
+};
 
 const startTimeEnum = Object.freeze({
 	800: 0,
@@ -44,32 +44,32 @@ function addDay(datum) {
 		);
 		return;
 	}
-	const woche = document.getElementById('variablerInhalt');
-	let tag = document.createElement('div');
-	tag.setAttribute('class', 'tag');
-	tag.setAttribute('datum', datum);
+	const week = document.getElementById('variableContent');
+	let day = document.createElement('div');
+	day.setAttribute('class', 'day');
+	day.setAttribute('datum', datum);
 	let firstRow = document.createElement('div');
-	firstRow.setAttribute('class', 'reihe');
+	firstRow.setAttribute('class', 'row');
 	firstRow.innerHTML = datum;
-	tag.appendChild(firstRow);
+	day.appendChild(firstRow);
 
 	for (let i = 0; i < 5; i++) {
-		let reihe = document.createElement('div');
-		reihe.setAttribute('class', 'reihe');
+		let row = document.createElement('div');
+		row.setAttribute('class', 'row');
 		timeTable[datum].forEach((element) => {
 			if (element['stunde'] === i) {
-				reihe.innerHTML = `${element['fach']}
+				row.innerHTML = `${element['fach']}
                 <p class="raumNr">${element['raum']} - ${element['lehrer']}</p>
                 `;
-				reihe.style.backgroundColor = colorEnum[element['fach']];
+				row.style.backgroundColor = colorEnum[element['fach']];
 			}
 		});
 
-		tag.appendChild(reihe);
+		day.appendChild(row);
 	}
-	woche.appendChild(tag);
+	week.appendChild(day);
 }
-async function getTag(datum) {
+async function getDay(datum) {
 	return new Promise((resolve, reject) => {
 		var xhr = new XMLHttpRequest();
 		xhr.addEventListener('load', () => {
@@ -87,7 +87,7 @@ async function getTag(datum) {
 				}
 			}
 
-			// Sortiert die Daten anhand der Zeit
+			// sort data
 			var arr = [null, null, null, null, null];
 			for (var i = 0; i < data.length; i++) {
 				const startZeit = data[i]['startZeit'];
@@ -111,19 +111,21 @@ async function getTag(datum) {
 }
 
 async function displayTimeTable(purge) {
-	let wochenAnzeige = document.getElementById('wochenAnzeige');
+	let weekDisplay = document.getElementById('weekDisplay');
 	let week = getWeekFromDay(new Date());
-	wochenAnzeige.innerHTML = `${week[0]} - ${week[4]}`;
+	weekDisplay.innerHTML = `${week[0]} - ${week[4]}`;
 
-	document.getElementById('variablerInhalt').innerHTML = '';
+	document.getElementById('variableContent').innerHTML = '';
 	if (purge) {
 		for (let i = 0; i < 5; i++) {
-			await getTag(week[i]).then(addDay).catch(console.log);
+			// !!!! There are some MAJOR performance improvements to be made here. This is insanely slow for no reason except I don't want to fix it
+			await getDay(week[i]).then(addDay).catch(console.log);
 		}
 	} else {
 		for (let i = 0; i < 5; i++) {
 			if (!timeTable[week[i]]) {
-				await getTag(week[i]).then(addDay).catch(console.log);
+				// Same thing
+				await getDay(week[i]).then(addDay).catch(console.log);
 			} else {
 				addDay(week[i]);
 			}
