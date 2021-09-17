@@ -42,7 +42,6 @@ function addDay(datum) {
 		throw new Error(
 			'To add a day to the Interface, it has to be present in the timeTable Object'
 		);
-		return;
 	}
 	const week = document.getElementById('variableContent');
 	let day = document.createElement('div');
@@ -75,6 +74,7 @@ async function getDay(datum) {
 		xhr.addEventListener('load', () => {
 			if (!(xhr.status === 200)) {
 				reject(xhr.response);
+				return;
 			}
 
 			var data = JSON.parse(xhr.response);
