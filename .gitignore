@@ -2,3 +2,5 @@ node_modules
 test*
 config.json
 Dockerfile
+*.sh
+config.env

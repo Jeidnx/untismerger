@@ -1,5 +1,0 @@
-{
-	"jwtSecret": "example",
-	"schoolName": "exampleName",
-	"schoolDomain": "example.webuntis.com"
-}

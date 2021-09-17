@@ -3,7 +3,6 @@ const express = require('express');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const http = require('http');
-const config = require('./config.json');
 const mime = require('mime-types');
 
 const classIdEnum = {
@@ -109,6 +108,15 @@ const classIdEnum = {
 	'BS10I3': 2661
 };
 
+const jwtSecret = process.env.JWT_SECRET;
+const schoolName = process.env.SCHOOL_NAME;
+const schoolDomain = process.env.SCHOOL_DOMAIN;
+
+if (!jwtSecret || !schoolName || !schoolDomain) {
+	console.log('Missing environment Variables');
+	process.exit(1);
+}
+
 const app = express();
 
 http.createServer(app).listen(8080);
@@ -126,17 +134,17 @@ app.post('/getTimeTable', (req, res) => {
 		res.status(406).send('Missing args');
 		return;
 	}
-	jwt.verify(req.body['jwt'], config.jwtSecret, (err, decoded) => {
+	jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
 		if (err) {
 			res.status(406).send('Invalid jwt');
 			return;
 		}
 
 		const untis = new WebUntisLib.WebUntisSecretAuth(
-			config.schoolName,
+			schoolName,
 			decoded['username'],
 			decoded['secret'],
-			config.schoolDomain
+			schoolDomain
 		);
 		untis
 			.login()
@@ -209,10 +217,10 @@ app.post('/setup', (req, res) => {
 	}
 
 	const untis = new WebUntisLib.WebUntisSecretAuth(
-		config.schoolName,
+		schoolName,
 		req.body['username'],
 		req.body['secret'],
-		config.schoolDomain
+		schoolDomain
 	);
 	untis
 		.login()
@@ -239,7 +247,7 @@ app.post('/setup', (req, res) => {
 				fachRichtung: classIdEnum[req.body['fachRichtung']],
 				sonstiges: selectedCourses
 			};
-			res.send(jwt.sign(userObj, config.jwtSecret));
+			res.send(jwt.sign(userObj, jwtSecret));
 			return;
 		})
 		.catch(() => {
