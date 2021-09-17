@@ -1,9 +1,8 @@
 FROM node:latest
 
-RUN git clone https://github.com/Jeidnx/untismerger.git
 WORKDIR /untismerger
 
-COPY ./config.js /untismerger/
+COPY . /untismerger/
 RUN npm install
 
 EXPOSE 8080 8081
