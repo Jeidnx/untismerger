@@ -4,7 +4,7 @@ const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const https = require('https');
 const http = require('http');
-const config = require('./config');
+const config = require('./config.json');
 const mime = require('mime-types');
 
 const classIdEnum = {
