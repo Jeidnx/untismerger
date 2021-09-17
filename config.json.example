@@ -1,11 +1,5 @@
 {
-	"useHttps": false,
-	"useHttp": true,
-	"jwtSecret": "test",
-	"sslCert": {
-		"key": "(...)/privkey.pem",
-		"cert": "(...)/fullchain.pem"
-	},
+	"jwtSecret": "example",
 	"schoolName": "exampleName",
 	"schoolDomain": "example.webuntis.com"
 }

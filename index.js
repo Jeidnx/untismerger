@@ -2,7 +2,6 @@ const WebUntisLib = require('webuntis');
 const express = require('express');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
-const https = require('https');
 const http = require('http');
 const config = require('./config.json');
 const mime = require('mime-types');
@@ -112,18 +111,7 @@ const classIdEnum = {
 
 const app = express();
 
-if (config.useHttp) {
-	http.createServer(app).listen(8080);
-	console.log(`Http Server Initialized. Listening on port: ${8080}`);
-}
-if (config.useHttps) {
-	const options = {
-		key: fs.readFileSync(config.sslCert.key),
-		cert: fs.readFileSync(config.sslCert.cert)
-	};
-	https.createServer(options, app).listen(8081);
-	console.log(`Https Server Initialized. Listening on port: ${8081}`);
-}
+http.createServer(app).listen(8080);
 
 app.use(express.urlencoded({ extended: true }));
 
