@@ -113,18 +113,16 @@ const classIdEnum = {
 const app = express();
 
 if (config.useHttp) {
-	http.createServer(app).listen(config.httpPort);
-	console.log(`Http Server Initialized. Listening on port: ${config.httpPort}`);
+	http.createServer(app).listen(8080);
+	console.log(`Http Server Initialized. Listening on port: ${8080}`);
 }
 if (config.useHttps) {
 	const options = {
 		key: fs.readFileSync(config.sslCert.key),
 		cert: fs.readFileSync(config.sslCert.cert)
 	};
-	https.createServer(options, app).listen(config.httpsPort);
-	console.log(
-		`Https Server Initialized. Listening on port: ${config.httpsPort}`
-	);
+	https.createServer(options, app).listen(8081);
+	console.log(`Https Server Initialized. Listening on port: ${8081}`);
 }
 
 app.use(express.urlencoded({ extended: true }));
