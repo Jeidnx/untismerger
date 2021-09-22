@@ -22,6 +22,20 @@ const startTimeEnum = Object.freeze({
 	1330: 3,
 	1515: 4
 });
+const weekDayEnum = {
+	0: 'Montag',
+	1: 'Dienstag',
+	2: 'Mittwoch',
+	3: 'Donnerstag',
+	4: 'Freitag'
+};
+const indexDayEnum = {
+	Montag: 0,
+	Dienstag: 1,
+	Mittwoch: 2,
+	Donnerstag: 3,
+	Freitag: 4
+};
 
 var timeTable = JSON.parse(localStorage.getItem('timeTable')) || {};
 
@@ -37,22 +51,28 @@ function getWeekFromDay(datum) {
 	return week;
 }
 
-function addDay(datum) {
+/**
+ * @param {string} datum
+ * @param {number} index
+ */
+function addDay(datum, index) {
 	if (!timeTable[datum]) {
 		throw new Error(
 			'To add a day to the Interface, it has to be present in the timeTable Object'
 		);
 	}
-	const week = document.getElementById('variableContent');
+	const variableContent = document.getElementById('variableContent');
 	let day = document.createElement('div');
 	day.setAttribute('class', 'day');
 	day.setAttribute('datum', datum);
 	let firstRow = document.createElement('div');
 	firstRow.setAttribute('class', 'row');
-	firstRow.innerHTML = datum;
+	firstRow.innerHTML = weekDayEnum[index];
 	day.appendChild(firstRow);
+	variableContent.appendChild(day);
+	variableContent.children;
 
-	for (let i = 0; i < 5; i++) {
+	for (let i = 0; i <= 5; i++) {
 		let row = document.createElement('div');
 		row.setAttribute('class', 'row');
 		timeTable[datum].forEach((element) => {
@@ -66,7 +86,20 @@ function addDay(datum) {
 
 		day.appendChild(row);
 	}
-	week.appendChild(day);
+	let itemArr = [];
+	let items = variableContent.children;
+	for (let i = 0; i < items.length; i++) {
+		itemArr.push(items[i]);
+	}
+	itemArr.sort((a, b) => {
+		let ab = indexDayEnum[a.children[0].innerHTML];
+		let ba = indexDayEnum[b.children[0].innerHTML];
+		return ab - ba;
+	});
+	variableContent.innerHTML = '';
+	for (let i = 0; i < itemArr.length; ++i) {
+		variableContent.appendChild(itemArr[i]);
+	}
 }
 async function getDay(datum) {
 	return new Promise((resolve, reject) => {
@@ -110,29 +143,39 @@ async function getDay(datum) {
 	});
 }
 
-async function displayTimeTable(purge) {
+/**
+ * @param {boolean} purge
+ */
+function displayWeek(purge) {
 	let weekDisplay = document.getElementById('weekDisplay');
 	let week = getWeekFromDay(new Date());
 	weekDisplay.innerHTML = `${week[0]} - ${week[4]}`;
-
 	document.getElementById('variableContent').innerHTML = '';
+
 	if (purge) {
 		for (let i = 0; i < 5; i++) {
-			// !!!! There are some MAJOR performance improvements to be made here. This is insanely slow for no reason except I don't want to fix it
-			await getDay(week[i]).then(addDay).catch(console.log);
+			getDay(week[i])
+				.then((date) => {
+					addDay(date, i);
+				})
+				.catch(console.log);
 		}
 	} else {
 		for (let i = 0; i < 5; i++) {
-			if (!timeTable[week[i]]) {
-				// Same thing
-				await getDay(week[i]).then(addDay).catch(console.log);
+			if (timeTable[week[i]]) {
+				addDay(week[i], i);
 			} else {
-				addDay(week[i]);
+				getDay(week[i])
+					.then((date) => {
+						addDay(date, i);
+					})
+					.catch(console.log);
 			}
 		}
 	}
 }
-displayTimeTable(false);
+
+displayWeek(false);
 
 let _startY;
 const body = document.body;
@@ -155,7 +198,7 @@ body.addEventListener(
 			!body.classList.contains('refreshing')
 		) {
 			body.classList.add('refreshing');
-			await displayTimeTable(true);
+			displayWeek(true);
 			body.classList.remove('refreshing');
 		}
 	},
@@ -165,7 +208,7 @@ body.addEventListener(
 window.onkeydown = async function (gfg) {
 	if (gfg.key === 'r') {
 		body.classList.add('refreshing');
-		await displayTimeTable(true);
+		displayWeek(true);
 		body.classList.remove('refreshing');
 	}
 };
