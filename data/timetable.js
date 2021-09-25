@@ -72,7 +72,7 @@ function addDay(datum, index) {
 	variableContent.appendChild(day);
 	variableContent.children;
 
-	for (let i = 0; i <= 5; i++) {
+	for (let i = 0; i < 5; i++) {
 		let row = document.createElement('div');
 		row.setAttribute('class', 'row');
 		timeTable[datum].forEach((element) => {
