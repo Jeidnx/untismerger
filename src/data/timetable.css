@@ -89,12 +89,14 @@ body {
 	visibility: hidden;
 	position: absolute;
 	width: 100vw;
-	height: 10vh;
-	background-color:lightcoral;
+	height: 5vh;
+	background-color:red;
 	color: white;
 	display: flex;
 	justify-content: center;
 	align-items: center;
+	font-weight: bold;
+	font-size: 1.2vmax;
 
 }
 body.offline  .offlineMessage{
