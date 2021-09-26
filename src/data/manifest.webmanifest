@@ -6,5 +6,7 @@
 	"display": "standalone",
 	"description": "Merged verschiedene Stundenpläne zusammen",
 	"start_url": "../",
-	"scope": "/"
+	"scope": "/",
+	"background_color": "black",
+	"theme_color": "white"
 }
