@@ -2,7 +2,7 @@ if (!localStorage.getItem('jwt')) {
 	window.location.href = '/setup';
 }
 if ('serviceWorker' in navigator) {
-	console.log('[Service Worker] supported. Trying to install')
+	console.log('[Service Worker] supported. Trying to install');
 	navigator.serviceWorker.register('/sw.js');
 } else {
 	console.log('[Service Worker] not supported');
@@ -44,9 +44,13 @@ const indexDayEnum = {
 };
 
 var timeTable = JSON.parse(localStorage.getItem('timeTable')) || {};
-
-function getWeekFromDay(datum) {
-	let curr = new Date(datum);
+/**
+ *
+ * @param {Date} date
+ * @returns {string[]}
+ */
+function getWeekFromDay(date) {
+	let curr = date;
 	let week = [];
 
 	for (let i = 1; i <= 5; i++) {
@@ -58,55 +62,62 @@ function getWeekFromDay(datum) {
 }
 
 /**
- * @param {string} datum
+ *
+ * @param {string} date
  * @param {number} index
+ * @returns {Promise<number>} Number of element Added
  */
-function addDay(datum, index) {
-	if (!timeTable[datum]) {
-		throw new Error(
-			'To add a day to the Interface, it has to be present in the timeTable Object'
-		);
-	}
-	const variableContent = document.getElementById('variableContent');
-	let day = document.createElement('div');
-	day.setAttribute('class', 'day');
-	day.setAttribute('datum', datum);
-	let firstRow = document.createElement('div');
-	firstRow.setAttribute('class', 'row');
-	firstRow.innerHTML = weekDayEnum[index];
-	day.appendChild(firstRow);
-	variableContent.appendChild(day);
-	variableContent.children;
+async function addDay(date, index) {
+	return new Promise((resolve, reject) => {
+		const variableContent = document.getElementById('variableContent');
+		let day = document.createElement('div');
+		day.setAttribute('class', 'day');
+		let firstRow = document.createElement('div');
+		firstRow.setAttribute('class', 'row');
+		firstRow.innerHTML = weekDayEnum[index];
+		day.appendChild(firstRow);
 
-	for (let i = 0; i < 5; i++) {
-		let row = document.createElement('div');
-		row.setAttribute('class', 'row');
-		timeTable[datum].forEach((element) => {
-			if (element['stunde'] === i) {
-				row.innerHTML = `${element['fach']}
+		for (let i = 0; i < 5; i++) {
+			let row = document.createElement('div');
+			row.setAttribute('class', 'row');
+			timeTable[date].forEach((element) => {
+				if (element['stunde'] === i) {
+					row.innerHTML = `${element['fach']}
                 <p class="raumNr">${element['raum']} - ${element['lehrer']}</p>
                 `;
-				row.style.backgroundColor = colorEnum[element['fach']];
-			}
-		});
+					row.style.backgroundColor = colorEnum[element['fach']];
+				}
+			});
 
-		day.appendChild(row);
-	}
-	let itemArr = [];
-	let items = variableContent.children;
-	for (let i = 0; i < items.length; i++) {
-		itemArr.push(items[i]);
-	}
-	itemArr.sort((a, b) => {
-		let ab = indexDayEnum[a.children[0].innerHTML];
-		let ba = indexDayEnum[b.children[0].innerHTML];
-		return ab - ba;
+			day.appendChild(row);
+		}
+		variableContent.appendChild(day);
+		if (variableContent.childElementCount === 5) {
+			let itemArr = [];
+			let items = variableContent.children;
+			for (let i = 0; i < items.length; i++) {
+				itemArr.push(items[i]);
+			}
+			itemArr.sort((a, b) => {
+				let ab = indexDayEnum[a.children[0].innerHTML];
+				let ba = indexDayEnum[b.children[0].innerHTML];
+				return ab - ba;
+			});
+			variableContent.innerHTML = '';
+			for (let i = 0; i < itemArr.length; ++i) {
+				variableContent.appendChild(itemArr[i]);
+			}
+		}
+
+		resolve(variableContent.childElementCount);
 	});
-	variableContent.innerHTML = '';
-	for (let i = 0; i < itemArr.length; ++i) {
-		variableContent.appendChild(itemArr[i]);
-	}
 }
+
+/**
+ *
+ * @param {string} datum
+ * @returns {Promise<void>}
+ */
 async function getDay(datum) {
 	return new Promise((resolve, reject) => {
 		var xhr = new XMLHttpRequest();
@@ -140,8 +151,7 @@ async function getDay(datum) {
 			});
 
 			timeTable[datum] = data;
-			resolve(datum);
-			localStorage.setItem('timeTable', JSON.stringify(timeTable));
+			resolve();
 		});
 		xhr.open('POST', '/getTimeTable');
 		xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -151,34 +161,52 @@ async function getDay(datum) {
 
 /**
  * @param {boolean} purge
+ * @returns {Promise<void>}
  */
-function displayWeek(purge) {
-	let weekDisplay = document.getElementById('weekDisplay');
-	let week = getWeekFromDay(new Date());
-	weekDisplay.innerHTML = `${week[0]} - ${week[4]}`;
-	document.getElementById('variableContent').innerHTML = '';
+async function displayWeek(purge) {
+	return new Promise((resolve, reject) => {
+		let weekDisplay = document.getElementById('weekDisplay');
+		let week = getWeekFromDay(new Date());
+		weekDisplay.innerHTML = `${week[0]} - ${week[4]}`;
+		document.getElementById('variableContent').innerHTML = '';
 
-	if (purge) {
-		for (let i = 0; i < 5; i++) {
-			getDay(week[i])
-				.then((date) => {
-					addDay(date, i);
-				})
-				.catch(console.log);
-		}
-	} else {
-		for (let i = 0; i < 5; i++) {
-			if (timeTable[week[i]]) {
-				addDay(week[i], i);
-			} else {
+		if (purge) {
+			for (let i = 0; i < 5; i++) {
 				getDay(week[i])
-					.then((date) => {
-						addDay(date, i);
+					.then(() => {
+						addDay(week[i], i).then((childCount) => {
+							if (childCount === 5) {
+								resolve();
+								localStorage.setItem('timeTable', JSON.stringify(timeTable));
+							}
+						});
 					})
 					.catch(console.log);
 			}
+		} else {
+			for (let i = 0; i < 5; i++) {
+				if (timeTable[week[i]]) {
+					addDay(week[i], i).then((childCount) => {
+						if (childCount === 5) {
+							resolve();
+							localStorage.setItem('timeTable', JSON.stringify(timeTable));
+						}
+					});
+				} else {
+					getDay(week[i])
+						.then(() => {
+							addDay(week[i], i).then((childCount) => {
+								if (childCount === 5) {
+									resolve();
+									localStorage.setItem('timeTable', JSON.stringify(timeTable));
+								}
+							});
+						})
+						.catch(console.log);
+				}
+			}
 		}
-	}
+	});
 }
 
 displayWeek(false);
@@ -203,30 +231,27 @@ body.addEventListener(
 			y > _startY + 40 &&
 			!body.classList.contains('refreshing')
 		) {
-		refreshHandler()
+			refreshHandler();
 		}
 	},
 	{ passive: true }
 );
 
-window.onkeydown = async function (event) {
+window.onkeydown = function (event) {
 	if (event.key === 'r') {
 		refreshHandler();
 	}
 };
 
-function refreshHandler() {
+async function refreshHandler() {
 	if (!window.navigator.onLine) {
 		body.classList.add('offline');
 		setTimeout(() => {
 			body.classList.remove('offline');
-		}, 3000)
+		}, 3000);
 		return;
 	}
 	body.classList.add('refreshing');
-	displayWeek(true);
-	// wink wink
-	setTimeout(() => {
-		body.classList.remove('refreshing');
-	}, 2000)
+	await displayWeek(true);
+	body.classList.remove('refreshing');
 }
