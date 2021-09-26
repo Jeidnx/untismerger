@@ -1,9 +1,8 @@
 // @ts-nocheck
-const cacheVersion = '1.0';
+const cacheVersion = '1.1';
 const cacheName = 'untmerger_v' + cacheVersion;
 const toCache = [
 	'/',
-	'/sw.js',
 	'/data/timetable.css',
 	'/data/timetable.js',
 	'/data/manifest.webmanifest',
