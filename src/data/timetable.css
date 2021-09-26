@@ -85,7 +85,22 @@ body {
 	justify-content: flex-start;
 	flex-direction: row;
 }
+.offlineMessage {
+	visibility: hidden;
+	position: absolute;
+	width: 100vw;
+	height: 10vh;
+	background-color:lightcoral;
+	color: white;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 
+}
+body.offline  .offlineMessage{
+	visibility: visible;
+
+}
 #variableContent {
 	height: 100vh;
 	width: 90vw;

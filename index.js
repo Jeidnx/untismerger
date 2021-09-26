@@ -108,9 +108,9 @@ const classIdEnum = {
 	'BS10I3': 2661
 };
 
-const jwtSecret = process.env.JWT_SECRET;
-const schoolName = process.env.SCHOOL_NAME;
-const schoolDomain = process.env.SCHOOL_DOMAIN;
+const jwtSecret = process.env.JWT_SECRET || "test";
+const schoolName = process.env.SCHOOL_NAME || "HEMS-Darmstadt";
+const schoolDomain = process.env.SCHOOL_DOMAIN || "neilo.webuntis.com";
 
 if (!jwtSecret || !schoolName || !schoolDomain) {
 	console.log('Missing environment Variables');
@@ -124,10 +124,10 @@ http.createServer(app).listen(8080);
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/', (req, res) => {
-	res.status(200).send(fs.readFileSync('timetable.html', 'utf-8'));
+	res.status(200).send(fs.readFileSync('./src/timetable.html', 'utf-8'));
 });
 app.get('/setup', (req, res) => {
-	res.status(200).send(fs.readFileSync('setup.html', 'utf-8'));
+	res.status(200).send(fs.readFileSync('./src/setup.html', 'utf-8'));
 });
 app.post('/getTimeTable', (req, res) => {
 	if (!req.body['jwt'] || !req.body['datum']) {
@@ -258,10 +258,9 @@ app.post('/setup', (req, res) => {
 
 app.get('*', (req, res) => {
 	if (
-		req.path.split('/')[1] === 'data' &&
-		fs.existsSync('./data/' + req.path.split('/')[2])
+		fs.existsSync('./src' + req.path)
 	) {
-		const path = './data/' + req.path.split('/')[2];
+		const path = './src' + req.path;
 		if (mime.lookup(path)) {
 			//@ts-ignore
 			res.contentType(mime.lookup(path));

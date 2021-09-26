@@ -1,7 +1,10 @@
 {
 	"name": "untismerger",
 	"short_name": "Untmerg",
+	"lang": "de-DE",
+	"orientation": "portrait",
 	"display": "standalone",
 	"description": "Merged verschiedene Stundenpläne zusammen",
-	"start_url": "../"
+	"start_url": "../",
+	"scope": "/"
 }

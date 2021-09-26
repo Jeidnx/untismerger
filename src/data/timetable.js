@@ -1,6 +1,12 @@
 if (!localStorage.getItem('jwt')) {
 	window.location.href = '/setup';
 }
+if ('serviceWorker' in navigator) {
+	console.log('[Service Worker] supported. Trying to install')
+	navigator.serviceWorker.register('/sw.js');
+} else {
+	console.log('[Service Worker] not supported');
+}
 
 const colorEnum = {
 	'Physik': 'teal',
@@ -197,18 +203,30 @@ body.addEventListener(
 			y > _startY + 40 &&
 			!body.classList.contains('refreshing')
 		) {
-			body.classList.add('refreshing');
-			displayWeek(true);
-			body.classList.remove('refreshing');
+		refreshHandler()
 		}
 	},
 	{ passive: true }
 );
 
-window.onkeydown = async function (gfg) {
-	if (gfg.key === 'r') {
-		body.classList.add('refreshing');
-		displayWeek(true);
-		body.classList.remove('refreshing');
+window.onkeydown = async function (event) {
+	if (event.key === 'r') {
+		refreshHandler();
 	}
 };
+
+function refreshHandler() {
+	if (!window.navigator.onLine) {
+		body.classList.add('offline');
+		setTimeout(() => {
+			body.classList.remove('offline');
+		}, 3000)
+		return;
+	}
+	body.classList.add('refreshing');
+	displayWeek(true);
+	// wink wink
+	setTimeout(() => {
+		body.classList.remove('refreshing');
+	}, 2000)
+}
