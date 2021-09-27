@@ -2,10 +2,7 @@ if (!localStorage.getItem('jwt')) {
 	window.location.href = '/setup';
 }
 if ('serviceWorker' in navigator) {
-	console.log('[Service Worker] supported. Trying to install');
 	navigator.serviceWorker.register('/sw.js');
-} else {
-	console.log('[Service Worker] not supported');
 }
 
 const colorEnum = {
@@ -228,8 +225,7 @@ body.addEventListener(
 		const y = e.touches[0].pageY;
 		if (
 			document.scrollingElement.scrollTop === 0 &&
-			y > _startY + 40 &&
-			!body.classList.contains('refreshing')
+			y > _startY + 40
 		) {
 			refreshHandler();
 		}
