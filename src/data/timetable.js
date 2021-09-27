@@ -243,7 +243,10 @@ window.onkeydown = function (event) {
 	}
 };
 
-async function refreshHandler() {
+function refreshHandler() {
+	if (body.classList.contains('refreshing')) {
+		return;
+	}
 	if (!window.navigator.onLine) {
 		body.classList.add('offline');
 		setTimeout(() => {
@@ -252,6 +255,7 @@ async function refreshHandler() {
 		return;
 	}
 	body.classList.add('refreshing');
-	await displayWeek(true);
-	body.classList.remove('refreshing');
+	displayWeek(true).then(() => {
+		body.classList.remove('refreshing')
+	})
 }
