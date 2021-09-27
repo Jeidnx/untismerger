@@ -8,5 +8,17 @@
 	"start_url": "../",
 	"scope": "/",
 	"background_color": "black",
-	"theme_color": "white"
+	"theme_color": "white",
+	"icons": [{
+		"src": "/data/icons/icon.png",
+		"sizes": "512x512",
+		"type": "image/png",
+		"purpose": "maskable"
+	},
+	{
+		"src": "/data/icons/icon_apple.png",
+		"sizes": "192x192",
+		"type": "image/png",
+		"purpose": "monochrome"
+	}]
 }
