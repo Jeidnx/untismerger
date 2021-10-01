@@ -37,10 +37,9 @@ submitForm.onsubmit = (e) => {
 		switch (stage) {
 			case 1: {
 				stage++;
-				console.log('stage1 complete');
-				document.getElementById('stage1qr').style.visibility = 'hidden';
-				document.getElementById('stage1manuel').style.visibility = 'hidden';
-				document.getElementById('stage2').style.visibility = 'visible';
+				document.getElementById('stage1qr').style.display = 'none';
+				document.getElementById('stage1manuel').style.display = 'none';
+				document.getElementById('stage2').style.display = '';
 				return;
 			}
 			case 2: {
