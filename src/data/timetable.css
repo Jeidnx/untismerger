@@ -11,7 +11,7 @@ body.refreshing .refresher {
 .refresher {
 	pointer-events: none;
 	--refresh-width: 12vw;
-	background: #fff;
+	background: #121212;
 	width: var(--refresh-width);
 	height: var(--refresh-width);
 	border-radius: 50%;
@@ -25,6 +25,7 @@ body.refreshing .refresher {
 	visibility: hidden;
 	justify-content: center;
 	align-items: center;
+	color: #cf6679;
 }
 @keyframes spinner {
 	0% {
@@ -37,10 +38,10 @@ body.refreshing .refresher {
 .refresher::before {
 	animation: 1.5s linear infinite spinner;
 	animation-play-state: inherit;
-	border-color: #cfd0d1;
+	border-color: #1a1a1a;
 	border-style: solid;
 	border-width: 1vw;
-	border-bottom-color: #1c87c9;
+	border-bottom-color: #cf6679;
 	border-radius: 50%;
 	content: '';
 	height: var(--refresh-width);
@@ -58,10 +59,15 @@ body.refreshing .refresher {
 	width: 18vw;
 	flex-direction: column;
 	justify-self: flex-start;
+	color: #ffffff;
 }
+
+
 
 #periods {
 	width: 10vw;
+	color: #fff;
+	font-size: 75%;
 }
 
 .row {
@@ -73,10 +79,14 @@ body.refreshing .refresher {
 	/*border-left-style: solid;
     border-bottom-style: solid;*/
 	border-style: solid;
-	border-color: black;
-	border-width: 1px;
+	border-color: #121212;
+	border-width: 1%;
+	border-radius: 5%;
 	flex-wrap: nowrap;
+	background-color: #1d1d1d;
+	font-size: 200%;
 }
+
 
 body {
 	height: 100vh;
@@ -85,13 +95,16 @@ body {
 	justify-content: flex-start;
 	flex-direction: row;
 	overscroll-behavior: contain;
+	background-color: #121212;
+	color: #bebebe;
+	font-family: sans-serif;
 }
 .offlineMessage {
 	visibility: hidden;
 	position: absolute;
 	width: 100vw;
 	height: 5vh;
-	background-color: red;
+	background-color: #cf6679;
 	color: white;
 	display: flex;
 	justify-content: center;
@@ -108,4 +121,9 @@ body.offline .offlineMessage {
 	display: flex;
 	justify-content: flex-start;
 	flex-direction: row;
+}
+
+.stunde  {
+	color: #000;
+	font-weight: bolder;
 }
