@@ -84,24 +84,23 @@ body {
 	display: flex;
 	justify-content: flex-start;
 	flex-direction: row;
+	overscroll-behavior: contain;
 }
 .offlineMessage {
 	visibility: hidden;
 	position: absolute;
 	width: 100vw;
 	height: 5vh;
-	background-color:red;
+	background-color: red;
 	color: white;
 	display: flex;
 	justify-content: center;
 	align-items: center;
 	font-weight: bold;
 	font-size: 1.2vmax;
-
 }
-body.offline  .offlineMessage{
+body.offline .offlineMessage {
 	visibility: visible;
-
 }
 #variableContent {
 	height: 100vh;
