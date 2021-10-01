@@ -1,5 +1,5 @@
 // @ts-nocheck
-const cacheVersion = '1.3';
+const cacheVersion = '1.5';
 const cacheName = 'untmerger_v' + cacheVersion;
 const toCache = [
 	'/',
@@ -16,7 +16,7 @@ self.addEventListener('install', (event) => {
 		caches.open(cacheName).then((cache) => {
 			return cache.addAll(toCache);
 		})
-	)
+	);
 });
 
 self.addEventListener('activate', (event) => {
@@ -38,7 +38,7 @@ self.addEventListener('fetch', (event) => {
 	if (event.request.method === 'POST') {
 		return;
 	}
-	
+
 	event.respondWith(
 		caches.match(event.request).then((response) => {
 			if (response) {
@@ -46,5 +46,5 @@ self.addEventListener('fetch', (event) => {
 			}
 			return fetch(event.request);
 		})
-	)
+	);
 });
