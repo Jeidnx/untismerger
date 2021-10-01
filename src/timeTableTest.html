@@ -5,12 +5,14 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=100, initial-scale=1.0">
     <meta name="theme-color" content="#ffffff">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; object-src 'self'">
     <meta name="description" content="Untmerger für HEMS Schueler">
-    <link rel="icon" href="/data/icons/favicon.png">
-    <title>timeTable</title>
+    <title>Stundenplan</title>
 
-    <link rel="stylesheet" href="/src/data/timetable.css" type="text/css">
+    <link rel="stylesheet" href="/data/timetable.css">
     <link rel="manifest" href="/data/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/icons/icon_apple.png">
+    <link rel="icon" href="/icons/images/icon.png">
 </head>
 
 <body>
@@ -27,13 +29,13 @@
     <div id="variableContent">
         <div class="day">
             <div class="row">Montag</div>
-            <div class="row" style="background-color: teal;">Physik
+            <div class="row stunde" style="background-color: teal;">Physik
                 <p class="raumNr">C312 - Starke</p>
             </div>
-            <div class="row" style="background-color: grey;">Informationstechnik
+            <div class="row stunde" style="background-color: grey;">Informationstechnik
                 <p class="raumNr">C306 - Amin</p>
             </div>
-            <div class="row" style="background-color: grey;">Informationstechnik
+            <div class="row stunde" style="background-color: grey;">Informationstechnik
                 <p class="raumNr">C306 - Amin</p>
             </div>
             <div class="row"></div>
@@ -41,16 +43,16 @@
         </div>
         <div class="day">
             <div class="row">Dienstag</div>
-            <div class="row" style="background-color: red;">Englisch
+            <div class="row stunde" style="background-color: red;">Englisch
                 <p class="raumNr">C418 - Jaenichen</p>
             </div>
-            <div class="row" style="background-color: lightgrey;">Deutsch
+            <div class="row stunde" style="background-color: lightgrey;">Deutsch
                 <p class="raumNr">C418 - Fuhrmann</p>
             </div>
-            <div class="row" style="background-color: green;">Ethik
+            <div class="row stunde" style="background-color: green;">Ethik
                 <p class="raumNr">C301 - Meyenburg</p>
             </div>
-            <div class="row" style="background-color: lightblue;">Sport
+            <div class="row stunde" style="background-color: lightblue;">Sport
                 <p class="raumNr">NB - Langsdorf</p>
             </div>
             <div class="row"></div>
@@ -58,10 +60,10 @@
         <div class="day">
             <div class="row">Mittwoch</div>
             <div class="row"></div>
-            <div class="row" style="background-color: orange;">Praktische Informatik
+            <div class="row stunde" style="background-color: orange;">Praktische Informatik
                 <p class="raumNr">C306 - Amin</p>
             </div>
-            <div class="row" style="background-color: orange;">Praktische Informatik
+            <div class="row stunde" style="background-color: orange;">Praktische Informatik
                 <p class="raumNr">C306 - Amin</p>
             </div>
             <div class="row"></div>
@@ -69,27 +71,27 @@
         </div>
         <div class="day">
             <div class="row">Donnerstag</div>
-            <div class="row" style="background-color: red;">Englisch
+            <div class="row stunde" style="background-color: red;">Englisch
                 <p class="raumNr">C418 - Jaenichen</p>
             </div>
-            <div class="row" style="background-color: azure;">Mathematik
+            <div class="row stunde" style="background-color: azure;">Mathematik
                 <p class="raumNr">C418 - Spieler</p>
             </div>
             <div class="row"></div>
-            <div class="row" style="background-color: lightgrey;">Deutsch
+            <div class="row stunde" style="background-color: lightgrey;">Deutsch
                 <p class="raumNr">C418 - Fuhrmann</p>
             </div>
             <div class="row"></div>
         </div>
         <div class="day">
             <div class="row">Freitag</div>
-            <div class="row" style="background-color: azure;">Mathematik
+            <div class="row stunde" style="background-color: azure;">Mathematik
                 <p class="raumNr">C418 - Spieler</p>
             </div>
-            <div class="row" style="background-color: blueviolet;">Geschichte
+            <div class="row stunde" style="background-color: blueviolet;">Geschichte
                 <p class="raumNr">C418 - Adamopoulos</p>
             </div>
-            <div class="row" style="background-color: lightgreen;">Politik und Wirtschaft
+            <div class="row stunde" style="background-color: lightgreen;">Politik und Wirtschaft
                 <p class="raumNr">C418 - Jaenichen</p>
             </div>
             <div class="row"></div>
