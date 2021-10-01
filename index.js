@@ -108,9 +108,9 @@ const classIdEnum = {
 	'BS10I3': 2661
 };
 
-const jwtSecret = process.env.JWT_SECRET || "test";
-const schoolName = process.env.SCHOOL_NAME || "HEMS-Darmstadt";
-const schoolDomain = process.env.SCHOOL_DOMAIN || "neilo.webuntis.com";
+const jwtSecret = process.env.JWT_SECRET || 'test';
+const schoolName = process.env.SCHOOL_NAME || 'HEMS-Darmstadt';
+const schoolDomain = process.env.SCHOOL_DOMAIN || 'neilo.webuntis.com';
 
 if (!jwtSecret || !schoolName || !schoolDomain) {
 	console.log('Missing environment Variables');
@@ -203,29 +203,41 @@ app.post('/getTimeTable', (req, res) => {
 });
 
 app.post('/setup', (req, res) => {
-	if (
-		!req.body['username'] ||
-		!req.body['secret'] ||
-		!req.body['lk'] ||
-		!req.body['fachRichtung'] ||
-		!req.body['ek'] ||
-		!req.body['sp'] ||
-		!req.body['naWi']
-	) {
-		res.status(406).send('Missing Arguments');
+	if (!req.body['stage'] || !req.body['username'] || !req.body['secret']) {
+		res.status(400).send('Missing Arguments');
 		return;
 	}
-
-	const untis = new WebUntisLib.WebUntisSecretAuth(
-		schoolName,
-		req.body['username'],
-		req.body['secret'],
-		schoolDomain
-	);
-	untis
-		.login()
-		.then(() => {
-			// still kinda trash, but not as much as before.
+	switch (req.body['stage']) {
+		case '1': {
+			// Stage 1
+			const untis = new WebUntisLib.WebUntisSecretAuth(
+				schoolName,
+				req.body['username'],
+				req.body['secret'],
+				schoolDomain
+			);
+			untis
+				.login()
+				.then(() => {
+					res.status(200).send('OK');
+				})
+				.catch((err) => {
+					res.status(400).send('Invalid Credentials');
+				});
+			return;
+		}
+		case '2': {
+			if (
+				!req.body['lk'] ||
+				!req.body['fachRichtung'] ||
+				!req.body['ek'] ||
+				!req.body['sp'] ||
+				!req.body['naWi']
+			) {
+				res.status(400).send('Missing Arguments');
+				return;
+			}
+			// Stage 2
 			const potentialCourses = ['DS', 'sn2', 'sn1', 'Ku'];
 			let selectedCourses = [];
 
@@ -249,17 +261,16 @@ app.post('/setup', (req, res) => {
 			};
 			res.send(jwt.sign(userObj, jwtSecret));
 			return;
-		})
-		.catch(() => {
-			res.status(406).send('Wrong Credentials');
+		}
+		default: {
+			res.status(400).send('Invalid Arguments');
 			return;
-		});
+		}
+	}
 });
 
 app.get('*', (req, res) => {
-	if (
-		fs.existsSync('./src' + req.path)
-	) {
+	if (fs.existsSync('./src' + req.path)) {
 		const path = './src' + req.path;
 		if (mime.lookup(path)) {
 			//@ts-ignore
