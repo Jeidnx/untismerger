@@ -79,8 +79,9 @@ async function addDay(date, index) {
 			row.setAttribute('class', 'row');
 			timeTable[date].forEach((element) => {
 				if (element['stunde'] === i) {
-					row.innerHTML = `${element['fach']}
-                <p class="raumNr">${element['raum']} - ${element['lehrer']}</p>
+					row.classList.add('stunde');
+					row.innerHTML = `<p>${element['fach']}<p>
+                <p>${element['raum']} - ${element['lehrer']}</p>
                 `;
 					row.style.backgroundColor = colorEnum[element['fach']];
 				}
