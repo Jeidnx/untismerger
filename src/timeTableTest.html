@@ -1,0 +1,75 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=100, initial-scale=1.0">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="description" content="Untmerger für HEMS Schueler">
+    <title>Stundenplan</title>
+
+    <link rel="stylesheet" href="/src/data/timetable.css" type="text/css">
+    <link rel="manifest" href="/data/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/icons/icon_apple.png">
+    <link rel="icon" href="/icons/images/icon.png">
+</head>
+
+<body>
+    <span class="refresher">Refreshing</span>
+    <span class="offlineMessage">Du scheinst offline zu sein.</span>
+    <div class="day" id="periods">
+        <div class="row" id="weekDisplay">2021-09-27 - 2021-10-01</div>
+        <div class="row">08:00 - 09:30</div>
+        <div class="row"> 09:45 - 11:15</div>
+        <div class="row"> 11:30 - 13:00</div>
+        <div class="row"> 13:30 - 15:00</div>
+        <div class="row"> 15:15 - 16:45</div>
+    </div>
+    <div id="variableContent">
+        <div class="day">
+            <div class="row">Montag</div>
+            <div class="row stunde" style="background-color: teal;"><p>Physik</p> <p>C312 - Starke</p></div>
+            <div class="row stunde" style="background-color: grey;"><p>Informationstechnik</p><p>C306 - Amin</p></div>
+            <div class="row stunde" style="background-color: grey;"><p>Informationstechnik </p><p>C306 - Amin</p></div>
+            <div class="row"></div>
+            <div class="row"></div>
+        </div>
+        <div class="day">
+            <div class="row">Dienstag</div>
+            <div class="row stunde" style="background-color: red;"><p> Englisch </p><p> C418 - Jaenichen</p></div>
+            <div class="row stunde" style="background-color: lightgrey;"><p>Deutsch</p><p>C418 - Fuhrmann</p></div>
+            <div class="row stunde" style="background-color: green;"><p>Ethik</p><p>C301 - Meyenburg</p></div>
+            <div class="row stunde" style="background-color: lightblue;"><p>Sport</p><p>NB - Langsdorf</p></div>
+            <div class="row"></div>
+        </div>
+        <div class="day">
+            <div class="row">Mittwoch</div>
+            <div class="row"></div>
+            <div class="row stunde" style="background-color: orange;"><p>Praktische Informatik</p><p>C306 - Amin</p></div>
+            <div class="row stunde" style="background-color: orange;"><p>Informatik</p><p>C306 - Amin</p></div>
+            <div class="row"></div>
+            <div class="row"></div>
+        </div>
+        <div class="day">
+            <div class="row">Donnerstag</div>
+            <div class="row stunde" style="background-color: red;"><p>Englisch</p><p>C418 - Jaenichen</p>
+            </div>
+            <div class="row stunde" style="background-color: azure;"><p>Mathematik</p><p>C418 - Spieler</p></div><div class="row"></div>
+            <div class="row stunde" style="background-color: lightgrey;"><p>Deutsch</p><p>C418 - Fuhrmann</p></div>
+            <div class="row"></div>
+        </div>
+        <div class="day">
+            <div class="row">Freitag</div>
+            <div class="row stunde" style="background-color: azure;"><p>Mathematik</p><p>C418 - Spieler</p></div>
+            <div class="row stunde" style="background-color: blueviolet;"><p>Geschichte</p><p>C418 - Adamopoulos</p></div>
+            <div class="row stunde" style="background-color: lightgreen;"><p>Politik und Wirtschaft</p><p>C418 - Jaenichen</p></div>
+            <div class="row"></div>
+            <div class="row"></div>
+        </div>
+    </div>
+    <script src="/data/timetable.js"></script>
+
+
+</body>
+
+</html>
