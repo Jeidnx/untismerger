@@ -223,10 +223,7 @@ body.addEventListener(
 	'touchmove',
 	async (e) => {
 		const y = e.touches[0].pageY;
-		if (
-			document.scrollingElement.scrollTop === 0 &&
-			y > _startY + 40
-		) {
+		if (document.scrollingElement.scrollTop === 0 && y > _startY + 40) {
 			refreshHandler();
 		}
 	},
@@ -252,6 +249,6 @@ function refreshHandler() {
 	}
 	body.classList.add('refreshing');
 	displayWeek(true).then(() => {
-		body.classList.remove('refreshing')
-	})
+		body.classList.remove('refreshing');
+	});
 }
