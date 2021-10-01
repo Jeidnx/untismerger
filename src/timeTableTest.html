@@ -1,0 +1,105 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=100, initial-scale=1.0">
+    <meta name="theme-color" content="#ffffff">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; object-src 'self'">
+    <meta name="description" content="Untmerger für HEMS Schueler">
+    <link rel="icon" href="/data/icons/favicon.png">
+    <title>timeTable</title>
+
+    <link rel="stylesheet" href="/data/timetable.css">
+    <link rel="manifest" href="/data/manifest.webmanifest">
+</head>
+
+<body>
+    <span class="refresher">Refreshing</span>
+    <span class="offlineMessage">Du scheinst offline zu sein.</span>
+    <div class="day" id="periods">
+        <div class="row" id="weekDisplay">2021-09-27 - 2021-10-01</div>
+        <div class="row">08:00 - 09:30</div>
+        <div class="row"> 09:45 - 11:15</div>
+        <div class="row"> 11:30 - 13:00</div>
+        <div class="row"> 13:30 - 15:00</div>
+        <div class="row"> 15:15 - 16:45</div>
+    </div>
+    <div id="variableContent">
+        <div class="day">
+            <div class="row">Montag</div>
+            <div class="row" style="background-color: teal;">Physik
+                <p class="raumNr">C312 - Starke</p>
+            </div>
+            <div class="row" style="background-color: grey;">Informationstechnik
+                <p class="raumNr">C306 - Amin</p>
+            </div>
+            <div class="row" style="background-color: grey;">Informationstechnik
+                <p class="raumNr">C306 - Amin</p>
+            </div>
+            <div class="row"></div>
+            <div class="row"></div>
+        </div>
+        <div class="day">
+            <div class="row">Dienstag</div>
+            <div class="row" style="background-color: red;">Englisch
+                <p class="raumNr">C418 - Jaenichen</p>
+            </div>
+            <div class="row" style="background-color: lightgrey;">Deutsch
+                <p class="raumNr">C418 - Fuhrmann</p>
+            </div>
+            <div class="row" style="background-color: green;">Ethik
+                <p class="raumNr">C301 - Meyenburg</p>
+            </div>
+            <div class="row" style="background-color: lightblue;">Sport
+                <p class="raumNr">NB - Langsdorf</p>
+            </div>
+            <div class="row"></div>
+        </div>
+        <div class="day">
+            <div class="row">Mittwoch</div>
+            <div class="row"></div>
+            <div class="row" style="background-color: orange;">Praktische Informatik
+                <p class="raumNr">C306 - Amin</p>
+            </div>
+            <div class="row" style="background-color: orange;">Praktische Informatik
+                <p class="raumNr">C306 - Amin</p>
+            </div>
+            <div class="row"></div>
+            <div class="row"></div>
+        </div>
+        <div class="day">
+            <div class="row">Donnerstag</div>
+            <div class="row" style="background-color: red;">Englisch
+                <p class="raumNr">C418 - Jaenichen</p>
+            </div>
+            <div class="row" style="background-color: azure;">Mathematik
+                <p class="raumNr">C418 - Spieler</p>
+            </div>
+            <div class="row"></div>
+            <div class="row" style="background-color: lightgrey;">Deutsch
+                <p class="raumNr">C418 - Fuhrmann</p>
+            </div>
+            <div class="row"></div>
+        </div>
+        <div class="day">
+            <div class="row">Freitag</div>
+            <div class="row" style="background-color: azure;">Mathematik
+                <p class="raumNr">C418 - Spieler</p>
+            </div>
+            <div class="row" style="background-color: blueviolet;">Geschichte
+                <p class="raumNr">C418 - Adamopoulos</p>
+            </div>
+            <div class="row" style="background-color: lightgreen;">Politik und Wirtschaft
+                <p class="raumNr">C418 - Jaenichen</p>
+            </div>
+            <div class="row"></div>
+            <div class="row"></div>
+        </div>
+    </div>
+    <script src="/data/timetable.js"></script>
+
+
+</body>
+
+</html>
