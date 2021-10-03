@@ -40,6 +40,8 @@ const indexDayEnum = {
 	Freitag: 4
 };
 
+let currentDay = new Date();
+
 var timeTable = JSON.parse(localStorage.getItem('timeTable')) || {};
 /**
  *
@@ -47,12 +49,11 @@ var timeTable = JSON.parse(localStorage.getItem('timeTable')) || {};
  * @returns {string[]}
  */
 function getWeekFromDay(date) {
-	let curr = date;
 	let week = [];
 
 	for (let i = 1; i <= 5; i++) {
-		let first = curr.getDate() - curr.getDay() + i;
-		let day = new Date(curr.setDate(first)).toISOString().slice(0, 10);
+		let first = date.getDate() - date.getDay() + i;
+		let day = new Date(date.setDate(first)).toISOString().slice(0, 10);
 		week.push(day);
 	}
 	return week;
@@ -158,16 +159,19 @@ async function getDay(datum) {
 }
 
 /**
- * @param {boolean} purge
+ * @param {boolean} purge Should the cache be purged
+ * @param {Date} date Optional Date to display, defaults to Current week
  * @returns {Promise<void>}
  */
-async function displayWeek(purge) {
+async function displayWeek(purge, date) {
 	return new Promise((resolve, reject) => {
 		let weekDisplay = document.getElementById('weekDisplay');
-		let week = getWeekFromDay(new Date());
-		weekDisplay.innerHTML = `${week[0]} - ${week[4]}`;
-		document.getElementById('variableContent').innerHTML = '';
+		let week = getWeekFromDay(date);
+		let firstDay = week[0].split('-');
+		let lastDay = week[4].split('-');
 
+		weekDisplay.innerHTML = `${firstDay[2]}.${firstDay[1]} - ${lastDay[2]}.${lastDay[1]}`;
+		document.getElementById('variableContent').innerHTML = '';
 		if (purge) {
 			for (let i = 0; i < 5; i++) {
 				getDay(week[i])
@@ -181,6 +185,12 @@ async function displayWeek(purge) {
 					})
 					.catch(console.log);
 			}
+			for (const [key, value] of Object.entries(timeTable)) {
+				if (new Date().getTime() > Date.parse(key)) {
+					delete timeTable[key];
+				}
+			}
+			localStorage.setItem('timeTable', JSON.stringify(timeTable));
 		} else {
 			for (let i = 0; i < 5; i++) {
 				if (timeTable[week[i]]) {
@@ -207,15 +217,17 @@ async function displayWeek(purge) {
 	});
 }
 
-displayWeek(false);
+displayWeek(false, currentDay);
 
 let _startY;
+let _startX;
 const body = document.body;
 
 body.addEventListener(
 	'touchstart',
 	(e) => {
 		_startY = e.touches[0].pageY;
+		_startX = e.touches[0].pageX;
 	},
 	{ passive: true }
 );
@@ -224,16 +236,34 @@ body.addEventListener(
 	'touchmove',
 	async (e) => {
 		const y = e.touches[0].pageY;
-		if (document.scrollingElement.scrollTop === 0 && y > _startY + 40) {
+		if (document.scrollingElement.scrollTop === 0 && y > _startY + 100) {
 			refreshHandler();
+		}
+		const x = e.touches[0].pageX;
+		if (document.scrollingElement.scrollLeft === 0 && x < _startX - 100) {
+			scrollWeeks(true);
+		}
+		if (document.scrollingElement.scrollLeft === 0 && x > _startX + 100) {
+			scrollWeeks(false);
 		}
 	},
 	{ passive: true }
 );
 
 window.onkeydown = function (event) {
-	if (event.key === 'r') {
-		refreshHandler();
+	switch (event.key) {
+		case 'r': {
+			refreshHandler();
+			break;
+		}
+		case 'a': {
+			scrollWeeks(false);
+			break;
+		}
+		case 'd': {
+			scrollWeeks(true);
+			break;
+		}
 	}
 };
 
@@ -253,7 +283,37 @@ function refreshHandler() {
 		return;
 	}
 	body.classList.add('refreshing');
-	displayWeek(true).then(() => {
+	displayWeek(true, currentDay).then(() => {
 		body.classList.remove('refreshing');
 	});
+}
+/**
+ * @param {boolean} boolIn true = +1 Week; false = -1 Week
+ */
+function scrollWeeks(boolIn) {
+	if (body.classList.contains('switching')) {
+		return;
+	}
+	body.classList.add('switching');
+	let curr = currentDay.getTime();
+
+	if (boolIn) {
+		curr += 7 * 60 * 60 * 24 * 1000;
+		currentDay = new Date(curr);
+		displayWeek(false, currentDay);
+	} else {
+		curr -= 7 * 60 * 60 * 24 * 1000;
+
+		if (curr < new Date().getTime()) {
+			setTimeout(() => {
+				body.classList.remove('switching');
+			}, 5);
+			return;
+		}
+		currentDay = new Date(curr);
+		displayWeek(false, currentDay);
+	}
+	setTimeout(() => {
+		body.classList.remove('switching');
+	}, 5);
 }
