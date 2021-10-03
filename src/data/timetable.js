@@ -87,6 +87,10 @@ async function addDay(date, index) {
 					if (element['code'] === 'cancelled') {
 						row.classList.add('cancelled');
 					}
+					if (element['code'] === 'irregular') {
+						row.classList.remove('cancelled');
+						row.classList.add('irregular');
+					}
 					row.style.backgroundColor = colorEnum[element['fach']];
 				}
 			});
@@ -131,9 +135,11 @@ async function getDay(datum) {
 
 			var data = JSON.parse(xhr.response);
 
-			for (var i = 0; i < data.length; i++) {
-				const first = data[i]['fach'];
-				const second = data[i + 1]['fach'];
+			for (var i = 0; i < data.length - 1; i++) {
+				const first = data[i].hasOwnProperty('fach') ? data[i]['fach'] : '';
+				const second = data[i + 1].hasOwnProperty('fach')
+					? data[i + 1]['fach']
+					: '';
 				if (first === second) {
 					data.splice(i + 1, 1);
 				}

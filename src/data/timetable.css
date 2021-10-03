@@ -128,3 +128,6 @@ body.offline .offlineMessage {
 	text-decoration: line-through;
 	color: #cf6679;
 }
+.irregular {
+	color: #cf6679;
+}
