@@ -62,8 +62,6 @@ body.refreshing .refresher {
 	color: #ffffff;
 }
 
-
-
 #periods {
 	width: 10vw;
 	color: #fff;
@@ -86,7 +84,6 @@ body.refreshing .refresher {
 	background-color: #1d1d1d;
 	font-size: 200%;
 }
-
 
 body {
 	height: 100vh;
@@ -123,7 +120,11 @@ body.offline .offlineMessage {
 	flex-direction: row;
 }
 
-.stunde  {
+.stunde {
 	color: #000;
 	font-weight: bolder;
+}
+.cancelled {
+	text-decoration: line-through;
+	background-color: #1d1d1d;
 }

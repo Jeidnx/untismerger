@@ -175,13 +175,14 @@ app.post('/getTimeTable', (req, res) => {
 
 				lk.forEach((element) => out.push(element));
 				fachRichtung.forEach((element) => out.push(element));
-
+				/*
 				out = out.filter((element) => {
 					if (!element['code']) return true;
 					let buf1 = Buffer.from('cancelled');
 					let buf2 = Buffer.from(element['code']);
 					return !buf1.equals(buf2);
 				});
+				*/
 				out.sort((a, b) => {
 					return a['startTime'] - b['startTime'];
 				});
@@ -192,7 +193,8 @@ app.post('/getTimeTable', (req, res) => {
 						startZeit: element['startTime'],
 						fach: element['su'][0]['longname'],
 						lehrer: element['te'][0]['longname'],
-						raum: element['ro'][0]['name']
+						raum: element['ro'][0]['name'],
+						code: element['code'] || 'regular'
 					});
 				});
 

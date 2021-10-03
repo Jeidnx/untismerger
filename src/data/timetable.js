@@ -84,6 +84,9 @@ async function addDay(date, index) {
 					row.innerHTML = `<p>${element['fach']}<p>
                 <p>${element['raum']} - ${element['lehrer']}</p>
                 `;
+					if (element['code'] === 'cancelled') {
+						row.classList.add('cancelled');
+					}
 					row.style.backgroundColor = colorEnum[element['fach']];
 				}
 			});
