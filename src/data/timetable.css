@@ -126,5 +126,5 @@ body.offline .offlineMessage {
 }
 .cancelled {
 	text-decoration: line-through;
-	background-color: #1d1d1d;
+	color: #cf6679;
 }
