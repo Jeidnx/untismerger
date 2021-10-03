@@ -7,12 +7,10 @@
   - Faster algorithms
 - Codebase
   - Readability
-  - Two step setup
 
 ## Frontend
 
 - Style
-  - CSS
   - Dark mode / Light mode toggle
   - Setup page
 - Settings
