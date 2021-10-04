@@ -277,10 +277,6 @@ window.onkeydown = function (event) {
 };
 
 function refreshHandler() {
-	navigator.serviceWorker.ready.then((req) => {
-		req.update();
-	});
-
 	if (body.classList.contains('refreshing')) {
 		return;
 	}
