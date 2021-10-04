@@ -18,3 +18,4 @@
   - Profiles
   - QR Code login
   - Show / Insert JWT
+  - Fix versioning / updating
