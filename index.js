@@ -108,9 +108,9 @@ const classIdEnum = {
 	'BS10I3': 2661
 };
 
-const jwtSecret = process.env.JWT_SECRET || 'test';
-const schoolName = process.env.SCHOOL_NAME || 'HEMS-Darmstadt';
-const schoolDomain = process.env.SCHOOL_DOMAIN || 'neilo.webuntis.com';
+const jwtSecret = process.env.JWT_SECRET;
+const schoolName = process.env.SCHOOL_NAME;
+const schoolDomain = process.env.SCHOOL_DOMAIN;
 
 if (!jwtSecret || !schoolName || !schoolDomain) {
 	console.log('Missing environment Variables');
@@ -205,27 +205,53 @@ app.post('/getTimeTable', (req, res) => {
 });
 
 app.post('/setup', (req, res) => {
-	if (!req.body['stage'] || !req.body['username'] || !req.body['secret']) {
+	if (!req.body['stage']) {
 		res.status(400).send('Missing Arguments');
 		return;
 	}
 	switch (req.body['stage']) {
 		case '1': {
 			// Stage 1
-			const untis = new WebUntisLib.WebUntisSecretAuth(
-				schoolName,
-				req.body['username'],
-				req.body['secret'],
-				schoolDomain
-			);
-			untis
-				.login()
-				.then(() => {
-					res.status(200).send('OK');
-				})
-				.catch((err) => {
-					res.status(400).send('Invalid Credentials');
+			if (typeof req.body['jwt'] !== 'undefined') {
+				jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
+					if (err) {
+						res.status(406).send('Invalid jwt');
+						return;
+					}
+					const untis = new WebUntisLib.WebUntisSecretAuth(
+						schoolName,
+						decoded['username'],
+						decoded['secret'],
+						schoolDomain
+					);
+					untis
+						.login()
+						.then(() => {
+							res.status(200).send('OK');
+						})
+						.catch((err) => {
+							res.status(400).send('Invalid Credentials');
+						});
 				});
+				return;
+			} else if (req.body['secret'] && req.body['username']) {
+				const untis = new WebUntisLib.WebUntisSecretAuth(
+					schoolName,
+					req.body['username'],
+					req.body['secret'],
+					schoolDomain
+				);
+				untis
+					.login()
+					.then(() => {
+						res.status(200).send('OK');
+					})
+					.catch((err) => {
+						res.status(400).send('Invalid Credentials');
+					});
+				return;
+			}
+			res.status(400).send('Invalid Credentials');
 			return;
 		}
 		case '2': {
