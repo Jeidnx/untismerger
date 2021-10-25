@@ -1,6 +1,11 @@
 if (localStorage.getItem('jwt')) {
 	window.location.href = '/';
 }
+
+if ('serviceWorker' in navigator) {
+	navigator.serviceWorker.register('/sw.js');
+}
+
 let stage = 1;
 let submitForm = document.getElementById('form');
 let qrButton = document.getElementById('qrButton');
