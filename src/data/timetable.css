@@ -131,3 +131,16 @@ body.offline .offlineMessage {
 .irregular {
 	color: #cf6679;
 }
+#settingsButton {
+	position: absolute;
+	width: 4vw;
+	height: 4vw;
+	top: 85%;
+	right: 5%;
+	border-radius: 50%;
+	background-color: lightgrey;
+	color: black;
+	text-align: center;
+	line-height: 4vw;
+	text-decoration: none;
+}
