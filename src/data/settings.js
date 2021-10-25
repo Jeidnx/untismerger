@@ -5,12 +5,14 @@ broadcast.onmessage = (event) => {
 		serviceWorkerVersion.innerHTML = 'Version: ' + event.data.body;
 	}
 };
+
 let serviceWorkerVersion = document.getElementById('serviceWorkerVersion');
 broadcast.postMessage({
 	type: 'GET',
 	body: 'VERSION'
 });
-
+// @ts-ignore
+document.getElementById('jwtKeyInput').value = localStorage.getItem('jwt');
 document
 	.getElementById('serviceWorkerClearCache')
 	.addEventListener('click', () => {

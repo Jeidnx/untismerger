@@ -12,7 +12,6 @@
 
 - Style
   - Dark mode / Light mode toggle
-  - Setup page
 - Settings
   - Allow switching of settings
   - Profiles
