@@ -25,6 +25,10 @@
             <button type="button" id="manuelButton"
                 onclick="document.getElementById('stage0').style.display = 'none'; document.getElementById('stage1manuel').style.display = '';">Mit
                 Nutzername und Schlüssel Registrieren</button>
+            <button type="button" id="jwtButton"
+                onclick="document.getElementById('stage0').style.display = 'none'; document.getElementById('stage1jwt').style.display = '';">Mit
+                JWT Schlüssel Registrieren</button>
+
         </div>
         <div id="stage1manuel" class="stage" style="display:none">
             <label for="username">Username</label>
@@ -35,6 +39,10 @@
             <button type="submit">Absenden</button>
         </div>
         <div id="stage1qr" class="stage" style="display:none"></div>
+        <div id0="stage1jwt" class="stage" style="display:none">
+            <input type="password" name="jwt" placeholder="jwt" id="jwtInput">
+            <button type="button"
+        </div>
         <div id="stage2" class="stage" style="display:none;">
             <label for="lk">Leistungskurs</label>
             <select name="lk">
