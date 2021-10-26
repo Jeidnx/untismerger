@@ -169,7 +169,7 @@ async function getDay(datum) {
 
 /**
  * @param {boolean} purge Should the cache be purged
- * @param {Date} date Optional Date to display, defaults to Current week
+ * @param {Date} date Date of the week to display
  * @returns {Promise<void>}
  */
 async function displayWeek(purge, date) {
