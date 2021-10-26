@@ -212,10 +212,10 @@ app.post('/setup', (req, res) => {
 	switch (req.body['stage']) {
 		case '1': {
 			// Stage 1
-			if (typeof req.body['jwt'] !== 'undefined') {
+			if (req.body['jwt']) {
 				jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
 					if (err) {
-						res.status(406).send('Invalid jwt');
+						res.status(400).send('Invalid jwt');
 						return;
 					}
 					const untis = new WebUntisLib.WebUntisSecretAuth(
@@ -251,7 +251,7 @@ app.post('/setup', (req, res) => {
 					});
 				return;
 			}
-			res.status(400).send('Invalid Credentials');
+			res.status(400).send('Missing Arguments');
 			return;
 		}
 		case '2': {
