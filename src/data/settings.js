@@ -22,13 +22,6 @@ document
 		});
 	});
 document
-	.getElementById('serviceWorkerUnregister')
-	.addEventListener('click', () => {
-		navigator.serviceWorker.getRegistration().then((registration) => {
-			registration.unregister();
-		});
-	});
-document
 	.getElementById('serviceWorkerReregister')
 	.addEventListener('click', () => {
 		navigator.serviceWorker.getRegistration().then((registration) => {
@@ -40,3 +33,14 @@ document
 			});
 		});
 	});
+function updatePage() {
+	broadcast.postMessage({
+		type: 'GET',
+		body: 'VERSION'
+	});
+	// @ts-ignore
+	document.getElementById('jwtKeyInput').value = localStorage.getItem('jwt');
+}
+function deleteLocalCache() {
+	localStorage.setItem('timeTable', '');
+}
