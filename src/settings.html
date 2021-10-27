@@ -10,20 +10,18 @@
 
 <body>
     <a href="/" style="text-decoration: none; color: black;">Zurück</a>
-    <button type="button" onclick="updatePage();">Aktualisieren</button>
     <section id="serviceWorker">
         <p>Service Worker</p>
+        <button type="button" onclick="updatePage();">Aktualisieren</button>
         <p id="serviceWorkerVersion">Version: Wird Geladen...</p>
-        <button type="button" id="serviceWorkerUpdate" disabled>Update</button>
-        <button type="button" id="serviceWorkerClearCache">Webcache leeren</button>
-        <button type="button" id="serviceWorkerReregister">Reregister</button>
+        <button type="button" id="serviceWorkerReregister">Update</button>
         <button type="button" id="serviceWorkerReloadCache">Reload Cache</button>
     </section>
     <section id="localStorage">
         <p>Local Storage</p>
+        <button type="button" onclick="deleteLocalCache()">Stundeplan Cache leeren</button>
         <p>JWT Key: <input type="password" id="jwtKeyInput" onmouseover="this.type='text';"
-                onmouseout="this.type='password';" onmousedown=" this.type='text' ;"> </p>
-        <button type="button" onclick="deleteLocalCache()">Local Cache Leeren</button>
+                onmouseout="this.type='password';" onmousedown=" this.type='text' ;" autocomplete="off" readonly> </p>
         <button type="button" id="localStorageDelJWT">JWT Key löschen.</button>
 
     </section>
