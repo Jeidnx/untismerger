@@ -2,6 +2,7 @@ body,
 html {
 	margin: 0;
 	padding: 0;
+	font-size: 1vmax;
 }
 body {
 	color: #bebebe;
@@ -25,14 +26,6 @@ form {
 	display: flex;
 	justify-content: center;
 }
-.stage {
-	display: flex;
-	justify-content: space-around;
-	align-items: center;
-	flex-direction: column;
-	height: 100vh;
-	margin-top: 25vh;
-}
 
 [hidden] {
 	display: none !important;
@@ -44,29 +37,32 @@ button {
 	border-radius: 2vh;
 	color: #bebebe;
 	padding: 1.5% 1.5% 1.5% 1.5%;
+	font-weight: bold;
 }
 
 button:hover {
-	background-color: #BB86FC;
+	background-color: #bb86fc;
 	color: #121212;
 }
 
 button:disabled,
-button[disabled]{
-  background-color: #cf6679;
-  color: #121212;
+button[disabled] {
+	background-color: #bebebe;
+	color: #121212;
 }
 
 input {
-    background-color: #1f1f1f;
-    border-radius: 4px;
+	background-color: #1f1f1f;
+	border-radius: 4px;
 	width: 25vw;
-    border: none;
-    padding: 1.5%;
+	border: none;
+	padding: 1.5%;
+	color: white;
 }
 
 label {
 	font-size: 1.5em;
+	font-weight: bold;
 }
 
 select {
@@ -78,49 +74,39 @@ select {
 	padding: 1.5%;
 }
 
-
-#stage0 {
+.stage {
 	background-color: #1a1a1a;
 	padding: 2%;
 	border-radius: 2vh;
-	height: 30%;
-	width: 50%;
-}
-
-#stage1manuel {
-	background-color: #1a1a1a;
-	padding: 2%;
-	border-radius: 2vh;
-	height: 30%;
-	width: 50%;
-}
-
-#stage2 {
-	background-color: #1a1a1a;
-	padding: 2%;
-	border-radius: 2vh;
-	height: 60%;
-	width: 60%;
+	height: 70vh;
+	margin-top: 15vh;
+	margin-bottom: 15vh;
+	margin-left: 10vw;
+	margin-right: 10vw;
+	width: 80vw;
 	display: flex;
-	flex-wrap: wrap;
-	flex-direction: row;
+	flex-direction: column;
+	justify-content: space-around;
+	align-items: center;
 }
 
-#stage2 p {
-	width: 100%;
-	margin-left: 25vh;
-	margin-right: 25vh;
+.stage > * {
+	width: 40vw;
 }
-
-#stage2 > * {
-	flex: 0 1 40%;
+#stage2 {
+	overflow-x: scroll;
+	justify-content: space-between;
 }
-
-#stage2 label {
-	font-size: 0.8em;
-	font-weight: bold;
-	line-break: normal;
+#stage2 > label {
+	margin-top: 3vh;
 }
-
-
-
+.backButton {
+	position: absolute;
+	display: inline;
+	top: 20vh;
+	left: 15vw;
+	border-radius: 1px;
+	width: 7vw;
+	height: 4vh;
+	padding: 0;
+}
