@@ -13,9 +13,9 @@
 - Style
   - Dark mode / Light mode toggle
   - Add back buttons to setup
+  - Settings page
 - Settings
+  - Color Picker
   - Allow switching of settings
   - Profiles
   - QR Code login
-  - Show / Insert JWT
-  - Fix versioning / updating
