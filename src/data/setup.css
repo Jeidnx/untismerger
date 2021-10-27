@@ -10,6 +10,7 @@ body {
 	background-image: url('/icons/background.png');
 	background-size: cover;
 	background-position: center;
+	background-color: #121212;
 }
 
 h5 {
@@ -21,6 +22,8 @@ h5 {
 form {
 	width: 100vw;
 	height: 100vh;
+	display: flex;
+	justify-content: center;
 }
 .stage {
 	display: flex;
@@ -28,8 +31,96 @@ form {
 	align-items: center;
 	flex-direction: column;
 	height: 100vh;
+	margin-top: 25vh;
 }
 
 [hidden] {
 	display: none !important;
 }
+
+button {
+	background-color: #121212;
+	border: none;
+	border-radius: 2vh;
+	color: #bebebe;
+	padding: 1.5% 1.5% 1.5% 1.5%;
+}
+
+button:hover {
+	background-color: #BB86FC;
+	color: #121212;
+}
+
+button:disabled,
+button[disabled]{
+  background-color: #cf6679;
+  color: #121212;
+}
+
+input {
+    background-color: #1f1f1f;
+    border-radius: 4px;
+	width: 25vw;
+    border: none;
+    padding: 1.5%;
+}
+
+label {
+	font-size: 1.5em;
+}
+
+select {
+	width: 5vw;
+	background-color: #121212;
+	border-radius: 4px;
+	border: none;
+	color: #bebebe;
+	padding: 1.5%;
+}
+
+
+#stage0 {
+	background-color: #1a1a1a;
+	padding: 2%;
+	border-radius: 2vh;
+	height: 30%;
+	width: 50%;
+}
+
+#stage1manuel {
+	background-color: #1a1a1a;
+	padding: 2%;
+	border-radius: 2vh;
+	height: 30%;
+	width: 50%;
+}
+
+#stage2 {
+	background-color: #1a1a1a;
+	padding: 2%;
+	border-radius: 2vh;
+	height: 60%;
+	width: 60%;
+	display: flex;
+	flex-wrap: wrap;
+	flex-direction: row;
+}
+
+#stage2 p {
+	width: 100%;
+	margin-left: 25vh;
+	margin-right: 25vh;
+}
+
+#stage2 > * {
+	flex: 0 1 40%;
+}
+
+#stage2 label {
+	font-size: 0.8em;
+	font-weight: bold;
+	line-break: normal;
+}
+
+
+
