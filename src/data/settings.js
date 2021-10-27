@@ -57,3 +57,8 @@ document
 			body: 'RELOADCACHE'
 		});
 	});
+// JWT Key löschen
+document.getElementById('localStorageDelJWT').addEventListener('click', () => {
+	localStorage.removeItem('jwt');
+	window.location.href = '/setup';
+});
