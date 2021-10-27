@@ -108,9 +108,9 @@ const classIdEnum = {
 	'BS10I3': 2661
 };
 
-const jwtSecret = process.env.JWT_SECRET || 'test';
-const schoolName = process.env.SCHOOL_NAME || 'HEMS-Darmstadt';
-const schoolDomain = process.env.SCHOOL_DOMAIN || 'neilo.webuntis.com';
+const jwtSecret = process.env.JWT_SECRET;
+const schoolName = process.env.SCHOOL_NAME;
+const schoolDomain = process.env.SCHOOL_DOMAIN;
 
 if (!jwtSecret || !schoolName || !schoolDomain) {
 	console.log('Missing environment Variables');
@@ -152,15 +152,13 @@ app.post('/getTimeTable', (req, res) => {
 				const dt = new Date(req.body['datum']);
 				var out = [];
 				let sonstiges =
-					(await untis.getTimetableFor(dt, 2232, 1).catch(console.log)) || [];
+					(await untis.getTimetableFor(dt, 2232, 1).catch()) || [];
 				let lk =
-					(await untis
-						.getTimetableFor(dt, decoded['lk'], 1)
-						.catch(console.log)) || [];
+					(await untis.getTimetableFor(dt, decoded['lk'], 1).catch()) || [];
 				let fachRichtung =
 					(await untis
 						.getTimetableFor(dt, decoded['fachRichtung'], 1)
-						.catch(console.log)) || [];
+						.catch()) || [];
 
 				borisLoop: for (let i = 0; i < sonstiges.length; i++) {
 					if (sonstiges[i]['su'].length < 1) continue borisLoop;
@@ -175,13 +173,14 @@ app.post('/getTimeTable', (req, res) => {
 
 				lk.forEach((element) => out.push(element));
 				fachRichtung.forEach((element) => out.push(element));
-
+				/*
 				out = out.filter((element) => {
 					if (!element['code']) return true;
 					let buf1 = Buffer.from('cancelled');
 					let buf2 = Buffer.from(element['code']);
 					return !buf1.equals(buf2);
 				});
+				*/
 				out.sort((a, b) => {
 					return a['startTime'] - b['startTime'];
 				});
@@ -192,7 +191,8 @@ app.post('/getTimeTable', (req, res) => {
 						startZeit: element['startTime'],
 						fach: element['su'][0]['longname'],
 						lehrer: element['te'][0]['longname'],
-						raum: element['ro'][0]['name']
+						raum: element['ro'][0]['name'],
+						code: element['code'] || 'regular'
 					});
 				});
 
@@ -203,27 +203,53 @@ app.post('/getTimeTable', (req, res) => {
 });
 
 app.post('/setup', (req, res) => {
-	if (!req.body['stage'] || !req.body['username'] || !req.body['secret']) {
+	if (!req.body['stage']) {
 		res.status(400).send('Missing Arguments');
 		return;
 	}
 	switch (req.body['stage']) {
 		case '1': {
 			// Stage 1
-			const untis = new WebUntisLib.WebUntisSecretAuth(
-				schoolName,
-				req.body['username'],
-				req.body['secret'],
-				schoolDomain
-			);
-			untis
-				.login()
-				.then(() => {
-					res.status(200).send('OK');
-				})
-				.catch((err) => {
-					res.status(400).send('Invalid Credentials');
+			if (req.body['jwt'] !== '') {
+				jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
+					if (err) {
+						res.status(400).send('Invalid jwt');
+						return;
+					}
+					const untis = new WebUntisLib.WebUntisSecretAuth(
+						schoolName,
+						decoded['username'],
+						decoded['secret'],
+						schoolDomain
+					);
+					untis
+						.login()
+						.then(() => {
+							res.status(200).send('OK');
+						})
+						.catch((err) => {
+							res.status(400).send('Invalid Credentials');
+						});
 				});
+				return;
+			} else if (req.body['secret'] && req.body['username']) {
+				const untis = new WebUntisLib.WebUntisSecretAuth(
+					schoolName,
+					req.body['username'],
+					req.body['secret'],
+					schoolDomain
+				);
+				untis
+					.login()
+					.then(() => {
+						res.status(200).send('OK');
+					})
+					.catch((err) => {
+						res.status(400).send('Invalid Credentials');
+					});
+				return;
+			}
+			res.status(400).send('Missing Arguments');
 			return;
 		}
 		case '2': {

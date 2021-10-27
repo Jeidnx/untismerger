@@ -7,16 +7,15 @@
   - Faster algorithms
 - Codebase
   - Readability
-  - Two step setup
 
 ## Frontend
 
 - Style
-  - CSS
   - Dark mode / Light mode toggle
-  - Setup page
+  - Add back buttons to setup
 - Settings
   - Allow switching of settings
   - Profiles
   - QR Code login
   - Show / Insert JWT
+  - Fix versioning / updating

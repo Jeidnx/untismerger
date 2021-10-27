@@ -1,3 +1,5 @@
 ### Untis Merger
 
-Node.js App designed to merge different time tables in untis together.
+Quellcode für [untismerger.tk](https://untismerger.tk)
+
+Untis Merger ist ein Projekt um mehrere Stundenpläne in einen zusammen zu führen.

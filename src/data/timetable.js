@@ -5,26 +5,32 @@ if ('serviceWorker' in navigator) {
 	navigator.serviceWorker.register('/sw.js');
 }
 
-const colorEnum = {
-	'Physik': 'teal',
-	'Informationstechnik': 'grey',
-	'Englisch': 'red',
-	'Ethik': 'green',
-	'Sport': 'lightblue',
-	'Praktische Informatik': 'orange',
-	'Mathematik': 'azure',
-	'Deutsch': 'lightgrey',
-	'Geschichte': 'blueViolet',
-	'Politik und Wirtschaft': 'lightgreen'
-};
+let colorEnum = JSON.parse(localStorage.getItem('colorEnum')) || {};
 
-const startTimeEnum = Object.freeze({
+const colorPalette = [
+	'#FF7878',
+	'#F3F0D7',
+	'#D5BFBF',
+	'#8CA1A5',
+	'#F6C6EA',
+	'#BEAEE2',
+	'#CDF0EA',
+	'#79B4B7',
+	'#DE8971',
+	'#F3E6E3',
+	'#F9F9F9',
+	'#E1F2FB',
+	'#745C97',
+	'#E0C097'
+];
+
+const startTimeEnum = {
 	800: 0,
 	945: 1,
 	1130: 2,
 	1330: 3,
 	1515: 4
-});
+};
 const weekDayEnum = {
 	0: 'Montag',
 	1: 'Dienstag',
@@ -40,6 +46,11 @@ const indexDayEnum = {
 	Freitag: 4
 };
 
+let _startY;
+let _startX;
+const body = document.body;
+let currentDay = new Date();
+
 var timeTable = JSON.parse(localStorage.getItem('timeTable')) || {};
 /**
  *
@@ -47,12 +58,11 @@ var timeTable = JSON.parse(localStorage.getItem('timeTable')) || {};
  * @returns {string[]}
  */
 function getWeekFromDay(date) {
-	let curr = date;
 	let week = [];
 
 	for (let i = 1; i <= 5; i++) {
-		let first = curr.getDate() - curr.getDay() + i;
-		let day = new Date(curr.setDate(first)).toISOString().slice(0, 10);
+		let first = date.getDate() - date.getDay() + i;
+		let day = new Date(date.setDate(first)).toISOString().slice(0, 10);
 		week.push(day);
 	}
 	return week;
@@ -83,7 +93,21 @@ async function addDay(date, index) {
 					row.innerHTML = `<p>${element['fach']}<p>
                 <p>${element['raum']} - ${element['lehrer']}</p>
                 `;
-					row.style.backgroundColor = colorEnum[element['fach']];
+					if (element['code'] === 'cancelled') {
+						row.classList.add('cancelled');
+					}
+					if (element['code'] === 'irregular') {
+						row.classList.remove('cancelled');
+						row.classList.add('irregular');
+					}
+					if (colorEnum[element['fach']]) {
+						row.style.backgroundColor = colorEnum[element['fach']];
+					} else {
+						colorEnum[element['fach']] =
+							colorPalette[Math.floor(Math.random() * colorPalette.length)];
+						row.style.backgroundColor = colorEnum[element['fach']];
+						localStorage.setItem('colorEnum', JSON.stringify(colorEnum));
+					}
 				}
 			});
 
@@ -127,9 +151,11 @@ async function getDay(datum) {
 
 			var data = JSON.parse(xhr.response);
 
-			for (var i = 0; i < data.length; i++) {
-				const first = data[i]['fach'];
-				const second = data[i + 1]['fach'];
+			for (var i = 0; i < data.length - 1; i++) {
+				const first = data[i].hasOwnProperty('fach') ? data[i]['fach'] : '';
+				const second = data[i + 1].hasOwnProperty('fach')
+					? data[i + 1]['fach']
+					: '';
 				if (first === second) {
 					data.splice(i + 1, 1);
 				}
@@ -158,16 +184,19 @@ async function getDay(datum) {
 }
 
 /**
- * @param {boolean} purge
+ * @param {boolean} purge Should the cache be purged
+ * @param {Date} date Date of the week to display
  * @returns {Promise<void>}
  */
-async function displayWeek(purge) {
+async function displayWeek(purge, date) {
 	return new Promise((resolve, reject) => {
 		let weekDisplay = document.getElementById('weekDisplay');
-		let week = getWeekFromDay(new Date());
-		weekDisplay.innerHTML = `${week[0]} - ${week[4]}`;
-		document.getElementById('variableContent').innerHTML = '';
+		let week = getWeekFromDay(date);
+		let firstDay = week[0].split('-');
+		let lastDay = week[4].split('-');
 
+		weekDisplay.innerHTML = `${firstDay[2]}.${firstDay[1]} - ${lastDay[2]}.${lastDay[1]}`;
+		document.getElementById('variableContent').innerHTML = '';
 		if (purge) {
 			for (let i = 0; i < 5; i++) {
 				getDay(week[i])
@@ -181,6 +210,12 @@ async function displayWeek(purge) {
 					})
 					.catch(console.log);
 			}
+			for (const [key, value] of Object.entries(timeTable)) {
+				if (new Date().getTime() > Date.parse(key)) {
+					delete timeTable[key];
+				}
+			}
+			localStorage.setItem('timeTable', JSON.stringify(timeTable));
 		} else {
 			for (let i = 0; i < 5; i++) {
 				if (timeTable[week[i]]) {
@@ -207,15 +242,13 @@ async function displayWeek(purge) {
 	});
 }
 
-displayWeek(false);
-
-let _startY;
-const body = document.body;
+refreshHandler(false);
 
 body.addEventListener(
 	'touchstart',
 	(e) => {
 		_startY = e.touches[0].pageY;
+		_startX = e.touches[0].pageX;
 	},
 	{ passive: true }
 );
@@ -224,36 +257,94 @@ body.addEventListener(
 	'touchmove',
 	async (e) => {
 		const y = e.touches[0].pageY;
-		if (document.scrollingElement.scrollTop === 0 && y > _startY + 40) {
-			refreshHandler();
+		if (document.scrollingElement.scrollTop === 0 && y > _startY + 100) {
+			refreshHandler(true);
+		}
+		const x = e.touches[0].pageX;
+		if (document.scrollingElement.scrollLeft === 0 && x < _startX - 100) {
+			scrollWeeks(true);
+		}
+		if (document.scrollingElement.scrollLeft === 0 && x > _startX + 100) {
+			scrollWeeks(false);
 		}
 	},
 	{ passive: true }
 );
 
 window.onkeydown = function (event) {
-	if (event.key === 'r') {
-		refreshHandler();
+	switch (event.key) {
+		case 'r': {
+			refreshHandler(true);
+			break;
+		}
+		case 'a': {
+			scrollWeeks(false);
+			break;
+		}
+		case 'd': {
+			scrollWeeks(true);
+			break;
+		}
 	}
 };
 
-function refreshHandler() {
-	navigator.serviceWorker.ready.then((req) => {
-		req.update();
-	});
-
-	if (body.classList.contains('refreshing')) {
-		return;
-	}
-	if (!window.navigator.onLine) {
-		body.classList.add('offline');
-		setTimeout(() => {
-			body.classList.remove('offline');
-		}, 3000);
-		return;
-	}
-	body.classList.add('refreshing');
-	displayWeek(true).then(() => {
-		body.classList.remove('refreshing');
+/**
+ * @param {boolean} purge Should the cache be purged?
+ * @return {Promise<void>} Resolves when the site finished loading, Rejects when nothing happened
+ */
+async function refreshHandler(purge) {
+	return new Promise((resolve, reject) => {
+		if (body.classList.contains('refreshing')) {
+			reject();
+		}
+		if (!window.navigator.onLine) {
+			body.classList.add('offline');
+			setTimeout(() => {
+				body.classList.remove('offline');
+			}, 3000);
+			return;
+		}
+		body.classList.add('refreshing');
+		displayWeek(purge, currentDay).then(() => {
+			body.classList.remove('refreshing');
+			resolve();
+		});
 	});
 }
+/**
+ * @param {boolean} boolIn true = +1 Week; false = -1 Week
+ */
+function scrollWeeks(boolIn) {
+	if (body.classList.contains('switching')) {
+		return;
+	}
+	body.classList.add('switching');
+	let curr = currentDay.getTime();
+
+	if (boolIn) {
+		curr += 7 * 60 * 60 * 24 * 1000;
+		currentDay = new Date(curr);
+		refreshHandler(false).then(function () {
+			body.classList.remove('switching');
+		});
+	} else {
+		curr -= 7 * 60 * 60 * 24 * 1000;
+
+		if (curr < new Date().getTime()) {
+			setTimeout(() => {
+				body.classList.remove('switching');
+			}, 50);
+			return;
+		}
+		currentDay = new Date(curr);
+		refreshHandler(false).then(() => {
+			body.classList.remove('switching');
+		});
+	}
+}
+
+document.getElementById('refreshButton').addEventListener('click', () => {
+	// @ts-ignore
+	document.getElementById('slide').checked = false;
+	refreshHandler(true);
+});

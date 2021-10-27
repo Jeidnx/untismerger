@@ -12,8 +12,8 @@
 
     <link rel="stylesheet" href="/data/timetable.css" type="text/css">
     <link rel="manifest" href="/data/manifest.webmanifest" type="application/json">
+    <link rel="icon" href="/icons/icon.png">
     <link rel="apple-touch-icon" href="/icons/icon_apple.png">
-    <link rel="icon" href="/icons/images/icon.png">
 </head>
 
 <body>
@@ -31,16 +31,15 @@
     <div id="variableContent"></div>
     <footer>
         <input type="checkbox" id="slide" name="" value="" />
-           <div class="container">
-              <label for="slide" class="toggle">☰</label>
-               <nav class="sidebar">
-                <a href="#">Settings<label>✐</label></a>
-                <a href="#">Settings<label>✐</label></a>
-                <a href="#">Settings<label>✐</label></a>
-                 </nav>
-           </div>
+        <div class="container">
+            <label for="slide" class="toggle">☰</label>
+            <nav class="sidebar">
+                <a href="/settings.html">Settings</a>
+                <a id="refreshButton">Refresh</a>
+            </nav>
+        </div>
     </footer>
-    
+
     <script src="/data/timetable.js"></script>
 </body>
 

@@ -1,17 +1,22 @@
 // @ts-nocheck
-const cacheVersion = '1.5';
+const cacheVersion = '1.74';
 const cacheName = 'untmerger_v' + cacheVersion;
 const toCache = [
 	'/',
 	'/data/timetable.css',
 	'/data/timetable.js',
+	'/settings.html',
+	'/data/settings.js',
 	'/data/manifest.webmanifest',
 	'/icons/icon_apple.png',
 	'/icons/icon.png'
 ];
 
+const broadcast = new BroadcastChannel('sw-channel');
+
 self.addEventListener('install', (event) => {
 	console.log('[Service Worker] Installing');
+	self.skipWaiting();
 	event.waitUntil(
 		caches.open(cacheName).then((cache) => {
 			return cache.addAll(toCache);
@@ -48,3 +53,34 @@ self.addEventListener('fetch', (event) => {
 		})
 	);
 });
+
+broadcast.onmessage = (event) => {
+	switch (event.data.type) {
+		case 'GET':
+			switch (event.data.body) {
+				case 'VERSION':
+					broadcast.postMessage({ type: 'VERSION', body: cacheVersion });
+					break;
+			}
+			break;
+		case 'POST':
+			switch (event.data.body) {
+				case 'CLEARCACHE':
+					caches.keys().then((cache) => {
+						caches.delete(cache);
+					});
+					break;
+				case 'RELOADCACHE':
+					caches
+						.keys()
+						.then((cache) => {
+							caches.delete(cache);
+						})
+						.then(() => {
+							caches.open(cacheName).then((cache) => {
+								return cache.addAll(toCache);
+							});
+						});
+			}
+	}
+};
