@@ -152,15 +152,13 @@ app.post('/getTimeTable', (req, res) => {
 				const dt = new Date(req.body['datum']);
 				var out = [];
 				let sonstiges =
-					(await untis.getTimetableFor(dt, 2232, 1).catch(console.log)) || [];
+					(await untis.getTimetableFor(dt, 2232, 1).catch()) || [];
 				let lk =
-					(await untis
-						.getTimetableFor(dt, decoded['lk'], 1)
-						.catch(console.log)) || [];
+					(await untis.getTimetableFor(dt, decoded['lk'], 1).catch()) || [];
 				let fachRichtung =
 					(await untis
 						.getTimetableFor(dt, decoded['fachRichtung'], 1)
-						.catch(console.log)) || [];
+						.catch()) || [];
 
 				borisLoop: for (let i = 0; i < sonstiges.length; i++) {
 					if (sonstiges[i]['su'].length < 1) continue borisLoop;
