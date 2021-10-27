@@ -25,6 +25,10 @@ document
 	.getElementById('serviceWorkerReregister')
 	.addEventListener('click', () => {
 		navigator.serviceWorker.getRegistration().then((registration) => {
+			if (typeof registration == 'undefined') {
+				navigator.serviceWorker.register('/sw.js');
+				return;
+			}
 			registration.unregister().then(() => {
 				setTimeout(() => {
 					console.log('Reregistered');
@@ -44,3 +48,12 @@ function updatePage() {
 function deleteLocalCache() {
 	localStorage.setItem('timeTable', '');
 }
+
+document
+	.getElementById('serviceWorkerReloadCache')
+	.addEventListener('click', () => {
+		broadcast.postMessage({
+			type: 'POST',
+			body: 'RELOADCACHE'
+		});
+	});

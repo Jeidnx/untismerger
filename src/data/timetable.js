@@ -5,26 +5,32 @@ if ('serviceWorker' in navigator) {
 	navigator.serviceWorker.register('/sw.js');
 }
 
-const colorEnum = {
-	'Physik': 'teal',
-	'Informationstechnik': 'grey',
-	'Englisch': 'red',
-	'Ethik': 'green',
-	'Sport': 'lightblue',
-	'Praktische Informatik': 'orange',
-	'Mathematik': 'azure',
-	'Deutsch': 'lightgrey',
-	'Geschichte': 'blueViolet',
-	'Politik und Wirtschaft': 'lightgreen'
-};
+let colorEnum = JSON.parse(localStorage.getItem('colorEnum')) || {};
 
-const startTimeEnum = Object.freeze({
+const colorPalette = [
+	'#FF7878',
+	'#F3F0D7',
+	'#D5BFBF',
+	'#8CA1A5',
+	'#F6C6EA',
+	'#BEAEE2',
+	'#CDF0EA',
+	'#79B4B7',
+	'#DE8971',
+	'#F3E6E3',
+	'#F9F9F9',
+	'#E1F2FB',
+	'#745C97',
+	'#E0C097'
+];
+
+const startTimeEnum = {
 	800: 0,
 	945: 1,
 	1130: 2,
 	1330: 3,
 	1515: 4
-});
+};
 const weekDayEnum = {
 	0: 'Montag',
 	1: 'Dienstag',
@@ -94,7 +100,14 @@ async function addDay(date, index) {
 						row.classList.remove('cancelled');
 						row.classList.add('irregular');
 					}
-					row.style.backgroundColor = colorEnum[element['fach']];
+					if (colorEnum[element['fach']]) {
+						row.style.backgroundColor = colorEnum[element['fach']];
+					} else {
+						colorEnum[element['fach']] =
+							colorPalette[Math.floor(Math.random() * colorPalette.length)];
+						row.style.backgroundColor = colorEnum[element['fach']];
+						localStorage.setItem('colorEnum', JSON.stringify(colorEnum));
+					}
 				}
 			});
 

@@ -16,6 +16,7 @@ const broadcast = new BroadcastChannel('sw-channel');
 
 self.addEventListener('install', (event) => {
 	console.log('[Service Worker] Installing');
+	self.skipWaiting();
 	event.waitUntil(
 		caches.open(cacheName).then((cache) => {
 			return cache.addAll(toCache);
@@ -69,6 +70,17 @@ broadcast.onmessage = (event) => {
 						caches.delete(cache);
 					});
 					break;
+				case 'RELOADCACHE':
+					caches
+						.keys()
+						.then((cache) => {
+							caches.delete(cache);
+						})
+						.then(() => {
+							caches.open(cacheName).then((cache) => {
+								return cache.addAll(toCache);
+							});
+						});
 			}
 	}
 };
