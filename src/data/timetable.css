@@ -92,8 +92,11 @@ body {
 	display: flex;
 	justify-content: flex-start;
 	flex-direction: row;
-	overscroll-behavior: contain;
+	overscroll-behavior: none;
 	overflow: hidden;
+	scroll-behavior: none;
+	touch-action: manipulation;
+	position: fixed;
 	background-color: #121212;
 	color: #bebebe;
 	font-family: sans-serif;
