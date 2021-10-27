@@ -255,9 +255,9 @@ body.addEventListener(
 
 body.addEventListener(
 	'touchmove',
-	async (e) => {
+	(e) => {
 		const y = e.touches[0].pageY;
-		if (document.scrollingElement.scrollTop === 0 && y > _startY) {
+		if (document.scrollingElement.scrollTop === 0 && y > _startY + 19) {
 			refreshHandler(true);
 		}
 		const x = e.touches[0].pageX;
@@ -270,7 +270,9 @@ body.addEventListener(
 	},
 	{ passive: true }
 );
-
+body.addEventListener('touchend', (e) => {
+	console.log(e);
+});
 window.onkeydown = function (event) {
 	switch (event.key) {
 		case 'r': {
