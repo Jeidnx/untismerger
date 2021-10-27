@@ -42,14 +42,14 @@
         <div id="stage1qr" class="stage" style="display:none"></div>
         <div id="stage1jwt" class="stage" style="display:none">
             <button type="button" class="backButton"
-                onclick="document.getElementById('stage0').style.display = ''; document.getElementById('stage1jwt').style.display = 'none'">Zurück</button>
+                onclick="document.getElementById('stage0').style.display = ''; document.getElementById('stage1jwt').style.display = 'none'; setStage(1)">Zurück</button>
             <input type="password" name="jwt" placeholder="jwt" id="jwtInput">
             <button type="button"
                 onclick="localStorage.setItem('jwt', document.getElementById('jwtInput').value); window.location.href='/'; return false">Absenden</button>
         </div>
         <div id="stage2" class="stage" style="display:none;">
             <button type="button" class="backButton"
-                onclick="document.getElementById('stage1manuel').style.display = ''; document.getElementById('stage2').style.display = 'none'">Zurück</button>
+                onclick="document.getElementById('stage1manuel').style.display = ''; document.getElementById('stage2').style.display = 'none'; setStage(1)">Zurück</button>
             <label for="lk">Leistungskurs</label>
             <select name="lk">
                 <option>BG12a</option>

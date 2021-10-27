@@ -58,3 +58,9 @@ submitForm.onsubmit = (e) => {
 	xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 	xhr.send(formBody);
 };
+/**
+ * @param {number} number Number
+ */
+function setStage(number) {
+	stage = number;
+}
