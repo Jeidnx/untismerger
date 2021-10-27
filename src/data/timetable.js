@@ -257,7 +257,7 @@ body.addEventListener(
 	'touchmove',
 	async (e) => {
 		const y = e.touches[0].pageY;
-		if (document.scrollingElement.scrollTop === 0 && y > _startY + 100) {
+		if (document.scrollingElement.scrollTop === 0 && y > _startY) {
 			refreshHandler(true);
 		}
 		const x = e.touches[0].pageX;
