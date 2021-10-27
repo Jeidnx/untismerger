@@ -93,6 +93,7 @@ body {
 	justify-content: flex-start;
 	flex-direction: row;
 	overscroll-behavior: contain;
+	overflow: hidden;
 	background-color: #121212;
 	color: #bebebe;
 	font-family: sans-serif;
