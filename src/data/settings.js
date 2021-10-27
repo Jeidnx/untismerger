@@ -57,3 +57,19 @@ document
 			body: 'RELOADCACHE'
 		});
 	});
+document.getElementById('colorPickerRefresh').addEventListener('click', () => {
+	document.getElementById('colorPickerData').innerHTML = localStorage
+		.getItem('colorEnum')
+		// @ts-ignore
+		.replaceAll(',', ', \n');
+});
+document.getElementById('colorPickerData').innerHTML = localStorage
+	.getItem('colorEnum')
+	// @ts-ignore
+	.replaceAll(',', ', \n');
+document.getElementById('colorPickerSubmit').addEventListener('click', () => {
+	localStorage.setItem(
+		'colorEnum',
+		document.getElementById('colorPickerData').innerHTML
+	);
+});
