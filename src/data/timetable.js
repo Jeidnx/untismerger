@@ -298,8 +298,9 @@ async function refreshHandler(purge) {
 			resolve(false);
 		}
 		if (
-			!window.navigator.onLine &&
-			!timeTable[currentDay.toISOString().slice(0, 10)]
+			(!window.navigator.onLine &&
+				!timeTable[currentDay.toISOString().slice(0, 10)]) ||
+			purge
 		) {
 			resolve(false);
 			body.classList.add('offline');
