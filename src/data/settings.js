@@ -46,7 +46,7 @@ function updatePage() {
 	document.getElementById('jwtKeyInput').value = localStorage.getItem('jwt');
 }
 function deleteLocalCache() {
-	localStorage.setItem('timeTable', '');
+	localStorage.removeItem('timeTable');
 }
 
 document
