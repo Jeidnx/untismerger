@@ -61,7 +61,7 @@ document.getElementById('colorPickerRefresh').addEventListener('click', () => {
 	document.getElementById('colorPickerData').innerHTML = localStorage
 		.getItem('colorEnum')
 		// @ts-ignore
-		.replaceAll(',', ', \n');
+		.replaceAll(',', ',\n');
 });
 document.getElementById('colorPickerData').innerHTML = localStorage
 	.getItem('colorEnum')
@@ -70,6 +70,7 @@ document.getElementById('colorPickerData').innerHTML = localStorage
 document.getElementById('colorPickerSubmit').addEventListener('click', () => {
 	localStorage.setItem(
 		'colorEnum',
-		document.getElementById('colorPickerData').innerHTML
+		// @ts-ignore
+		document.getElementById('colorPickerData').innerHTML.replaceAll('\n', '')
 	);
 });
