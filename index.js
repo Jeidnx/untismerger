@@ -225,7 +225,7 @@ app.post('/setup', (req, res) => {
 					untis
 						.login()
 						.then(() => {
-							res.status(200).send('OK');
+							res.status(200).send(req.body['jwt']);
 						})
 						.catch((err) => {
 							res.status(400).send('Invalid Credentials');
