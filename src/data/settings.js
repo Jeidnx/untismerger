@@ -1,13 +1,20 @@
-const broadcast = new BroadcastChannel('sw-channel');
+let swChannel = new MessageChannel();
 
-broadcast.onmessage = (event) => {
+swChannel.port1.onmessage = (event) => {
 	if (event.data.type == 'VERSION') {
 		serviceWorkerVersion.innerHTML = 'Version: ' + event.data.body;
 	}
 };
 
+navigator.serviceWorker.controller.postMessage(
+	{
+		type: 'INIT_PORT'
+	},
+	[swChannel.port2]
+);
+
 let serviceWorkerVersion = document.getElementById('serviceWorkerVersion');
-broadcast.postMessage({
+swChannel.port1.postMessage({
 	type: 'GET',
 	body: 'VERSION'
 });
@@ -33,7 +40,7 @@ document
 	});
 
 function updatePage() {
-	broadcast.postMessage({
+	swChannel.port1.postMessage({
 		type: 'GET',
 		body: 'VERSION'
 	});
@@ -48,7 +55,7 @@ function deleteLocalCache() {
 document
 	.getElementById('serviceWorkerReloadCache')
 	.addEventListener('click', () => {
-		broadcast.postMessage({
+		swChannel.port1.postMessage({
 			type: 'POST',
 			body: 'RELOADCACHE'
 		});
