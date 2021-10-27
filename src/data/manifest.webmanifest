@@ -7,24 +7,26 @@
 	"description": "Merged verschiedene Stundenpläne zusammen",
 	"start_url": "../",
 	"scope": "/",
-	"background_color": "black",
-	"theme_color": "white",
-	"icons": [{
-		"src": "/icons/icon.png",
-		"sizes": "512x512",
-		"type": "image/png",
-		"purpose": "any"
-	},
-	{
-		"src": "/icons/icon.png",
-		"sizes": "512x512",
-		"type": "image/png",
-		"purpose": "maskable"
-	},
-	{
-		"src": "/icons/icon_apple.png",
-		"sizes": "192x192",
-		"type": "image/png",
-		"purpose": "monochrome"
-	}]
+	"background_color": "#121212",
+	"theme_color": "#1d1d1d",
+	"icons": [
+		{
+			"src": "/icons/icon.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "any"
+		},
+		{
+			"src": "/icons/icon.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "maskable"
+		},
+		{
+			"src": "/icons/icon_apple.png",
+			"sizes": "192x192",
+			"type": "image/png",
+			"purpose": "monochrome"
+		}
+	]
 }
