@@ -210,7 +210,7 @@ app.post('/setup', (req, res) => {
 	switch (req.body['stage']) {
 		case '1': {
 			// Stage 1
-			if (req.body['jwt'] !== '') {
+			if (req.body['jwt'] && req.body['jwt'] !== '') {
 				jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
 					if (err) {
 						res.status(400).send('Invalid jwt');
@@ -225,7 +225,7 @@ app.post('/setup', (req, res) => {
 					untis
 						.login()
 						.then(() => {
-							res.status(200).send('OK');
+							res.status(200).send(req.body['jwt']);
 						})
 						.catch((err) => {
 							res.status(400).send('Invalid Credentials');

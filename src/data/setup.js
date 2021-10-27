@@ -37,10 +37,18 @@ submitForm.onsubmit = (e) => {
 	xhr.addEventListener('load', () => {
 		if (!(xhr.status === 200)) {
 			document.getElementById('return1').innerHTML = xhr.response;
+			document.getElementById('returnJwt').innerHTML = xhr.response;
 			return;
 		}
+
 		switch (stage) {
 			case 1: {
+				if (xhr.response !== 'OK') {
+					localStorage.setItem('jwt', xhr.response);
+					window.location.href = '/';
+					return;
+				}
+
 				stage++;
 				document.getElementById('stage1qr').style.display = 'none';
 				document.getElementById('stage1manuel').style.display = 'none';
@@ -58,3 +66,10 @@ submitForm.onsubmit = (e) => {
 	xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 	xhr.send(formBody);
 };
+
+/**
+ * @param {number} number Number
+ */
+function setStage(number) {
+	stage = number;
+}
