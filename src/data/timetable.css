@@ -132,19 +132,6 @@ body.offline .offlineMessage {
 .irregular {
 	color: #cf6679;
 }
-#settingsButton {
-	position: absolute;
-	width: 4vw;
-	height: 4vw;
-	top: 85%;
-	right: 5%;
-	border-radius: 50%;
-	background-color: lightgrey;
-	color: black;
-	text-align: center;
-	line-height: 4vw;
-	text-decoration: none;
-}
 
 .toggle {
 	text-decoration: none;
@@ -177,15 +164,18 @@ body.offline .offlineMessage {
 
 .sidebar a {
 	color: white;
+	display: block;
 	font-family: Arial;
 	font-size: 1.6em;
 	margin: 0;
 	cursor: pointer;
 	text-decoration: none;
-	line-height: 450%;
 	background-color: #121212;
 	padding: 0.5em 0em 0.5em 0.5em;
 	border-radius: 20vh;
+	border-style: solid;
+	border-color: white;
+	margin-bottom: 3vh;
 }
 
 .sidebar a:hover {

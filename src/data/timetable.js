@@ -40,6 +40,9 @@ const indexDayEnum = {
 	Freitag: 4
 };
 
+let _startY;
+let _startX;
+const body = document.body;
 let currentDay = new Date();
 
 var timeTable = JSON.parse(localStorage.getItem('timeTable')) || {};
@@ -226,11 +229,7 @@ async function displayWeek(purge, date) {
 	});
 }
 
-displayWeek(false, currentDay);
-
-let _startY;
-let _startX;
-const body = document.body;
+refreshHandler(false);
 
 body.addEventListener(
 	'touchstart',
@@ -246,7 +245,7 @@ body.addEventListener(
 	async (e) => {
 		const y = e.touches[0].pageY;
 		if (document.scrollingElement.scrollTop === 0 && y > _startY + 100) {
-			refreshHandler();
+			refreshHandler(true);
 		}
 		const x = e.touches[0].pageX;
 		if (document.scrollingElement.scrollLeft === 0 && x < _startX - 100) {
@@ -262,7 +261,7 @@ body.addEventListener(
 window.onkeydown = function (event) {
 	switch (event.key) {
 		case 'r': {
-			refreshHandler();
+			refreshHandler(true);
 			break;
 		}
 		case 'a': {
@@ -276,7 +275,10 @@ window.onkeydown = function (event) {
 	}
 };
 
-function refreshHandler() {
+/**
+ * @param {boolean} purge Should the cache be purged?
+ */
+function refreshHandler(purge) {
 	if (body.classList.contains('refreshing')) {
 		return;
 	}
@@ -288,7 +290,7 @@ function refreshHandler() {
 		return;
 	}
 	body.classList.add('refreshing');
-	displayWeek(true, currentDay).then(() => {
+	displayWeek(purge, currentDay).then(() => {
 		body.classList.remove('refreshing');
 	});
 }
@@ -305,7 +307,7 @@ function scrollWeeks(boolIn) {
 	if (boolIn) {
 		curr += 7 * 60 * 60 * 24 * 1000;
 		currentDay = new Date(curr);
-		displayWeek(false, currentDay);
+		refreshHandler(false);
 	} else {
 		curr -= 7 * 60 * 60 * 24 * 1000;
 
@@ -316,9 +318,15 @@ function scrollWeeks(boolIn) {
 			return;
 		}
 		currentDay = new Date(curr);
-		displayWeek(false, currentDay);
+		refreshHandler(false);
 	}
 	setTimeout(() => {
 		body.classList.remove('switching');
 	}, 5);
 }
+
+document.getElementById('refreshButton').addEventListener('click', () => {
+	// @ts-ignore
+	document.getElementById('slide').checked = false;
+	refreshHandler(true);
+});

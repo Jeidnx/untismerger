@@ -12,6 +12,7 @@
 
 - Style
   - Dark mode / Light mode toggle
+  - Add back buttons to setup
 - Settings
   - Allow switching of settings
   - Profiles
