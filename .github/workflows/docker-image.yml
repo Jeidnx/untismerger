@@ -26,8 +26,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: untismerger_${{ github.sha }}
-          release_name: Release ${{ github.sha }}
+          tag_name: untismerger_${{ github.ref }}
+          release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
       - name: Upload Release Asset
