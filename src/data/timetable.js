@@ -290,14 +290,18 @@ window.onkeydown = function (event) {
 
 /**
  * @param {boolean} purge Should the cache be purged?
- * @return {Promise<void>} Resolves when the site finished loading, Rejects when nothing happened
+ * @return {Promise<boolean>} true when site is reloaded, false if nothing happened
  */
 async function refreshHandler(purge) {
 	return new Promise((resolve, reject) => {
 		if (body.classList.contains('refreshing')) {
-			reject();
+			resolve(false);
 		}
-		if (!window.navigator.onLine) {
+		if (
+			!window.navigator.onLine &&
+			!timeTable[currentDay.toISOString().slice(0, 10)]
+		) {
+			resolve(false);
 			body.classList.add('offline');
 			setTimeout(() => {
 				body.classList.remove('offline');
@@ -307,7 +311,7 @@ async function refreshHandler(purge) {
 		body.classList.add('refreshing');
 		displayWeek(purge, currentDay).then(() => {
 			body.classList.remove('refreshing');
-			resolve();
+			resolve(true);
 		});
 	});
 }
