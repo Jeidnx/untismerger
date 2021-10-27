@@ -290,21 +290,25 @@ window.onkeydown = function (event) {
 
 /**
  * @param {boolean} purge Should the cache be purged?
+ * @return {Promise<void>} Resolves when the site finished loading, Rejects when nothing happened
  */
-function refreshHandler(purge) {
-	if (body.classList.contains('refreshing')) {
-		return;
-	}
-	if (!window.navigator.onLine) {
-		body.classList.add('offline');
-		setTimeout(() => {
-			body.classList.remove('offline');
-		}, 3000);
-		return;
-	}
-	body.classList.add('refreshing');
-	displayWeek(purge, currentDay).then(() => {
-		body.classList.remove('refreshing');
+async function refreshHandler(purge) {
+	return new Promise((resolve, reject) => {
+		if (body.classList.contains('refreshing')) {
+			reject();
+		}
+		if (!window.navigator.onLine) {
+			body.classList.add('offline');
+			setTimeout(() => {
+				body.classList.remove('offline');
+			}, 3000);
+			return;
+		}
+		body.classList.add('refreshing');
+		displayWeek(purge, currentDay).then(() => {
+			body.classList.remove('refreshing');
+			resolve();
+		});
 	});
 }
 /**
@@ -320,22 +324,23 @@ function scrollWeeks(boolIn) {
 	if (boolIn) {
 		curr += 7 * 60 * 60 * 24 * 1000;
 		currentDay = new Date(curr);
-		refreshHandler(false);
+		refreshHandler(false).then(function () {
+			body.classList.remove('switching');
+		});
 	} else {
 		curr -= 7 * 60 * 60 * 24 * 1000;
 
 		if (curr < new Date().getTime()) {
 			setTimeout(() => {
 				body.classList.remove('switching');
-			}, 5);
+			}, 50);
 			return;
 		}
 		currentDay = new Date(curr);
-		refreshHandler(false);
+		refreshHandler(false).then(() => {
+			body.classList.remove('switching');
+		});
 	}
-	setTimeout(() => {
-		body.classList.remove('switching');
-	}, 5);
 }
 
 document.getElementById('refreshButton').addEventListener('click', () => {
