@@ -59,6 +59,12 @@ document
 	});
 // JWT Key löschen
 document.getElementById('localStorageDelJWT').addEventListener('click', () => {
-	localStorage.removeItem('jwt');
-	window.location.href = '/setup';
+	if (
+		window.confirm(
+			'Bist du dir sicher? Eine erneute anmeldung ist erfoderlich.'
+		)
+	) {
+		localStorage.removeItem('jwt');
+		window.location.href = '/setup';
+	}
 });
