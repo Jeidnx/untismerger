@@ -35,3 +35,4 @@ jobs:
         with:
           push: true
           file: Dockerfile
+          tags: jeidnx/untismerger:latest
