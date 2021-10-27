@@ -297,17 +297,22 @@ async function refreshHandler(purge) {
 		if (body.classList.contains('refreshing')) {
 			resolve(false);
 		}
-		if (
-			(!window.navigator.onLine &&
-				!timeTable[currentDay.toISOString().slice(0, 10)]) ||
-			purge
-		) {
-			resolve(false);
-			body.classList.add('offline');
-			setTimeout(() => {
-				body.classList.remove('offline');
-			}, 3000);
-			return;
+		if (!window.navigator.onLine) {
+			if (purge) {
+				body.classList.add('offline');
+				setTimeout(() => {
+					body.classList.remove('offline');
+				}, 3000);
+				resolve(false);
+				return;
+			} else if (!timeTable[currentDay.toISOString().slice(0, 10)]) {
+				body.classList.add('offline');
+				setTimeout(() => {
+					body.classList.remove('offline');
+				}, 3000);
+				resolve(false);
+				return;
+			}
 		}
 		body.classList.add('refreshing');
 		displayWeek(purge, currentDay).then(() => {
