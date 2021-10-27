@@ -15,7 +15,6 @@
   - Add back buttons to setup
   - Settings page
 - Settings
-  - Color Picker
   - Allow switching of settings
   - Profiles
   - QR Code login
