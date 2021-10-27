@@ -12,7 +12,6 @@
 
 - Style
   - Dark mode / Light mode toggle
-  - Add back buttons to setup
   - Settings page
 - Settings
   - Allow switching of settings
