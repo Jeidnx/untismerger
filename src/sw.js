@@ -10,7 +10,8 @@ const toCache = [
 	'/icons/icon_apple.png',
 	'/icons/icon.png',
 	'/settings.html',
-	'/data/settings.css'
+	'/data/settings.css',
+	'icons/background.png'
 ];
 
 self.addEventListener('install', (event) => {

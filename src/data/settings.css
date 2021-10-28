@@ -17,6 +17,7 @@ body {
 	justify-content: flex-start;
 	align-items: center;
 	flex-direction: column;
+	overscroll-behavior: none;
 }
 section {
 	display: flex;
