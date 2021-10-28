@@ -1,4 +1,9 @@
+if (!localStorage.getItem('jwt')) {
+	window.location.href = '/setup';
+}
+
 let swChannel = new MessageChannel();
+let serviceWorkerVersion = document.getElementById('serviceWorkerVersion');
 
 swChannel.port1.onmessage = (event) => {
 	if (event.data.type == 'VERSION') {
@@ -6,51 +11,38 @@ swChannel.port1.onmessage = (event) => {
 	}
 };
 
-navigator.serviceWorker.controller.postMessage(
-	{
-		type: 'INIT_PORT'
-	},
-	[swChannel.port2]
-);
+navigator.serviceWorker.register('/sw.js');
 
-let serviceWorkerVersion = document.getElementById('serviceWorkerVersion');
-swChannel.port1.postMessage({
-	type: 'GET',
-	body: 'VERSION'
+navigator.serviceWorker.ready.then((swRegistration) => {
+	swRegistration.active.postMessage(
+		{
+			type: 'INIT_PORT'
+		},
+		[swChannel.port2]
+	);
+	swChannel.port1.postMessage({
+		type: 'GET',
+		body: 'VERSION'
+	});
 });
-// @ts-ignore
-document.getElementById('jwtKeyInput').value = localStorage.getItem('jwt');
 
-// Re-register Service Worker
+// Update service worker
 document
 	.getElementById('serviceWorkerReregister')
 	.addEventListener('click', () => {
 		navigator.serviceWorker.getRegistration().then((registration) => {
 			if (typeof registration == 'undefined') {
 				navigator.serviceWorker.register('/sw.js');
+				setTimeout(() => {
+					window.location.reload();
+				}, 2000);
 				return;
 			}
 			registration.unregister().then(() => {
-				setTimeout(() => {
-					console.log('Reregistered');
-					navigator.serviceWorker.register('/sw.js');
-				}, 2000);
+				window.location.reload();
 			});
 		});
 	});
-
-function updatePage() {
-	swChannel.port1.postMessage({
-		type: 'GET',
-		body: 'VERSION'
-	});
-	// @ts-ignore
-	document.getElementById('jwtKeyInput').value = localStorage.getItem('jwt');
-}
-
-function deleteLocalCache() {
-	localStorage.removeItem('timeTable');
-}
 // Reload Cache
 document
 	.getElementById('serviceWorkerReloadCache')
@@ -71,26 +63,34 @@ document.getElementById('localStorageDelJWT').addEventListener('click', () => {
 		window.location.href = '/setup';
 	}
 });
+// JWT Kopieren
+document.getElementById('copyJwt').addEventListener('click', () => {
+	navigator.clipboard.writeText(localStorage.getItem('jwt'));
+});
+// Back Button
+document.getElementById('backButton').addEventListener('click', () => {
+	window.location.href = '/';
+});
 
 //Setup color picker
-const json = JSON.parse(localStorage.getItem('colorEnum'));
+const colorEnum = JSON.parse(localStorage.getItem('colorEnum'));
 function colorPickerInit() {
 	var colorPickerHTML =
-		"<h3>Farben für deine Fächer Auswählen</h3><button id='colorPickerRefresh'>Zurücksetzen</button><table><tr><th>Fach</th><th>Farbe</th></tr>";
-	for (var key in json) {
-		colorPickerHTML += `<tr><td>${key}</td><td><input type="color" id="${key}" value="${json[key]}"/></td></tr>`;
+		'<h3>Farben für deine Fächer Auswählen</h3><table><tr><th>Fach</th><th>Farbe</th></tr>';
+	for (var key in colorEnum) {
+		colorPickerHTML += `<tr><td>${key}</td><td><input type="color" id="${key}" value="${colorEnum[key]}"/></td></tr>`;
 	}
 	colorPickerHTML +=
-		"</table><button id='colorPickerSubmit'>Speichern</button>";
+		"</table><button id='colorPickerRefresh'>Zurücksetzen</button><button id='colorPickerSubmit'>Speichern</button>";
 	document.getElementById('colorPicker').innerHTML = colorPickerHTML;
 }
 colorPickerInit();
 document.getElementById('colorPickerSubmit').addEventListener('click', () => {
-	for (var key in json) {
+	for (var key in colorEnum) {
 		// @ts-ignore
-		json[key] = document.getElementById(key).value;
+		colorEnum[key] = document.getElementById(key).value;
 	}
-	localStorage.setItem('colorEnum', JSON.stringify(json));
+	localStorage.setItem('colorEnum', JSON.stringify(colorEnum));
 });
 document.getElementById('colorPickerRefresh').addEventListener('click', () => {
 	colorPickerInit();
