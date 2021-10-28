@@ -10,23 +10,24 @@
 
 <body>
     <a href="/" style="text-decoration: none; color: black;">Zurück</a>
-    <section id="serviceWorker">
-        <p>Service Worker</p>
-        <button type="button" onclick="updatePage();">Aktualisieren</button>
+    <section id="account">
+        <h3>App</h3>
         <p id="serviceWorkerVersion">Version: Wird Geladen...</p>
         <button type="button" id="serviceWorkerReregister">Update</button>
-        <button type="button" id="serviceWorkerReloadCache">Reload Cache</button>
+        <button type="button" id="localStorageDelJWT">Abmelden</button>
     </section>
-    <section id="localStorage">
-        <p>Local Storage</p>
-        <button type="button" onclick="deleteLocalCache()">Stundeplan Cache leeren</button>
-        <p>JWT Key: <input type="password" id="jwtKeyInput" onmouseover="this.type='text';"
-                onmouseout="this.type='password';" onmousedown=" this.type='text' ;" autocomplete="off" readonly> </p>
-        <button type="button" id="localStorageDelJWT">JWT Key löschen.</button>
 
-    </section>
     <section id="colorPicker">
+        <h3>Farben für deine Fächer Auswählen</h3>
         Wird geladen...
+    </section>
+
+    <section id="advancedSettings">
+        <h3>Erweiterte Einstellungen</h3>
+        <button type="button" onclick="deleteLocalCache()">Stundeplan Cache leeren</button>
+        <button type="button" id="serviceWorkerReloadCache">Cache erneuern</button>
+        <p>JWT Key: <input type="password" id="jwtKeyInput" onmouseover="this.type='text';"
+                onmouseout="this.type='password';" onmousedown=" this.type='text' ;" autocomplete="off" readonly></p>
     </section>
     <script type="text/javascript" src="data/settings.js"></script>
 </body>
