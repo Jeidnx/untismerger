@@ -1,3 +1,7 @@
+if (!localStorage.getItem('jwt')) {
+	window.location.href = '/setup';
+}
+
 let swChannel = new MessageChannel();
 let serviceWorkerVersion = document.getElementById('serviceWorkerVersion');
 
@@ -7,8 +11,10 @@ swChannel.port1.onmessage = (event) => {
 	}
 };
 
-navigator.serviceWorker.register('/sw.js').then((swRegistration) => {
-	navigator.serviceWorker.controller.postMessage(
+navigator.serviceWorker.register('/sw.js');
+
+navigator.serviceWorker.ready.then((swRegistration) => {
+	swRegistration.active.postMessage(
 		{
 			type: 'INIT_PORT'
 		},
@@ -20,9 +26,6 @@ navigator.serviceWorker.register('/sw.js').then((swRegistration) => {
 	});
 });
 
-// @ts-ignore
-document.getElementById('jwtKeyInput').value = localStorage.getItem('jwt');
-
 // Update service worker
 document
 	.getElementById('serviceWorkerReregister')
@@ -30,12 +33,13 @@ document
 		navigator.serviceWorker.getRegistration().then((registration) => {
 			if (typeof registration == 'undefined') {
 				navigator.serviceWorker.register('/sw.js');
-				return;
-			}
-			registration.unregister().then(() => {
 				setTimeout(() => {
 					window.location.reload();
 				}, 2000);
+				return;
+			}
+			registration.unregister().then(() => {
+				window.location.reload();
 			});
 		});
 	});
@@ -59,17 +63,25 @@ document.getElementById('localStorageDelJWT').addEventListener('click', () => {
 		window.location.href = '/setup';
 	}
 });
+// JWT Kopieren
+document.getElementById('copyJwt').addEventListener('click', () => {
+	navigator.clipboard.writeText(localStorage.getItem('jwt'));
+});
+// Back Button
+document.getElementById('backButton').addEventListener('click', () => {
+	window.location.href = '/';
+});
 
 //Setup color picker
 const colorEnum = JSON.parse(localStorage.getItem('colorEnum'));
 function colorPickerInit() {
 	var colorPickerHTML =
-		"<h3>Farben für deine Fächer Auswählen</h3><button id='colorPickerRefresh'>Zurücksetzen</button><table><tr><th>Fach</th><th>Farbe</th></tr>";
+		'<h3>Farben für deine Fächer Auswählen</h3><table><tr><th>Fach</th><th>Farbe</th></tr>';
 	for (var key in colorEnum) {
 		colorPickerHTML += `<tr><td>${key}</td><td><input type="color" id="${key}" value="${colorEnum[key]}"/></td></tr>`;
 	}
 	colorPickerHTML +=
-		"</table><button id='colorPickerSubmit'>Speichern</button>";
+		"</table><button id='colorPickerRefresh'>Zurücksetzen</button><button id='colorPickerSubmit'>Speichern</button>";
 	document.getElementById('colorPicker').innerHTML = colorPickerHTML;
 }
 colorPickerInit();
