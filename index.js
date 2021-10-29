@@ -198,7 +198,9 @@ app.post('/getTimeTable', (req, res) => {
 
 				res.send(sendArr);
 			})
-			.catch(console.log);
+			.catch(() => {
+				res.status(200).send([]);
+			});
 	});
 });
 
