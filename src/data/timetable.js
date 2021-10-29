@@ -97,7 +97,6 @@ async function addDay(date, index) {
 						row.classList.add('cancelled');
 					}
 					if (element['code'] === 'irregular') {
-						row.classList.remove('cancelled');
 						row.classList.add('irregular');
 					}
 					if (colorEnum[element['fach']]) {
@@ -158,15 +157,17 @@ async function getDay(datum) {
 					: '';
 				if (first === second) {
 					data.splice(i + 1, 1);
+					continue;
 				}
-			}
-
-			// sort data
-			var arr = [null, null, null, null, null];
-			for (var i = 0; i < data.length; i++) {
-				const startZeit = data[i]['startZeit'];
-				const stunde = startTimeEnum[startZeit];
-				arr[stunde] = data[i];
+				const startA = data[i].hasOwnProperty('startZeit')
+					? data[i]['startZeit']
+					: '';
+				const startB = data[i + 1].hasOwnProperty('startZeit')
+					? data[i + 1]['startZeit']
+					: 'e';
+				if (startA === startB) {
+					data.splice(i + 1, 1);
+				}
 			}
 
 			data.forEach((element) => {
