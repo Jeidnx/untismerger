@@ -90,8 +90,8 @@ async function addDay(date, index) {
 			timeTable[date].forEach((element) => {
 				if (element['stunde'] === i) {
 					row.classList.add('stunde');
-					row.innerHTML = `<p>${element['fach']}<p>
-                <p>${element['raum']} - ${element['lehrer']}</p>
+					row.innerHTML = `<p>${element['subject']}<p>
+                <p>${element['room']} - ${element['teacher']}</p>
                 `;
 					if (element['code'] === 'cancelled') {
 						row.classList.add('cancelled');
@@ -99,12 +99,12 @@ async function addDay(date, index) {
 					if (element['code'] === 'irregular') {
 						row.classList.add('irregular');
 					}
-					if (colorEnum[element['fach']]) {
-						row.style.backgroundColor = colorEnum[element['fach']];
+					if (colorEnum[element['subject']]) {
+						row.style.backgroundColor = colorEnum[element['subject']];
 					} else {
-						colorEnum[element['fach']] =
+						colorEnum[element['subject']] =
 							colorPalette[Math.floor(Math.random() * colorPalette.length)];
-						row.style.backgroundColor = colorEnum[element['fach']];
+						row.style.backgroundColor = colorEnum[element['subject']];
 						localStorage.setItem('colorEnum', JSON.stringify(colorEnum));
 					}
 				}
@@ -151,19 +151,21 @@ async function getDay(datum) {
 			var data = JSON.parse(xhr.response);
 
 			for (var i = 0; i < data.length - 1; i++) {
-				const first = data[i].hasOwnProperty('fach') ? data[i]['fach'] : '';
-				const second = data[i + 1].hasOwnProperty('fach')
-					? data[i + 1]['fach']
+				const first = data[i].hasOwnProperty('subject')
+					? data[i]['subject']
+					: '';
+				const second = data[i + 1].hasOwnProperty('subject')
+					? data[i + 1]['subject']
 					: '';
 				if (first === second) {
 					data.splice(i + 1, 1);
 					continue;
 				}
-				const startA = data[i].hasOwnProperty('startZeit')
-					? data[i]['startZeit']
+				const startA = data[i].hasOwnProperty('startTime')
+					? data[i]['startTime']
 					: '';
-				const startB = data[i + 1].hasOwnProperty('startZeit')
-					? data[i + 1]['startZeit']
+				const startB = data[i + 1].hasOwnProperty('startTime')
+					? data[i + 1]['startTime']
 					: 'e';
 				if (startA === startB) {
 					data.splice(i + 1, 1);
@@ -171,8 +173,8 @@ async function getDay(datum) {
 			}
 
 			data.forEach((element) => {
-				element['stunde'] = startTimeEnum[element['startZeit']];
-				delete element['startZeit'];
+				element['stunde'] = startTimeEnum[element['startTime']];
+				delete element['startTime'];
 			});
 
 			timeTable[datum] = data;
