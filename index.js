@@ -199,7 +199,7 @@ app.post('/getTimeTable', (req, res) => {
 						teacher: element['te'][0]
 							? element['te'][0]['longname']
 							: 'Untis API 👍',
-						room: element['ro'][0] ? element['ro'][0]['name'] : 'Untis API 👍'
+						room: element['ro'][0] ? element['ro'][0]['name'] : 'Untis 👍'
 					});
 				});
 
