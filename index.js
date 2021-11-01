@@ -113,6 +113,11 @@ const jwtSecret = process.env.JWT_SECRET;
 const schoolName = process.env.SCHOOL_NAME;
 const schoolDomain = process.env.SCHOOL_DOMAIN;
 const statsfileName = "data/data.json";
+let config = null;
+try {
+	config = require("./data/config.json");
+} catch (_) {}
+
 
 if (!jwtSecret || !schoolName || !schoolDomain) {
 	console.log('Missing environment Variables');
@@ -340,7 +345,27 @@ app.post('/setup', (req, res) => {
 		}
 	}
 });
-
+app.post('/getStats', (req, res) => {
+	if (!req.body['jwt']) {
+		res.status(406).send('Missing args');
+		return;
+	}
+	jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
+		if (err) {
+			res.status(406).send('Invalid jwt');
+			return;
+		}
+		res.setHeader("Content-Type", "application/json");
+		if(isUserAdmin(decoded["username"])) {
+			let st = {};
+			st["requests"] = stats.requests;
+			st["users"] = stats.registeredUsers.length;
+			res.status(200).send(JSON.stringify(st))
+		} else {
+			res.status(403).send(JSON.stringify({"error": true, "message": "Keine Rechte"}))
+		}
+	});
+})
 app.get('*', (req, res) => {
 	const d = getDate();
 	if(!stats.requests.hasOwnProperty(d)) {
@@ -365,7 +390,7 @@ function loadData() {
 	if(!fs.existsSync(statsfileName)) {
 		fs.writeFileSync(statsfileName, "{}");
 	}
-	const d = fs.readFileSync(file);
+	const d = fs.readFileSync(statsfileName);
 	return JSON.parse(d);
 }
 function saveData() {
@@ -405,4 +430,13 @@ function createUserArray() {
 }
 function hash(str) {
 	return crypto.createHash("sha256").update(str).digest("hex");
+}
+function isUserAdmin(name) {
+	if(!config) {
+		return false;
+	}
+	if(!config.hasOwnProperty("adminuser")) {
+		return false;
+	}
+	return config.adminuser.includes(hash(name));
 }
