@@ -1,5 +1,5 @@
 // @ts-nocheck
-const cacheVersion = '1.84';
+const cacheVersion = '1.85';
 const cacheName = 'untmerger_v' + cacheVersion;
 const toCache = [
 	'/',
@@ -44,14 +44,12 @@ self.addEventListener('fetch', (event) => {
 		return;
 	}
 
-	event.respondWith(
-		caches.match(event.request).then((response) => {
-			if (response) {
-				return response;
-			}
-			return fetch(event.request);
-		})
-	);
+	caches.match(event.request).then((response) => {
+		if (response) {
+			event.respondWith(response);
+		}
+		return;
+	});
 });
 
 self.addEventListener('message', (event) => {
