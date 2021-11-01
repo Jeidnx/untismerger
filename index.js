@@ -4,6 +4,7 @@ const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const http = require('http');
 const mime = require('mime-types');
+const crypto = require("crypto");
 
 const classIdEnum = {
 	'BBVZ10-1': 2176,
@@ -126,6 +127,11 @@ initScheduler();
 if(!stats.hasOwnProperty("requests")) {
 	stats.requests = {};
 }
+createUserArray();
+
+
+
+
 const app = express();
 
 http.createServer(app).listen(8080);
@@ -163,9 +169,9 @@ app.post('/getTimeTable', (req, res) => {
 			res.status(406).send('Invalid jwt');
 			return;
 		}
-
-		if(!stats.registeredUsers.contains(decoded['username'])) {
-			stats.registeredUsers.push(decoded['username']);
+		const h = hash(decoded["username"])
+		if(!stats.registeredUsers.includes(h)) {
+			stats.registeredUsers.push(h);
 		}
 
 		const untis = new WebUntisLib.WebUntisSecretAuth(
@@ -375,7 +381,7 @@ function saveData() {
 function initScheduler() {
 	setInterval(function () {
 		saveData();
-	}, 0.10 * 60 * 1000);
+	}, 10 * 60 * 1000);
 }
 function getDate() {
 	const d = new Date();
@@ -393,5 +399,11 @@ function constructDateStruct(s) {
 	stats.requests[s].post["/getTimeTable"] = 0;
 }
 function createUserArray() {
-	stats.registeredUsers = [];
+	if(!stats.hasOwnProperty("registeredUsers")) {
+		stats.registeredUsers = [];
+	}
+
+}
+function hash(str) {
+	return crypto.createHash("sha256").update(str).digest("hex");
 }
