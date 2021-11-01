@@ -112,7 +112,7 @@ const classIdEnum = {
 const jwtSecret = process.env.JWT_SECRET;
 const schoolName = process.env.SCHOOL_NAME;
 const schoolDomain = process.env.SCHOOL_DOMAIN;
-const file = "data/data.json";
+const statsfileName = "data/data.json";
 
 if (!jwtSecret || !schoolName || !schoolDomain) {
 	console.log('Missing environment Variables');
@@ -124,9 +124,6 @@ if (!jwtSecret || !schoolName || !schoolDomain) {
 // User hashed list
 let stats = loadData();
 initScheduler();
-if(!stats.hasOwnProperty("requests")) {
-	stats.requests = {};
-}
 createUserArray();
 
 
@@ -365,14 +362,14 @@ app.get('*', (req, res) => {
 });
 
 function loadData() {
-	if(!fs.existsSync(file)) {
-		fs.writeFileSync(file, "{}");
+	if(!fs.existsSync(statsfileName)) {
+		fs.writeFileSync(statsfileName, "{}");
 	}
 	const d = fs.readFileSync(file);
 	return JSON.parse(d);
 }
 function saveData() {
-	fs.writeFile(file, JSON.stringify(stats), function (err) {
+	fs.writeFile(statsfileName, JSON.stringify(stats), function (err) {
 		if(err)
 			console.log(err.message);
 		console.log("save")
@@ -402,7 +399,9 @@ function createUserArray() {
 	if(!stats.hasOwnProperty("registeredUsers")) {
 		stats.registeredUsers = [];
 	}
-
+	if(!stats.hasOwnProperty("requests")) {
+		stats.requests = {};
+	}
 }
 function hash(str) {
 	return crypto.createHash("sha256").update(str).digest("hex");
