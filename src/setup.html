@@ -32,13 +32,19 @@
             <button type="button" class="backButton"
                 onclick="document.getElementById('stage0').style.display = ''; document.getElementById('stage1manuel').style.display = 'none'">Zurück</button>
             <label for="username">Username</label>
-            <input type="text" name="username">
+            <input type="text" name="username" id="usernameInput">
             <label for="secret">Untis Key</label>
-            <input type="password" name="secret">
+            <input type="password" name="secret" id="secretInput">
             <h3 id="return1"></h3>
             <button type="submit">Absenden</button>
         </div>
-        <div id="stage1qr" class="stage" style="display:none"></div>
+        <div id="stage1qr" class="stage" style="display:none">
+            <h3 id="qrStatus"></h3>
+            <video id="videoStream" autoplay>
+
+            </video>
+            <button type="button" id="captureButton">Aufnehmen</button>
+        </div>
         <div id="stage1jwt" class="stage" style="display:none">
             <button type="button" class="backButton"
                 onclick="document.getElementById('stage0').style.display = ''; document.getElementById('stage1jwt').style.display = 'none'; setStage(1)">Zurück</button>

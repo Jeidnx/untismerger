@@ -110,3 +110,7 @@ select {
 	height: 4vh;
 	padding: 0;
 }
+#videoStream {
+	width: 80vw;
+	height: 60vh;
+}
