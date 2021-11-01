@@ -111,12 +111,21 @@ const classIdEnum = {
 const jwtSecret = process.env.JWT_SECRET;
 const schoolName = process.env.SCHOOL_NAME;
 const schoolDomain = process.env.SCHOOL_DOMAIN;
+const file = "data/data.json";
 
 if (!jwtSecret || !schoolName || !schoolDomain) {
 	console.log('Missing environment Variables');
 	process.exit(1);
 }
 
+// Init stats
+// Overall request counting
+// User hashed list
+let stats = loadData();
+initScheduler();
+if(!stats.hasOwnProperty("requests")) {
+	stats.requests = {};
+}
 const app = express();
 
 http.createServer(app).listen(8080);
@@ -124,12 +133,27 @@ http.createServer(app).listen(8080);
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/', (req, res) => {
+	const d = getDate();
+	if(!stats.requests.hasOwnProperty(d)) {
+		constructDateStruct(d)
+	}
+	stats.requests[d]["get"]["/"] += 1;
 	res.status(200).send(fs.readFileSync('./src/timetable.html', 'utf-8'));
 });
 app.get('/setup', (req, res) => {
+	const d = getDate();
+	if(!stats.requests.hasOwnProperty(d)) {
+		constructDateStruct(d)
+	}
+	stats.requests[d]["get"]["/setup"] += 1;
 	res.status(200).send(fs.readFileSync('./src/setup.html', 'utf-8'));
 });
 app.post('/getTimeTable', (req, res) => {
+	const d = getDate();
+	if(!stats.requests.hasOwnProperty(d)) {
+		constructDateStruct(d)
+	}
+	stats.requests[d]["post"]["/getTimeTable"] += 1;
 	if (!req.body['jwt'] || !req.body['datum']) {
 		res.status(406).send('Missing args');
 		return;
@@ -138,6 +162,10 @@ app.post('/getTimeTable', (req, res) => {
 		if (err) {
 			res.status(406).send('Invalid jwt');
 			return;
+		}
+
+		if(!stats.registeredUsers.contains(decoded['username'])) {
+			stats.registeredUsers.push(decoded['username']);
 		}
 
 		const untis = new WebUntisLib.WebUntisSecretAuth(
@@ -213,6 +241,11 @@ app.post('/getTimeTable', (req, res) => {
 });
 
 app.post('/setup', (req, res) => {
+	const d = getDate();
+	if(!stats.requests.hasOwnProperty(d)) {
+		constructDateStruct(d)
+	}
+	stats.requests[d]["post"]["/setup"] += 1;
 	if (!req.body['stage']) {
 		res.status(400).send('Missing Arguments');
 		return;
@@ -306,6 +339,11 @@ app.post('/setup', (req, res) => {
 });
 
 app.get('*', (req, res) => {
+	const d = getDate();
+	if(!stats.requests.hasOwnProperty(d)) {
+		constructDateStruct(d)
+	}
+	stats.requests[d]["get"]["*"] += 1;
 	if (fs.existsSync('./src' + req.path)) {
 		const path = './src' + req.path;
 		if (mime.lookup(path)) {
@@ -319,3 +357,41 @@ app.get('*', (req, res) => {
 		res.status(404).send('404');
 	}
 });
+
+function loadData() {
+	if(!fs.existsSync(file)) {
+		fs.writeFileSync(file, "{}");
+	}
+	const d = fs.readFileSync(file);
+	return JSON.parse(d);
+}
+function saveData() {
+	fs.writeFile(file, JSON.stringify(stats), function (err) {
+		if(err)
+			console.log(err.message);
+		console.log("save")
+	});
+}
+function initScheduler() {
+	setInterval(function () {
+		saveData();
+	}, 0.10 * 60 * 1000);
+}
+function getDate() {
+	const d = new Date();
+	return d.toISOString().slice(0, 10);
+}
+function constructDateStruct(s) {
+	// Please dont kill me
+	stats.requests[s] = {};
+	stats.requests[s].get = {};
+	stats.requests[s].get["/"] = 0;
+	stats.requests[s].get["/setup"] = 0;
+	stats.requests[s].get["*"] = 0;
+	stats.requests[s].post = {};
+	stats.requests[s].post["/setup"] = 0;
+	stats.requests[s].post["/getTimeTable"] = 0;
+}
+function createUserArray() {
+	stats.registeredUsers = [];
+}
