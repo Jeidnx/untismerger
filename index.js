@@ -188,17 +188,25 @@ app.post('/getTimeTable', (req, res) => {
 				var sendArr = [];
 				out.forEach((element) => {
 					sendArr.push({
-						startZeit: element['startTime'],
-						fach: element['su'][0]['longname'],
-						lehrer: element['te'][0]['longname'],
-						raum: element['ro'][0]['name'],
-						code: element['code'] || 'regular'
+						startTime: element['startTime'] || 'Untis API 👍',
+						code: element['code'] || 'regular',
+						shortSubject: element['su'][0]
+							? element['su'][0]['name']
+							: 'Untis 👍',
+						subject: element['su'][0]
+							? element['su'][0]['longname']
+							: 'Untis API 👍',
+						teacher: element['te'][0]
+							? element['te'][0]['longname']
+							: 'Untis API 👍',
+						room: element['ro'][0] ? element['ro'][0]['name'] : 'Untis API 👍'
 					});
 				});
 
 				res.send(sendArr);
 			})
-			.catch(() => {
+			.catch((err) => {
+				console.log(err);
 				res.status(200).send([]);
 			});
 	});
