@@ -1,9 +1,68 @@
 if (localStorage.getItem('jwt')) {
 	window.location.href = '/';
 }
-
+/*
 if ('serviceWorker' in navigator) {
 	navigator.serviceWorker.register('/sw.js');
+}*/
+const videoSettings = {
+	video: {
+		width: {
+			min: 480,
+			ideal: 1080,
+			max: 1080
+		},
+		height: {
+			min: 480,
+			ideal: 1080,
+			max: 1080
+		},
+		facingMode: 'environment'
+	}
+};
+let mStream;
+async function startVideo() {
+	return new Promise((resolve, reject) => {
+		navigator.mediaDevices.getUserMedia(videoSettings).then((mStream) => {
+			resolve(mStream);
+		});
+	});
+}
+async function detectQR() {
+	return new Promise((resolve, reject) => {
+		startVideo().then((mediaStream) => {
+			// @ts-ignore
+			let imageCp = new ImageCapture(mediaStream.getTracks()[0]);
+			imageCp.takePhoto().then((photo) => {
+				// @ts-ignore
+				let barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+				createImageBitmap(photo).then((bitmap) => {
+					barcodeDetector
+						.detect(bitmap)
+						.then((qrArr) => {
+							if (qrArr.length > 0) {
+								const raw = qrArr[0].rawValue;
+								let obj = {};
+								raw
+									.split('?')[1]
+									.split('&')
+									.forEach((element) => {
+										const e = element.split('=');
+										const key = e[0];
+										const val = e[1];
+										obj[key] = val;
+									});
+
+								resolve(obj);
+								return;
+							}
+							reject('Konnte kein QR Code finden');
+						})
+						.catch(console.log);
+				});
+			});
+		});
+	});
 }
 
 let stage = 1;
