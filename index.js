@@ -112,12 +112,13 @@ const classIdEnum = {
 const jwtSecret = process.env.JWT_SECRET;
 const schoolName = process.env.SCHOOL_NAME;
 const schoolDomain = process.env.SCHOOL_DOMAIN;
+const portenv = process.env.PORT;
 const statsfileName = "data/data.json";
 let config = null;
 try {
 	config = require("./data/config.json");
 } catch (_) {}
-
+const port = (portenv != null) ? portenv : 8080;
 
 if (!jwtSecret || !schoolName || !schoolDomain) {
 	console.log('Missing environment Variables');
@@ -136,7 +137,7 @@ createUserArray();
 
 const app = express();
 
-http.createServer(app).listen(8080);
+http.createServer(app).listen(port);
 
 app.use(express.urlencoded({ extended: true }));
 
