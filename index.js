@@ -114,6 +114,8 @@ const schoolName = process.env.SCHOOL_NAME;
 const schoolDomain = process.env.SCHOOL_DOMAIN;
 const portenv = process.env.PORT;
 const statsfileName = "data/data.json";
+const saveInterval = 10; // Interval in minutes when data is saved to statsfileName
+
 let config = null;
 try {
 	config = require("./data/config.json");
@@ -142,27 +144,27 @@ http.createServer(app).listen(port);
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/', (req, res) => {
-	const d = getDate();
-	if(!stats.requests.hasOwnProperty(d)) {
-		constructDateStruct(d)
+	const date = getDate();
+	if(!stats.requests.hasOwnProperty(date)) {
+		constructDateStruct(date)
 	}
-	stats.requests[d]["get"]["/"] += 1;
+	stats.requests[date]["get"]["/"] += 1;
 	res.status(200).send(fs.readFileSync('./src/timetable.html', 'utf-8'));
 });
 app.get('/setup', (req, res) => {
-	const d = getDate();
-	if(!stats.requests.hasOwnProperty(d)) {
-		constructDateStruct(d)
+	const date = getDate();
+	if(!stats.requests.hasOwnProperty(date)) {
+		constructDateStruct(date)
 	}
-	stats.requests[d]["get"]["/setup"] += 1;
+	stats.requests[date]["get"]["/setup"] += 1;
 	res.status(200).send(fs.readFileSync('./src/setup.html', 'utf-8'));
 });
 app.post('/getTimeTable', (req, res) => {
-	const d = getDate();
-	if(!stats.requests.hasOwnProperty(d)) {
-		constructDateStruct(d)
+	const date = getDate();
+	if(!stats.requests.hasOwnProperty(date)) {
+		constructDateStruct(date)
 	}
-	stats.requests[d]["post"]["/getTimeTable"] += 1;
+	stats.requests[date]["post"]["/getTimeTable"] += 1;
 	if (!req.body['jwt'] || !req.body['datum']) {
 		res.status(406).send('Missing args');
 		return;
@@ -250,11 +252,11 @@ app.post('/getTimeTable', (req, res) => {
 });
 
 app.post('/setup', (req, res) => {
-	const d = getDate();
-	if(!stats.requests.hasOwnProperty(d)) {
-		constructDateStruct(d)
+	const date = getDate();
+	if(!stats.requests.hasOwnProperty(date)) {
+		constructDateStruct(date)
 	}
-	stats.requests[d]["post"]["/setup"] += 1;
+	stats.requests[date]["post"]["/setup"] += 1;
 	if (!req.body['stage']) {
 		res.status(400).send('Missing Arguments');
 		return;
@@ -368,11 +370,11 @@ app.post('/getStats', (req, res) => {
 	});
 })
 app.get('*', (req, res) => {
-	const d = getDate();
-	if(!stats.requests.hasOwnProperty(d)) {
-		constructDateStruct(d)
+	const date = getDate();
+	if(!stats.requests.hasOwnProperty(date)) {
+		constructDateStruct(date)
 	}
-	stats.requests[d]["get"]["*"] += 1;
+	stats.requests[date]["get"]["*"] += 1;
 	if (fs.existsSync('./src' + req.path)) {
 		const path = './src' + req.path;
 		if (mime.lookup(path)) {
@@ -391,8 +393,8 @@ function loadData() {
 	if(!fs.existsSync(statsfileName)) {
 		fs.writeFileSync(statsfileName, "{}");
 	}
-	const d = fs.readFileSync(statsfileName);
-	return JSON.parse(d);
+	const filecontent = fs.readFileSync(statsfileName);
+	return JSON.parse(filecontent);
 }
 function saveData() {
 	fs.writeFile(statsfileName, JSON.stringify(stats), function (err) {
@@ -404,11 +406,10 @@ function saveData() {
 function initScheduler() {
 	setInterval(function () {
 		saveData();
-	}, 10 * 60 * 1000);
+	}, saveInterval * 60 * 1000);
 }
 function getDate() {
-	const d = new Date();
-	return d.toISOString().slice(0, 10);
+	return new Date().toISOString().slice(0, 10);
 }
 function constructDateStruct(s) {
 	// Please dont kill me
