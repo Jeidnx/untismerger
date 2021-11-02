@@ -437,8 +437,5 @@ function isUserAdmin(name) {
 	if(!config) {
 		return false;
 	}
-	if(!config.hasOwnProperty("adminuser")) {
-		return false;
-	}
-	return config.adminuser.includes(hash(name));
+	return config.adminuser?.includes(hash(name)) || false;
 }
