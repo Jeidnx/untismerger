@@ -118,7 +118,7 @@ let config = null;
 try {
 	config = require("./data/config.json");
 } catch (_) {}
-const port = (portenv != null) ? portenv : 8080;
+const port = portenv ?? 8080
 
 if (!jwtSecret || !schoolName || !schoolDomain) {
 	console.log('Missing environment Variables');
