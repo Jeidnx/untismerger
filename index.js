@@ -4,6 +4,7 @@ const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const http = require('http');
 const mime = require('mime-types');
+const crypto = require("crypto");
 
 const classIdEnum = {
 	'BBVZ10-1': 2176,
@@ -111,25 +112,57 @@ const classIdEnum = {
 const jwtSecret = process.env.JWT_SECRET;
 const schoolName = process.env.SCHOOL_NAME;
 const schoolDomain = process.env.SCHOOL_DOMAIN;
+const portenv = process.env.PORT;
+
+const saveInterval = 10; // Interval in minutes when data is saved to database
+
+const config = require("./data/config.json");;
+
+const port = portenv ?? 8080
 
 if (!jwtSecret || !schoolName || !schoolDomain) {
 	console.log('Missing environment Variables');
 	process.exit(1);
 }
 
+// Init stats
+// Overall request counting
+// User hashed list
+let stats = loadData();
+initScheduler();
+createUserArray();
+
+
+
+
 const app = express();
 
-http.createServer(app).listen(8080);
+http.createServer(app).listen(port);
 
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/', (req, res) => {
+	const date = getDate();
+	if(!stats.requests.hasOwnProperty(date)) {
+		constructDateStruct(date)
+	}
+	stats.requests[date]["get"]["/"] += 1;
 	res.status(200).send(fs.readFileSync('./src/timetable.html', 'utf-8'));
 });
 app.get('/setup', (req, res) => {
+	const date = getDate();
+	if(!stats.requests.hasOwnProperty(date)) {
+		constructDateStruct(date)
+	}
+	stats.requests[date]["get"]["/setup"] += 1;
 	res.status(200).send(fs.readFileSync('./src/setup.html', 'utf-8'));
 });
 app.post('/getTimeTable', (req, res) => {
+	const date = getDate();
+	if(!stats.requests.hasOwnProperty(date)) {
+		constructDateStruct(date)
+	}
+	stats.requests[date]["post"]["/getTimeTable"] += 1;
 	if (!req.body['jwt'] || !req.body['datum']) {
 		res.status(406).send('Missing args');
 		return;
@@ -138,6 +171,10 @@ app.post('/getTimeTable', (req, res) => {
 		if (err) {
 			res.status(406).send('Invalid jwt');
 			return;
+		}
+		const h = hash(decoded["username"])
+		if(!stats.registeredUsers.includes(h)) {
+			stats.registeredUsers.push(h);
 		}
 
 		const untis = new WebUntisLib.WebUntisSecretAuth(
@@ -213,6 +250,11 @@ app.post('/getTimeTable', (req, res) => {
 });
 
 app.post('/setup', (req, res) => {
+	const date = getDate();
+	if(!stats.requests.hasOwnProperty(date)) {
+		constructDateStruct(date)
+	}
+	stats.requests[date]["post"]["/setup"] += 1;
 	if (!req.body['stage']) {
 		res.status(400).send('Missing Arguments');
 		return;
@@ -304,8 +346,33 @@ app.post('/setup', (req, res) => {
 		}
 	}
 });
-
+app.post('/getStats', (req, res) => {
+	if (!req.body['jwt']) {
+		res.status(406).send('Missing args');
+		return;
+	}
+	jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
+		if (err) {
+			res.status(406).send('Invalid jwt');
+			return;
+		}
+		res.setHeader("Content-Type", "application/json");
+		if(isUserAdmin(decoded["username"])) {
+			let st = {};
+			st["requests"] = stats.requests;
+			st["users"] = stats.registeredUsers.length;
+			res.status(200).send(JSON.stringify(st))
+		} else {
+			res.status(403).send(JSON.stringify({"error": true, "message": "Keine Rechte"}))
+		}
+	});
+})
 app.get('*', (req, res) => {
+	const date = getDate();
+	if(!stats.requests.hasOwnProperty(date)) {
+		constructDateStruct(date)
+	}
+	stats.requests[date]["get"]["*"] += 1;
 	if (fs.existsSync('./src' + req.path)) {
 		const path = './src' + req.path;
 		if (mime.lookup(path)) {
@@ -319,3 +386,69 @@ app.get('*', (req, res) => {
 		res.status(404).send('404');
 	}
 });
+
+/**
+ * Loads the statistic data
+ * @returns object Returns JSON Object with the statistics
+ */
+function loadData() {
+	//TODO: Implement with Database
+	return null;
+}
+
+/**
+ * Saves statistic data
+ */
+function saveData() {
+	//TODO: Implement with Database
+}
+function initScheduler() {
+	setInterval(function () {
+		saveData();
+	}, saveInterval * 60 * 1000);
+}
+function getDate() {
+	return new Date().toISOString().slice(0, 10);
+}
+
+
+//TODO: What need to happen with this shitshow
+function constructDateStruct(s) {
+	// Please dont kill me
+	stats.requests[s] = {};
+	stats.requests[s].get = {};
+	stats.requests[s].get["/"] = 0;
+	stats.requests[s].get["/setup"] = 0;
+	stats.requests[s].get["*"] = 0;
+	stats.requests[s].post = {};
+	stats.requests[s].post["/setup"] = 0;
+	stats.requests[s].post["/getTimeTable"] = 0;
+}
+function createUserArray() {
+	if(!stats.hasOwnProperty("registeredUsers")) {
+		stats.registeredUsers = [];
+	}
+	if(!stats.hasOwnProperty("requests")) {
+		stats.requests = {};
+	}
+}
+
+
+/**
+ * Basic hashing function
+ * @param str cleartext input
+ * @returns {string} hash
+ */
+function hash(str) {
+	return crypto.createHash("sha256").update(str).digest("hex");
+}
+
+/**
+ * Checks if the user is admin
+ * @param name Name of the user
+ * @returns {boolean} if the user is admin
+ */
+function isUserAdmin(name) {
+	//TODO: Implement with Database
+	return false;
+}
