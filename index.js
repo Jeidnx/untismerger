@@ -116,7 +116,7 @@ const portenv = process.env.PORT;
 
 const saveInterval = 10; // Interval in minutes when data is saved to database
 
-let config = require("./data/config.json");;
+const config = require("./data/config.json");;
 
 const port = portenv ?? 8080
 
