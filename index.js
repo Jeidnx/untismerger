@@ -4,7 +4,7 @@ const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const http = require('http');
 const mime = require('mime-types');
-const crypto = require("crypto");
+const crypto = require('crypto');
 
 const classIdEnum = {
 	'BBVZ10-1': 2176,
@@ -116,13 +116,17 @@ const portenv = process.env.PORT;
 
 const saveInterval = 10; // Interval in minutes when data is saved to database
 
-const config = require("./data/config.json");;
+const config = require('./data/config.json');
 
-const port = portenv ?? 8080
+const port = portenv ?? 8080;
 
 if (!jwtSecret || !schoolName || !schoolDomain) {
 	console.log('Missing environment Variables');
 	process.exit(1);
+}
+
+function loginHandler(username, secret) {
+	// Checks Db ...
 }
 
 // Init stats
@@ -132,9 +136,6 @@ let stats = loadData();
 initScheduler();
 createUserArray();
 
-
-
-
 const app = express();
 
 http.createServer(app).listen(port);
@@ -143,37 +144,37 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get('/', (req, res) => {
 	const date = getDate();
-	if(!stats.requests.hasOwnProperty(date)) {
-		constructDateStruct(date)
+	if (!stats.requests.hasOwnProperty(date)) {
+		constructDateStruct(date);
 	}
-	stats.requests[date]["get"]["/"] += 1;
+	stats.requests[date]['get']['/'] += 1;
 	res.status(200).send(fs.readFileSync('./src/timetable.html', 'utf-8'));
 });
 app.get('/setup', (req, res) => {
 	const date = getDate();
-	if(!stats.requests.hasOwnProperty(date)) {
-		constructDateStruct(date)
+	if (!stats.requests.hasOwnProperty(date)) {
+		constructDateStruct(date);
 	}
-	stats.requests[date]["get"]["/setup"] += 1;
+	stats.requests[date]['get']['/setup'] += 1;
 	res.status(200).send(fs.readFileSync('./src/setup.html', 'utf-8'));
 });
 app.post('/getTimeTable', (req, res) => {
 	const date = getDate();
-	if(!stats.requests.hasOwnProperty(date)) {
-		constructDateStruct(date)
+	if (!stats.requests.hasOwnProperty(date)) {
+		constructDateStruct(date);
 	}
-	stats.requests[date]["post"]["/getTimeTable"] += 1;
+	stats.requests[date]['post']['/getTimeTable'] += 1;
 	if (!req.body['jwt'] || !req.body['datum']) {
 		res.status(406).send('Missing args');
 		return;
 	}
 	jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
 		if (err) {
-			res.status(406).send('Invalid jwt');
+			res.status(406).send({ error: true, message: 'Invalid JWT' });
 			return;
 		}
-		const h = hash(decoded["username"])
-		if(!stats.registeredUsers.includes(h)) {
+		const h = hash(decoded['username']);
+		if (!stats.registeredUsers.includes(h)) {
 			stats.registeredUsers.push(h);
 		}
 
@@ -251,12 +252,12 @@ app.post('/getTimeTable', (req, res) => {
 
 app.post('/setup', (req, res) => {
 	const date = getDate();
-	if(!stats.requests.hasOwnProperty(date)) {
-		constructDateStruct(date)
+	if (!stats.requests.hasOwnProperty(date)) {
+		constructDateStruct(date);
 	}
-	stats.requests[date]["post"]["/setup"] += 1;
+	stats.requests[date]['post']['/setup'] += 1;
 	if (!req.body['stage']) {
-		res.status(400).send('Missing Arguments');
+		res.status(400).send({ error: true, message: 'Missing Arguments' });
 		return;
 	}
 	switch (req.body['stage']) {
@@ -265,7 +266,7 @@ app.post('/setup', (req, res) => {
 			if (req.body['jwt'] && req.body['jwt'] !== '') {
 				jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
 					if (err) {
-						res.status(400).send('Invalid jwt');
+						res.status(400).send({ error: true, message: 'Invalid JWT' });
 						return;
 					}
 					const untis = new WebUntisLib.WebUntisSecretAuth(
@@ -277,10 +278,22 @@ app.post('/setup', (req, res) => {
 					untis
 						.login()
 						.then(() => {
-							res.status(200).send(req.body['jwt']);
+							if (!isUserRegistered(decoded['username'])) {
+								res.status(418).send({ error: true, message: 'how?' });
+								return;
+							}
+							getUserPreferences(decoded['username'])
+								.then((prefs) => {
+									res.status(200).send({ message: 'OK', prefs: prefs });
+								})
+								.catch((e) => {
+									res.status(500).send({ error: true, message: e });
+								});
 						})
 						.catch((err) => {
-							res.status(400).send('Invalid Credentials');
+							res
+								.status(400)
+								.send({ error: true, message: 'Invalid Credentials' });
 						});
 				});
 				return;
@@ -294,14 +307,27 @@ app.post('/setup', (req, res) => {
 				untis
 					.login()
 					.then(() => {
-						res.status(200).send('OK');
+						if (isUserRegistered(hash(req.body['username']))) {
+							getUserPreferences(hash(req.body['username']))
+								.then((prefs) => {
+									res.status(200).send({ message: 'OK', prefs: prefs });
+								})
+								.catch((e) => {
+									res.status(500).send({ error: true, message: e });
+								});
+							return;
+							// TODO somehow sign a valid jwt
+						}
+						res.status(200).send({ message: 'OK' });
 					})
 					.catch((err) => {
-						res.status(400).send('Invalid Credentials');
+						res
+							.status(400)
+							.send({ error: true, message: 'Invalid Credentials' });
 					});
 				return;
 			}
-			res.status(400).send('Missing Arguments');
+			res.status(400).send({ error: true, message: 'Missing Arguments' });
 			return;
 		}
 		case '2': {
@@ -312,7 +338,7 @@ app.post('/setup', (req, res) => {
 				!req.body['sp'] ||
 				!req.body['naWi']
 			) {
-				res.status(400).send('Missing Arguments');
+				res.status(400).send({ error: true, message: 'Missing Arguments' });
 				return;
 			}
 			// Stage 2
@@ -337,11 +363,12 @@ app.post('/setup', (req, res) => {
 				fachRichtung: classIdEnum[req.body['fachRichtung']],
 				sonstiges: selectedCourses
 			};
+			userObj['secureid'] = registerUser(userObj);
 			res.send(jwt.sign(userObj, jwtSecret));
 			return;
 		}
 		default: {
-			res.status(400).send('Invalid Arguments');
+			res.status(400).send({ error: true, message: 'Invalid Arguments' });
 			return;
 		}
 	}
@@ -353,26 +380,26 @@ app.post('/getStats', (req, res) => {
 	}
 	jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
 		if (err) {
-			res.status(406).send('Invalid jwt');
+			res.status(406).send({ error: true, message: 'Invalid JWT' });
 			return;
 		}
-		res.setHeader("Content-Type", "application/json");
-		if(isUserAdmin(decoded["username"])) {
+		res.setHeader('Content-Type', 'application/json');
+		if (isUserAdmin(decoded['username'])) {
 			let st = {};
-			st["requests"] = stats.requests;
-			st["users"] = stats.registeredUsers.length;
-			res.status(200).send(JSON.stringify(st))
+			st['requests'] = stats.requests;
+			st['users'] = stats.registeredUsers.length;
+			res.status(200).send(JSON.stringify(st));
 		} else {
-			res.status(403).send(JSON.stringify({"error": true, "message": "Keine Rechte"}))
+			res.status(403).send({ error: true, message: 'Keine Rechte' });
 		}
 	});
-})
+});
 app.get('*', (req, res) => {
 	const date = getDate();
-	if(!stats.requests.hasOwnProperty(date)) {
-		constructDateStruct(date)
+	if (!stats.requests.hasOwnProperty(date)) {
+		constructDateStruct(date);
 	}
-	stats.requests[date]["get"]["*"] += 1;
+	stats.requests[date]['get']['*'] += 1;
 	if (fs.existsSync('./src' + req.path)) {
 		const path = './src' + req.path;
 		if (mime.lookup(path)) {
@@ -385,6 +412,13 @@ app.get('*', (req, res) => {
 	} else {
 		res.status(404).send('404');
 	}
+});
+app.post('updateUserPrefs', (req, res) => {
+	if (!req.body['jwt'] || !req.body['prefs']) {
+		res.status(400).send({ error: true, message: 'Invalid JWT' });
+		return;
+	}
+	updateUserPrefs(req.body['prefs']);
 });
 
 /**
@@ -411,28 +445,26 @@ function getDate() {
 	return new Date().toISOString().slice(0, 10);
 }
 
-
 //TODO: What need to happen with this shitshow
 function constructDateStruct(s) {
 	// Please dont kill me
 	stats.requests[s] = {};
 	stats.requests[s].get = {};
-	stats.requests[s].get["/"] = 0;
-	stats.requests[s].get["/setup"] = 0;
-	stats.requests[s].get["*"] = 0;
+	stats.requests[s].get['/'] = 0;
+	stats.requests[s].get['/setup'] = 0;
+	stats.requests[s].get['*'] = 0;
 	stats.requests[s].post = {};
-	stats.requests[s].post["/setup"] = 0;
-	stats.requests[s].post["/getTimeTable"] = 0;
+	stats.requests[s].post['/setup'] = 0;
+	stats.requests[s].post['/getTimeTable'] = 0;
 }
 function createUserArray() {
-	if(!stats.hasOwnProperty("registeredUsers")) {
+	if (!stats.hasOwnProperty('registeredUsers')) {
 		stats.registeredUsers = [];
 	}
-	if(!stats.hasOwnProperty("requests")) {
+	if (!stats.hasOwnProperty('requests')) {
 		stats.requests = {};
 	}
 }
-
 
 /**
  * Basic hashing function
@@ -440,7 +472,7 @@ function createUserArray() {
  * @returns {string} hash
  */
 function hash(str) {
-	return crypto.createHash("sha256").update(str).digest("hex");
+	return crypto.createHash('sha256').update(str).digest('hex');
 }
 
 /**
