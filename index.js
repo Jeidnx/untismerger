@@ -140,27 +140,29 @@ http.createServer(app).listen(port);
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/', (req, res) => {
+	/*
 	const date = getDate();
 	if (!stats.requests.hasOwnProperty(date)) {
 		constructDateStruct(date);
 	}
-	stats.requests[date]['get']['/'] += 1;
+	stats.requests[date]['get']['/'] += 1; */
 	res.status(200).send(fs.readFileSync('./src/timetable.html', 'utf-8'));
 });
 app.get('/setup', (req, res) => {
+	/*
 	const date = getDate();
 	if (!stats.requests.hasOwnProperty(date)) {
 		constructDateStruct(date);
 	}
-	stats.requests[date]['get']['/setup'] += 1;
+	stats.requests[date]['get']['/setup'] += 1;*/
 	res.status(200).send(fs.readFileSync('./src/setup.html', 'utf-8'));
 });
 app.post('/getTimeTable', (req, res) => {
 	const date = getDate();
-	if (!stats.requests.hasOwnProperty(date)) {
+	/* 	if (!stats.requests.hasOwnProperty(date)) {
 		constructDateStruct(date);
 	}
-	stats.requests[date]['post']['/getTimeTable'] += 1;
+	stats.requests[date]['post']['/getTimeTable'] += 1; */
 	if (!req.body['jwt'] || !req.body['datum']) {
 		res.status(406).send('Missing args');
 		return;
@@ -170,10 +172,10 @@ app.post('/getTimeTable', (req, res) => {
 			res.status(406).send({ error: true, message: 'Invalid JWT' });
 			return;
 		}
-		const h = hash(decoded['username']);
+		/* 		const h = hash(decoded['username']);
 		if (!stats.registeredUsers.includes(h)) {
 			stats.registeredUsers.push(h);
-		}
+		} */
 
 		const untis = new WebUntisLib.WebUntisSecretAuth(
 			schoolName,
@@ -249,10 +251,10 @@ app.post('/getTimeTable', (req, res) => {
 
 app.post('/setup', (req, res) => {
 	const date = getDate();
-	if (!stats.requests.hasOwnProperty(date)) {
+	/*if (!stats.requests.hasOwnProperty(date)) {
 		constructDateStruct(date);
 	}
-	stats.requests[date]['post']['/setup'] += 1;
+	stats.requests[date]['post']['/setup'] += 1;*/
 	if (!req.body['stage']) {
 		res.status(400).send({ error: true, message: 'Missing Arguments' });
 		return;
@@ -304,18 +306,26 @@ app.post('/setup', (req, res) => {
 				untis
 					.login()
 					.then(() => {
-						if (isUserRegistered(hash(req.body['username']))) {
-							getUserPreferences(hash(req.body['username']))
-								.then((prefs) => {
-									res.status(200).send({ message: 'OK', prefs: prefs });
-								})
-								.catch((e) => {
-									res.status(500).send({ error: true, message: e });
-								});
-							return;
-							// TODO somehow sign a valid jwt
-						}
-						res.status(200).send({ message: 'OK' });
+						isUserRegistered(req.body['username']).then((facts) => {
+							if (facts) {
+								getUserPreferences(req.body['username'])
+									.then((prefs) => {
+										// TODO Add sachen array to jwt
+										getUserData(req.body['username']).then((data) => {
+											res.status(200).send({
+												message: 'OK',
+												prefs: prefs,
+												jwt: jwt.sign(data, config.secrets.JWT_SECRET)
+											});
+										});
+									})
+									.catch((e) => {
+										res.status(500).send({ error: true, message: e });
+									});
+								return;
+							}
+							res.status(200).send({ message: 'OK' });
+						});
 					})
 					.catch((err) => {
 						res
@@ -361,7 +371,7 @@ app.post('/setup', (req, res) => {
 				sonstiges: selectedCourses
 			};
 			userObj['secureid'] = registerUser(userObj);
-			res.send(jwt.sign(userObj, jwtSecret));
+			res.send({ message: 'OK', jwt: jwt.sign(userObj, jwtSecret) });
 			return;
 		}
 		default: {
@@ -392,11 +402,11 @@ app.post('/getStats', (req, res) => {
 	});
 });
 app.get('*', (req, res) => {
-	const date = getDate();
+	/* 	const date = getDate();
 	if (!stats.requests.hasOwnProperty(date)) {
 		constructDateStruct(date);
 	}
-	stats.requests[date]['get']['*'] += 1;
+	stats.requests[date]['get']['*'] += 1; */
 	if (fs.existsSync('./src' + req.path)) {
 		const path = './src' + req.path;
 		if (mime.lookup(path)) {
@@ -419,7 +429,7 @@ app.post('updateUserPrefs', (req, res) => {
 
 /**
  * Loads the statistic data
- * @returns object Returns JSON Object with the statistics
+ * @returns {Object} Returns JSON Object with the statistics
  */
 function loadData() {
 	//TODO: Implement with Database
@@ -472,26 +482,27 @@ function hash(str) {
 }
 
 /**
- * Checks if the user is admin [ASYNC]
+ * Checks if the user is admin [SYNC]
  * @param name Name of the user
  * @returns {Promise<boolean>} if the user is admin
  */
-async function isUserAdmin(name) {
+function isUserAdmin(name) {
 	return new Promise((resolve, reject) => {
 		db.query(
 			'SELECT isadmin FROM user WHERE username = ?',
-			[name],
+			[hash(name)],
 			function (err, result, fields) {
 				if (err) {
 					console.log(err);
 					reject(err);
+					return;
 				}
 				// @ts-ignore
 				if (result.length === 1) {
 					resolve(result[0].isadmin === 1);
-				} else {
-					resolve(false);
+					return;
 				}
+				resolve(false);
 			}
 		);
 	});
@@ -500,19 +511,20 @@ async function isUserAdmin(name) {
 // Database stuff
 
 /**
- * Checks if the user is already in the database [ASYNC]
+ * Checks if the user is already in the database [SYNC]
  * @param username Hashed username
  * @return {Promise<boolean>} If user is registered
  */
-async function isUserRegistered(username) {
+function isUserRegistered(username) {
 	return new Promise((resolve, reject) => {
 		db.query(
 			'SELECT id FROM user WHERE username = ?',
-			[username],
+			[hash(username)],
 			function (err, result, fields) {
 				if (err) {
 					console.log(err);
 					reject(err);
+					return;
 				}
 				// @ts-ignore
 				resolve(result.length > 0);
@@ -531,10 +543,11 @@ function registerUser(userdata) {
 	let randomid = getRandomInt(100000);
 	db.execute(
 		'INSERT INTO user (username, lk, fachrichtung, secureid) VALUES (?, ?, ?, ?)',
-		[userdata.username, userdata.lk, userdata.fachRichtung, randomid],
+		[hash(userdata.username), userdata.lk, userdata.fachRichtung, randomid],
 		function (err, result, _) {
 			if (err) {
 				console.log(err);
+				return;
 			}
 			// @ts-ignore
 			const id = result.insertId;
@@ -545,6 +558,7 @@ function registerUser(userdata) {
 					function (err) {
 						if (err) {
 							console.log(err);
+							return;
 						}
 					}
 				);
@@ -559,15 +573,15 @@ function getRandomInt(max) {
 }
 
 /**
- * Get user settings [ASYNC]
+ * Get user settings [SYNC]
  * @param user hashed user
  * @return {Promise<any>}
  */
-async function getUserPreferences(user) {
+function getUserPreferences(user) {
 	return new Promise((resolve, reject) => {
 		db.query(
-			'SELECT settings FROM user WHERE username = ?',
-			[user],
+			'SELECT lk, fachrichtung, secureid FROM user WHERE username = ?',
+			[hash(user)],
 			function (err, result, fields) {
 				if (err) {
 					console.log(err);
@@ -575,9 +589,37 @@ async function getUserPreferences(user) {
 				}
 				// @ts-ignore
 				if (result.length === 1) {
-					resolve(result[0].settings);
+					resolve(result[0]);
+					return;
 				}
-				resolve({});
+				reject('User not found in DB');
+			}
+		);
+	});
+}
+
+/**
+ * Get lk, fachrichtung, secureid [SYNC]
+ * @param {String} user
+ * @return {Promise<Object>}
+ */
+function getUserData(user) {
+	return new Promise((resolve, reject) => {
+		db.query(
+			'SELECT lk, fachrichtung, secureid FROM user WHERE username = ?',
+			[hash(user)],
+			function (err, result, fields) {
+				if (err) {
+					console.log(err);
+					reject(err);
+					return;
+				}
+				// @ts-ignore
+				if (result.length === 1) {
+					resolve(result[0]);
+					return;
+				}
+				reject('User not found in DB');
 			}
 		);
 	});
