@@ -113,13 +113,11 @@ const jwtSecret = process.env.JWT_SECRET;
 const schoolName = process.env.SCHOOL_NAME;
 const schoolDomain = process.env.SCHOOL_DOMAIN;
 const portenv = process.env.PORT;
-const statsfileName = "data/data.json";
-const saveInterval = 10; // Interval in minutes when data is saved to statsfileName
 
-let config = null;
-try {
-	config = require("./data/config.json");
-} catch (_) {}
+const saveInterval = 10; // Interval in minutes when data is saved to database
+
+let config = require("./data/config.json");;
+
 const port = portenv ?? 8080
 
 if (!jwtSecret || !schoolName || !schoolDomain) {
@@ -389,19 +387,20 @@ app.get('*', (req, res) => {
 	}
 });
 
+/**
+ * Loads the statistic data
+ * @returns object Returns JSON Object with the statistics
+ */
 function loadData() {
-	if(!fs.existsSync(statsfileName)) {
-		fs.writeFileSync(statsfileName, "{}");
-	}
-	const filecontent = fs.readFileSync(statsfileName);
-	return JSON.parse(filecontent);
+	//TODO: Implement with Database
+	return null;
 }
+
+/**
+ * Saves statistic data
+ */
 function saveData() {
-	fs.writeFile(statsfileName, JSON.stringify(stats), function (err) {
-		if(err)
-			console.log(err.message);
-		console.log("save")
-	});
+	//TODO: Implement with Database
 }
 function initScheduler() {
 	setInterval(function () {
@@ -411,6 +410,9 @@ function initScheduler() {
 function getDate() {
 	return new Date().toISOString().slice(0, 10);
 }
+
+
+//TODO: What need to happen with this shitshow
 function constructDateStruct(s) {
 	// Please dont kill me
 	stats.requests[s] = {};
@@ -430,12 +432,23 @@ function createUserArray() {
 		stats.requests = {};
 	}
 }
+
+
+/**
+ * Basic hashing function
+ * @param str cleartext input
+ * @returns {string} hash
+ */
 function hash(str) {
 	return crypto.createHash("sha256").update(str).digest("hex");
 }
+
+/**
+ * Checks if the user is admin
+ * @param name Name of the user
+ * @returns {boolean} if the user is admin
+ */
 function isUserAdmin(name) {
-	if(!config) {
-		return false;
-	}
-	return config.adminuser?.includes(hash(name)) || false;
+	//TODO: Implement with Database
+	return false;
 }
