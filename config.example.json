@@ -1,3 +1,13 @@
 {
-  "adminuser": []
+  "mysql": {
+    "host": "localhost",
+    "user": "root",
+    "database": "app",
+    "password": ""
+  },
+  "secrets": {
+    "JWT_SECRET": "",
+    "SCHOOL_NAME": "",
+    "SCHOOL_DOMAIN": ""
+  }
 }

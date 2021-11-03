@@ -5,7 +5,10 @@ const jwt = require('jsonwebtoken');
 const http = require('http');
 const mime = require('mime-types');
 const crypto = require("crypto");
+const mysql = require('mysql2');
 
+// Statics
+const saveInterval = 10; // Interval in minutes when data is saved to database
 const classIdEnum = {
 	'BBVZ10-1': 2176,
 	'BFS10a': 2181,
@@ -109,28 +112,26 @@ const classIdEnum = {
 	'BS10I3': 2661
 };
 
-const jwtSecret = process.env.JWT_SECRET;
-const schoolName = process.env.SCHOOL_NAME;
-const schoolDomain = process.env.SCHOOL_DOMAIN;
-const portenv = process.env.PORT;
-
-const saveInterval = 10; // Interval in minutes when data is saved to database
-
-const config = require("./data/config.json");;
-
-const port = portenv ?? 8080
-
-if (!jwtSecret || !schoolName || !schoolDomain) {
-	console.log('Missing environment Variables');
+// Config
+const config = require("./data/config.json");
+const jwtSecret = config.secrets.JWT_SECRET;
+const schoolName = config.secrets.SCHOOL_NAME;
+const schoolDomain = config.secrets.SCHOOL_DOMAIN;
+const port = process.env.PORT;
+const db = mysql.createPool(config.mysql);
+if (!jwtSecret || !schoolName || !schoolDomain || !port) {
+	console.log('Missing environment or config.json Variables');
 	process.exit(1);
 }
+
+//TODO: Port this to database
 
 // Init stats
 // Overall request counting
 // User hashed list
 let stats = loadData();
-initScheduler();
-createUserArray();
+// initScheduler();
+// createUserArray();
 
 
 
@@ -444,11 +445,94 @@ function hash(str) {
 }
 
 /**
- * Checks if the user is admin
+ * Checks if the user is admin [ASYNC]
  * @param name Name of the user
- * @returns {boolean} if the user is admin
+ * @returns {Promise<boolean>} if the user is admin
  */
-function isUserAdmin(name) {
-	//TODO: Implement with Database
-	return false;
+async function isUserAdmin(name) {
+	return new Promise((resolve, reject) => {
+	db.query("SELECT isadmin FROM user WHERE username = ?", [username], function (err, result, fields) {
+		if(err) {
+			console.log(err);
+			reject(err);
+		}
+		if(result.length === 1) {
+			resolve(result[0].isadmin === 1);
+		} else {
+			resolve(false);
+		}
+	});
+});
+}
+
+
+// Database stuff
+
+/**
+ * Checks if the user is already in the database [ASYNC]
+ * @param username Hashed username
+ * @return {Promise<boolean>} If user is registered
+ */
+async function isUserRegistered(username) {
+	return new Promise((resolve, reject) => {
+		db.query("SELECT id FROM user WHERE username = ?", [username], function (err, result, fields) {
+			if(err) {
+				console.log(err);
+				reject(err);
+			}
+			resolve(result.length > 0);
+		});
+	})
+
+}
+
+/**
+ * Adds user to database [SYNC]
+ * @param userdata Data from JWT
+ * @return int secureid
+ */
+function registerUser(userdata) {
+	let others = userdata.sonstiges;
+	let randomid = getRandomInt(100000)
+	db.execute("INSERT INTO user (username, lk, fachrichtung, secureid) VALUES (?, ?, ?, ?)", [userdata.username, userdata.lk, userdata.fachRichtung, randomid],
+function (err, result, _) {
+		if(err) {
+			console.log(err);
+		}
+		const id = result.insertId;
+		for (const ele of others) {
+			db.execute("INSERT INTO fach (user, fach) VALUES (?,?)", [id, ele], function (err) {
+				if(err) {
+					console.log(err);
+				}
+			});
+		}
+	});
+	return randomid;
+}
+
+function getRandomInt(max) {
+	return Math.floor(Math.random() * max);
+}
+
+/**
+ * Get user settings [ASYNC]
+ * @param user hashed user
+ * @return {Promise<any>}
+ */
+async function getUserPreferences(user) {
+	return new Promise((resolve, reject) => {
+		db.query("SELECT settings FROM user WHERE username = ?", [user], function (err, result, fields) {
+			if(err) {
+				console.log(err);
+				reject(err);
+			}
+			if(result.length === 1) {
+				resolve(result[0].settings);
+			}
+			resolve({});
+		})
+	});
+
+
 }
