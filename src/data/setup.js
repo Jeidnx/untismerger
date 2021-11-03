@@ -104,14 +104,18 @@ function submitHandler() {
 
 	xhr.addEventListener('load', () => {
 		if (!(xhr.status === 200)) {
-			document.getElementById('return1').innerHTML = xhr.response;
-			document.getElementById('returnJwt').innerHTML = xhr.response;
+			document.getElementById('return1').innerHTML = JSON.parse(
+				xhr.response
+			).message;
+			document.getElementById('returnJwt').innerHTML = JSON.parse(
+				xhr.response
+			).message;
 			return;
 		}
 
 		switch (stage) {
 			case 1: {
-				if (xhr.response !== 'OK') {
+				if (JSON.parse(xhr.response).jwt) {
 					localStorage.setItem('jwt', xhr.response);
 					window.location.href = '/';
 					return;
@@ -124,7 +128,7 @@ function submitHandler() {
 				return;
 			}
 			case 2: {
-				localStorage.setItem('jwt', xhr.response);
+				localStorage.setItem('jwt', JSON.parse(xhr.response).jwt);
 				window.location.href = '/';
 				return;
 			}
