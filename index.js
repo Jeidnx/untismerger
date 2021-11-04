@@ -184,9 +184,10 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
                 out = out.concat(lk);
                 out = out.concat(fachRichtung);
 
-                await sonstiges;
+                sonstiges = (await sonstiges).filter(element => {
+                    return startTimes.includes(element.startTime);
+                })
                 outer: for (let i = 0; i < sonstiges.length; i++) {
-                    if (!startTimes.includes(sonstiges[i].startTime)) continue;
                     if (sonstiges[i]['su'].length < 1) continue;
                     let element = sonstiges[i];
                     for (let j = 0; j < decoded['sonstiges'].length; j++) {
