@@ -8,6 +8,10 @@
   "secrets": {
     "JWT_SECRET": "",
     "SCHOOL_NAME": "",
-    "SCHOOL_DOMAIN": ""
+    "SCHOOL_DOMAIN": "",
+    "ENCRYPT": "Encryption key"
+  },
+  "constants": {
+    "apiPath": "Reverse-proxy-path-to-api"
   }
 }
