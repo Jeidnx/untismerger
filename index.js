@@ -125,6 +125,9 @@ if (!jwtSecret || !schoolName || !schoolDomain || !port) {
 	process.exit(1);
 }
 
+const iv = new Buffer.alloc(16, config.secrets.SCHOOL_NAME);
+
+
 //TODO: Port this to database
 
 // Init stats
@@ -142,98 +145,6 @@ http.createServer(app).listen(port);
 
 app.use(express.urlencoded({ extended: true }));
 
-app.post(path + '/getTimeTable', (req, res) => {
-	// TODO: Rewrite this to send the response for the whole week. Also jwt should have parameter if it is a webuntis secret or password
-
-	const date = getDate();
-	/* 	if (!stats.requests.hasOwnProperty(date)) {
-		constructDateStruct(date);
-	}
-	stats.requests[date]['post']['/getTimeTable'] += 1; */
-	if (!req.body['jwt'] || !req.body['datum']) {
-		res.status(406).send('Missing args');
-		return;
-	}
-	jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
-		if (err) {
-			res.status(406).send({ error: true, message: 'Invalid JWT' });
-			return;
-		}
-		/* 		const h = hash(decoded['username']);
-		if (!stats.registeredUsers.includes(h)) {
-			stats.registeredUsers.push(h);
-		} */
-		const untis = new WebUntisLib.WebUntisSecretAuth(
-			schoolName,
-			decoded['username'],
-			decoded['secret'],
-			schoolDomain
-		);
-		untis
-			.login()
-			.then(async () => {
-				const dt = new Date(req.body['datum']);
-				let out = [];
-				let sonstiges =
-					await untis.getTimetableFor(dt, 2232, 1);
-				let lk =
-					await untis.getTimetableFor(dt, decoded['lk'], 1);
-				let fachRichtung =
-					await untis
-						.getTimetableFor(dt, decoded['fachRichtung'], 1).catch((error) => console.log("error"));
-
-				outer: for (let i = 0; i < sonstiges.length; i++) {
-					if (sonstiges[i]['su'].length < 1) continue;
-					let element = sonstiges[i];
-					for (let j = 0; j < decoded['sonstiges'].length; j++) {
-						if (element['su'][0]['name'] === decoded['sonstiges'][j]) {
-							out.push(element);
-							continue outer;
-						}
-					}
-				}
-
-				lk.forEach((element) => out.push(element));
-				console.log(fachRichtung);
-				fachRichtung.forEach((element) => out.push(element));
-				/*
-				out = out.filter((element) => {
-					if (!element['code']) return true;
-					let buf1 = Buffer.from('cancelled');
-					let buf2 = Buffer.from(element['code']);
-					return !buf1.equals(buf2);
-				});
-				*/
-				out.sort((a, b) => {
-					return a['startTime'] - b['startTime'];
-				});
-
-				let sendArr = [];
-				out.forEach((element) => {
-					sendArr.push({
-						startTime: element['startTime'] || 'Untis API 👍',
-						code: element['code'] || 'regular',
-						shortSubject: element['su'][0]
-							? element['su'][0]['name']
-							: 'Untis 👍',
-						subject: element['su'][0]
-							? element['su'][0]['longname']
-							: 'Untis API 👍',
-						teacher: element['te'][0]
-							? element['te'][0]['longname']
-							: 'Untis API 👍',
-						room: element['ro'][0] ? element['ro'][0]['name'] : 'Untis 👍'
-					});
-				});
-
-				res.send(sendArr);
-			})
-			.catch((err) => {
-				console.log(err);
-				res.status(200).send([]);
-			});
-	});
-});
 app.post(path + '/getTimeTableWeek', (req, res) => {
 	if (!req.body['jwt'] || !req.body['startDate'] || !req.body.endDate) {
 		res.status(406).send('Missing args');
@@ -362,7 +273,7 @@ app.post(path +'/setup', (req, res) => {
 										// TODO Add username + secret to jwt
 										getUserData(req.body['username']).then((data) => {
 											data.username = req.body.username;
-											data.secret = req.body.secret;
+											data.secret = encrypt(req.body.secret);
 											// TODO: In the future this could be password, depending on what the  user chose
 											data.type = "secret";
 
@@ -522,13 +433,13 @@ function hash(str) {
 }
 
 function encrypt(str) {
-	// TODO: Make this do something
-	return str;
+	const cipher = crypto.createCipheriv('aes128', config.secrets.ENCRYPT, iv);
+	return cipher.update(str, 'utf8', 'hex') + cipher.final('hex');
 }
 
-function decrypt(str) {
-	//TODO: make this do someting
-	return str;
+function decrypt(encrypted) {
+	const decipher = crypto.createDecipheriv('aes128', config.secrets.ENCRYPT, iv);
+	return decipher.update(encrypted, 'hex', 'utf-8') + decipher.final('utf8');
 }
 
 /**

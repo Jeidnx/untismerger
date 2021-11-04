@@ -79,6 +79,7 @@ function displayWeek(purge, date){
 
 		if(purge){
 			week.forEach(day => {
+				timeTable[day] = [];
 				for(let i = 0; i < 5; i++){
 					timeTable[day][i] = false;
 				}
