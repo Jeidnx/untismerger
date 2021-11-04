@@ -245,6 +245,127 @@ async function displayWeek(purge, date) {
 	});
 }
 
+/**
+ * @param {boolean} purge Should the cache be purged
+ * @param {Date} date Date of the week to display
+ * @returns {Promise<void>}
+ */
+function displayWeekNew(purge, date){
+	return new Promise((resovle, reject) => {
+		let weekDisplay = document.getElementById('weekDisplay');
+		let week = getWeekFromDay(date);
+		let firstDay = week[0].split('-');
+		let lastDay = week[4].split('-');
+
+		weekDisplay.innerHTML = `${firstDay[2]}.${firstDay[1]} - ${lastDay[2]}.${lastDay[1]}`;
+		document.getElementById('variableContent').innerHTML = '';
+
+		if(purge){
+			week.forEach(day => {
+				for(let i = 0; i < 5; i++){
+					timeTable[day][i] = false;
+				}
+			})
+			getWeek(week).then(() => {addWeek(week)});
+		}else{
+			if(timeTable[week[1]]){
+				addWeek(week);
+			}else{
+				displayWeekNew(true, new Date(week[1]));
+			}
+		}
+	})
+}
+
+function addWeek(week){
+	const variableContent = document.getElementById('variableContent');
+	variableContent.innerHTML = "";
+	dayLoop:for(let index = 0; index < 5; index++) {
+
+		let date = week[index];
+		let day = document.createElement('div');
+		day.setAttribute('class', 'day');
+		let firstRow = document.createElement('div');
+		firstRow.setAttribute('class', 'row');
+		firstRow.innerHTML = weekDayEnum[index];
+		day.appendChild(firstRow);
+
+		lessonLoop:for (let i = 0; i < 5; i++) {
+			let row = document.createElement('div');
+			row.setAttribute('class', 'row');
+			if(timeTable[date][i]){
+				const element = timeTable[date][i];
+				row.classList.add('stunde')
+				row.innerHTML = `<p>${element['subject']}<p>
+                <p>${element['room']} - ${element['teacher']}</p>
+                `;
+				if (element['code'] === 'cancelled') {
+					row.classList.add('cancelled');
+				}
+				if (element['code'] === 'irregular') {
+					row.classList.add('irregular');
+				}
+				if (colorEnum[element['subject']]) {
+					row.style.backgroundColor = colorEnum[element['subject']];
+				} else {
+					colorEnum[element['subject']] =
+						colorPalette[Math.floor(Math.random() * colorPalette.length)];
+					row.style.backgroundColor = colorEnum[element['subject']];
+					localStorage.setItem('colorEnum', JSON.stringify(colorEnum));
+				}
+			}
+
+			day.appendChild(row);
+		}
+		variableContent.appendChild(day)
+	}
+}
+
+function getWeek(week){
+	return new Promise((resolve, reject) => {
+		let xhr = new XMLHttpRequest();
+		xhr.addEventListener('load', () => {
+			if (!(xhr.status === 200)) {
+				reject(JSON.parse(xhr.response).message);
+				return;
+			}
+
+			let data = JSON.parse(xhr.response).data;
+
+			data.forEach(element => {
+				let d = convertUntisDateToDate(element.date);
+				let start = startTimeEnum[element.startTime]
+				delete element.startTime;
+				delete element.date;
+
+				timeTable[d.toISOString().slice(0, 10)][start] = element;
+
+			})
+			localStorage.setItem("timeTable", JSON.stringify(timeTable))
+		resolve()
+
+		})
+		xhr.open('POST', '/getTimeTableWeek');
+		xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+		xhr.send(`jwt=${localStorage.getItem('jwt')}&startDate=${week[0]}&endDate=${week[4]}`);
+
+})
+
+	/**
+	 *
+	 * @param {int} date Untis date format
+	 * @return {Date} JS Date Object
+	 */
+	function convertUntisDateToDate(date){
+
+		const year = Math.floor(date / 10000)
+		const month = Math.floor((date - (year * 10000)) / 100);
+		const day = (date - (year * 10000) - month * 100);
+
+		return new Date(year, month - 1, day, 8)
+	}
+}
+
 refreshHandler(false);
 
 body.addEventListener(

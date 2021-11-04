@@ -111,6 +111,9 @@ const classIdEnum = {
 	'FS01T': 2657,
 	'BS10I3': 2661
 };
+const startTimes = [
+	800, 945, 1130, 1330, 1515
+]
 
 // Config
 const config = require('./data/config.json');
@@ -158,6 +161,8 @@ app.get('/setup', (req, res) => {
 	res.status(200).send(fs.readFileSync('./src/setup.html', 'utf-8'));
 });
 app.post('/getTimeTable', (req, res) => {
+	// TODO: Rewrite this to send the response for the whole week. Also jwt should have parameter if it is a webuntis secret or password
+
 	const date = getDate();
 	/* 	if (!stats.requests.hasOwnProperty(date)) {
 		constructDateStruct(date);
@@ -176,7 +181,6 @@ app.post('/getTimeTable', (req, res) => {
 		if (!stats.registeredUsers.includes(h)) {
 			stats.registeredUsers.push(h);
 		} */
-
 		const untis = new WebUntisLib.WebUntisSecretAuth(
 			schoolName,
 			decoded['username'],
@@ -187,28 +191,28 @@ app.post('/getTimeTable', (req, res) => {
 			.login()
 			.then(async () => {
 				const dt = new Date(req.body['datum']);
-				var out = [];
+				let out = [];
 				let sonstiges =
-					(await untis.getTimetableFor(dt, 2232, 1).catch()) || [];
+					await untis.getTimetableFor(dt, 2232, 1);
 				let lk =
-					(await untis.getTimetableFor(dt, decoded['lk'], 1).catch()) || [];
+					await untis.getTimetableFor(dt, decoded['lk'], 1);
 				let fachRichtung =
-					(await untis
-						.getTimetableFor(dt, decoded['fachRichtung'], 1)
-						.catch()) || [];
+					await untis
+						.getTimetableFor(dt, decoded['fachRichtung'], 1).catch((error) => console.log("error"));
 
-				borisLoop: for (let i = 0; i < sonstiges.length; i++) {
-					if (sonstiges[i]['su'].length < 1) continue borisLoop;
+				outer: for (let i = 0; i < sonstiges.length; i++) {
+					if (sonstiges[i]['su'].length < 1) continue outer;
 					let element = sonstiges[i];
 					for (let j = 0; j < decoded['sonstiges'].length; j++) {
 						if (element['su'][0]['name'] == decoded['sonstiges'][j]) {
 							out.push(element);
-							continue borisLoop;
+							continue outer;
 						}
 					}
 				}
 
 				lk.forEach((element) => out.push(element));
+				console.log(fachRichtung);
 				fachRichtung.forEach((element) => out.push(element));
 				/*
 				out = out.filter((element) => {
@@ -222,7 +226,7 @@ app.post('/getTimeTable', (req, res) => {
 					return a['startTime'] - b['startTime'];
 				});
 
-				var sendArr = [];
+				let sendArr = [];
 				out.forEach((element) => {
 					sendArr.push({
 						startTime: element['startTime'] || 'Untis API 👍',
@@ -248,7 +252,70 @@ app.post('/getTimeTable', (req, res) => {
 			});
 	});
 });
+app.post('/getTimeTableWeek', (req, res) => {
+	if (!req.body['jwt'] || !req.body['startDate'] || !req.body.endDate) {
+		res.status(406).send('Missing args');
+		return;
+	}
+	jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
+		if(decoded.type == "secret"){
+			const untis = new WebUntisLib.WebUntisSecretAuth(
+				config.secrets.SCHOOL_NAME,
+				decoded.username,
+				decrypt(decoded.secret),
+				config.secrets.SCHOOL_DOMAIN
+			);
+			untis.login().then(async () => {
+				const startDate = new Date(req.body.startDate);
+				const endDate = new Date(req.body.endDate);
+				let sonstigesPromise =  untis.getTimetableForRange(startDate, endDate, 2232, 1).catch(err => {return []});
+				let lk = untis.getOwnClassTimetableForRange(startDate, endDate).catch(err => {return []});
+				let fachRichtung  = untis.getTimetableForRange(startDate, endDate, decoded['fachRichtung'], 1).catch(err => {return []});
 
+				let out = [];
+				let sonstiges = await sonstigesPromise;
+				outer: for (let i = 0; i < sonstiges.length; i++) {
+					if (sonstiges[i]['su'].length < 1) continue outer;
+					let element = sonstiges[i];
+					for (let j = 0; j < decoded['sonstiges'].length; j++) {
+						if (element['su'][0]['name'] === decoded['sonstiges'][j]) {
+							out.push(element);
+							continue outer;
+						}
+					}
+				}
+				out = out.concat(await lk).concat(await fachRichtung);
+
+
+
+				out = out.filter(element => {
+					return startTimes.includes(element.startTime);
+				})
+
+				let sendArr = [];
+				out.forEach((element) => {
+					sendArr.push({
+						date: element.date,
+						startTime: element.startTime,
+						code: element['code'] || 'regular',
+						shortSubject: element['su'][0]
+							? element['su'][0]['name']
+							: 'Untis 👍',
+						subject: element['su'][0]
+							? element['su'][0]['longname']
+							: 'Untis API 👍',
+						teacher: element['te'][0]
+							? element['te'][0]['longname']
+							: 'Untis API 👍',
+						room: element['ro'][0] ? element['ro'][0]['name'] : 'Untis 👍'
+					});
+				});
+
+				res.send({message: "OK", data: sendArr});
+			})
+		}
+	})
+})
 app.post('/setup', (req, res) => {
 	const date = getDate();
 	/*if (!stats.requests.hasOwnProperty(date)) {
@@ -306,12 +373,17 @@ app.post('/setup', (req, res) => {
 				untis
 					.login()
 					.then(() => {
-						isUserRegistered(req.body['username']).then((facts) => {
-							if (facts) {
+						isUserRegistered(req.body['username']).then((bool) => {
+							if (bool) {
 								getUserPreferences(req.body['username'])
 									.then((prefs) => {
-										// TODO Add sachen array to jwt
+										// TODO Add username + secret to jwt
 										getUserData(req.body['username']).then((data) => {
+											data.username = req.body.username;
+											data.secret = req.body.secret;
+											// TODO: In the future this could be password, depending on what the  user chose
+											data.type = "secret";
+
 											res.status(200).send({
 												message: 'OK',
 												prefs: prefs,
@@ -368,7 +440,9 @@ app.post('/setup', (req, res) => {
 				secret: req.body['secret'],
 				lk: classIdEnum[req.body['lk']],
 				fachRichtung: classIdEnum[req.body['fachRichtung']],
-				sonstiges: selectedCourses
+				sonstiges: selectedCourses,
+				//TODO: could be password in the future
+				type: "secret"
 			};
 			userObj['secureid'] = registerUser(userObj);
 			res.send({ message: 'OK', jwt: jwt.sign(userObj, jwtSecret) });
@@ -391,14 +465,16 @@ app.post('/getStats', (req, res) => {
 			return;
 		}
 		res.setHeader('Content-Type', 'application/json');
-		if (isUserAdmin(decoded['username'])) {
+		isUserAdmin(decoded['username']).then(bool => {
+			if(bool){
 			let st = {};
 			st['requests'] = stats.requests;
 			st['users'] = stats.registeredUsers.length;
 			res.status(200).send(JSON.stringify(st));
-		} else {
-			res.status(403).send({ error: true, message: 'Keine Rechte' });
-		}
+		}	else {
+				res.status(403).send({ error: true, message: 'Keine Rechte' });
+			}
+		})
 	});
 });
 app.get('*', (req, res) => {
@@ -426,6 +502,7 @@ app.post('updateUserPrefs', (req, res) => {
 		return;
 	}
 });
+
 
 /**
  * Loads the statistic data
@@ -479,6 +556,16 @@ function createUserArray() {
  */
 function hash(str) {
 	return crypto.createHash('sha256').update(str).digest('hex');
+}
+
+function encrypt(str) {
+	// TODO: Make this do something
+	return str;
+}
+
+function decrypt(str) {
+	//TODO: make this do someting
+	return str;
 }
 
 /**
@@ -558,7 +645,6 @@ function registerUser(userdata) {
 					function (err) {
 						if (err) {
 							console.log(err);
-							return;
 						}
 					}
 				);
@@ -580,7 +666,7 @@ function getRandomInt(max) {
 function getUserPreferences(user) {
 	return new Promise((resolve, reject) => {
 		db.query(
-			'SELECT lk, fachrichtung, secureid FROM user WHERE username = ?',
+			'SELECT settings FROM user WHERE username = ?',
 			[hash(user)],
 			function (err, result, fields) {
 				if (err) {
@@ -606,7 +692,7 @@ function getUserPreferences(user) {
 function getUserData(user) {
 	return new Promise((resolve, reject) => {
 		db.query(
-			'SELECT lk, fachrichtung, secureid FROM user WHERE username = ?',
+			'SELECT id, lk, fachrichtung, secureid FROM user WHERE username = ?',
 			[hash(user)],
 			function (err, result, fields) {
 				if (err) {
@@ -616,8 +702,22 @@ function getUserData(user) {
 				}
 				// @ts-ignore
 				if (result.length === 1) {
-					resolve(result[0]);
-					return;
+					db.query('SELECT fach FROM fach where user = ?',
+						[result[0].id],
+						(err,  res2) => {
+						if(err){
+							console.log(err);
+							reject(err);
+						}
+						result[0]["sonstiges"] = [];
+						res2.forEach(fach => {
+							result[0]["sonstiges"].push(fach["fach"])
+						})
+						console.log(result[0]);
+						resolve(result[0]);
+						return;
+					})
+				return;
 				}
 				reject('User not found in DB');
 			}
