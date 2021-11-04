@@ -1,9 +1,7 @@
 const WebUntisLib = require('webuntis');
 const express = require('express');
-const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const http = require('http');
-const mime = require('mime-types');
 const crypto = require('crypto');
 const mysql = require('mysql2');
 
@@ -142,24 +140,6 @@ http.createServer(app).listen(port);
 
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/', (req, res) => {
-	/*
-	const date = getDate();
-	if (!stats.requests.hasOwnProperty(date)) {
-		constructDateStruct(date);
-	}
-	stats.requests[date]['get']['/'] += 1; */
-	res.status(200).send(fs.readFileSync('./src/timetable.html', 'utf-8'));
-});
-app.get('/setup', (req, res) => {
-	/*
-	const date = getDate();
-	if (!stats.requests.hasOwnProperty(date)) {
-		constructDateStruct(date);
-	}
-	stats.requests[date]['get']['/setup'] += 1;*/
-	res.status(200).send(fs.readFileSync('./src/setup.html', 'utf-8'));
-});
 app.post('/getTimeTable', (req, res) => {
 	// TODO: Rewrite this to send the response for the whole week. Also jwt should have parameter if it is a webuntis secret or password
 
@@ -201,10 +181,10 @@ app.post('/getTimeTable', (req, res) => {
 						.getTimetableFor(dt, decoded['fachRichtung'], 1).catch((error) => console.log("error"));
 
 				outer: for (let i = 0; i < sonstiges.length; i++) {
-					if (sonstiges[i]['su'].length < 1) continue outer;
+					if (sonstiges[i]['su'].length < 1) continue;
 					let element = sonstiges[i];
 					for (let j = 0; j < decoded['sonstiges'].length; j++) {
-						if (element['su'][0]['name'] == decoded['sonstiges'][j]) {
+						if (element['su'][0]['name'] === decoded['sonstiges'][j]) {
 							out.push(element);
 							continue outer;
 						}
@@ -477,30 +457,11 @@ app.post('/getStats', (req, res) => {
 		})
 	});
 });
-app.get('*', (req, res) => {
-	/* 	const date = getDate();
-	if (!stats.requests.hasOwnProperty(date)) {
-		constructDateStruct(date);
-	}
-	stats.requests[date]['get']['*'] += 1; */
-	if (fs.existsSync('./src' + req.path)) {
-		const path = './src' + req.path;
-		if (mime.lookup(path)) {
-			//@ts-ignore
-			res.contentType(mime.lookup(path));
-		}
-
-		res.status(200).send(fs.readFileSync(path, 'utf-8'));
-		return;
-	} else {
-		res.status(404).send('404');
-	}
-});
 app.post('updateUserPrefs', (req, res) => {
 	if (!req.body['jwt'] || !req.body['prefs']) {
 		res.status(400).send({ error: true, message: 'Invalid JWT' });
-		return;
 	}
+	res.status(201).send({message: "created"});
 });
 
 
@@ -715,7 +676,6 @@ function getUserData(user) {
 						})
 						console.log(result[0]);
 						resolve(result[0]);
-						return;
 					})
 				return;
 				}

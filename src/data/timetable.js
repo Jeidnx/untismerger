@@ -46,7 +46,6 @@ let currentDay = new Date();
 
 let timeTable = JSON.parse(localStorage.getItem('timeTable')) || {};
 /**
- *
  * @param {Date} date
  * @returns {string[]}
  */
@@ -97,6 +96,11 @@ function displayWeek(purge, date){
 	})
 }
 
+/**
+ *
+ * @param {String[]} week Array of Dates to fetch
+ * @return {Promise<void>} Resolves when days have been added to the DOM
+ */
 function addWeek(week){
 	return new Promise((resolve, reject) => {
 	const variableContent = document.getElementById('variableContent');
@@ -143,6 +147,11 @@ function addWeek(week){
 	})
 }
 
+/**
+ *
+ * @param {String[]} week
+ * @return {Promise<void>} Resolves when all data is saved to the timeTable obj and localstorage
+ */
 function getWeek(week){
 	return new Promise((resolve, reject) => {
 		let xhr = new XMLHttpRequest();
@@ -167,7 +176,7 @@ function getWeek(week){
 		resolve()
 
 		})
-		xhr.open('POST', '/getTimeTableWeek');
+		xhr.open('POST', '/api/getTimeTableWeek');
 		xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 		xhr.send(`jwt=${localStorage.getItem('jwt')}&startDate=${week[0]}&endDate=${week[4]}`);
 

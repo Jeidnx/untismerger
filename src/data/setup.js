@@ -134,7 +134,7 @@ function submitHandler() {
 			}
 		}
 	});
-	xhr.open('POST', '/setup');
+	xhr.open('POST', '/api/setup');
 	xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 	xhr.send(formBody);
 }
