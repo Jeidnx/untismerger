@@ -116,7 +116,7 @@ function submitHandler() {
 		switch (stage) {
 			case 1: {
 				if (JSON.parse(xhr.response).jwt) {
-					localStorage.setItem('jwt', xhr.response);
+					localStorage.setItem('jwt', JSON.parse(xhr.response).jwt);
 					window.location.href = '/';
 					return;
 				}
@@ -128,7 +128,7 @@ function submitHandler() {
 				return;
 			}
 			case 2: {
-				localStorage.setItem('jwt', JSON.parse(xhr.response).jwt);
+				localStorage.setItem('jwt', JSON.parse(xhr.response)["jwt"]);
 				window.location.href = '/';
 				return;
 			}
