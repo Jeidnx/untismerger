@@ -134,13 +134,15 @@ let stats = loadData();
 // initScheduler();
 // createUserArray();
 
+const path = config.constants.apiPath;
+
 const app = express();
 
 http.createServer(app).listen(port);
 
 app.use(express.urlencoded({ extended: true }));
 
-app.post('/getTimeTable', (req, res) => {
+app.post(path + '/getTimeTable', (req, res) => {
 	// TODO: Rewrite this to send the response for the whole week. Also jwt should have parameter if it is a webuntis secret or password
 
 	const date = getDate();
@@ -232,7 +234,7 @@ app.post('/getTimeTable', (req, res) => {
 			});
 	});
 });
-app.post('/getTimeTableWeek', (req, res) => {
+app.post(path + '/getTimeTableWeek', (req, res) => {
 	if (!req.body['jwt'] || !req.body['startDate'] || !req.body.endDate) {
 		res.status(406).send('Missing args');
 		return;
@@ -296,7 +298,7 @@ app.post('/getTimeTableWeek', (req, res) => {
 		}
 	})
 })
-app.post('/setup', (req, res) => {
+app.post(path +'/setup', (req, res) => {
 	const date = getDate();
 	/*if (!stats.requests.hasOwnProperty(date)) {
 		constructDateStruct(date);
@@ -434,7 +436,7 @@ app.post('/setup', (req, res) => {
 		}
 	}
 });
-app.post('/getStats', (req, res) => {
+app.post(path +'/getStats', (req, res) => {
 	if (!req.body['jwt']) {
 		res.status(406).send('Missing args');
 		return;
@@ -457,7 +459,7 @@ app.post('/getStats', (req, res) => {
 		})
 	});
 });
-app.post('updateUserPrefs', (req, res) => {
+app.post(path + 'updateUserPrefs', (req, res) => {
 	if (!req.body['jwt'] || !req.body['prefs']) {
 		res.status(400).send({ error: true, message: 'Invalid JWT' });
 	}
