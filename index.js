@@ -270,7 +270,8 @@ app.post('/getTimeTableWeek', (req, res) => {
 				const endDate = new Date(req.body.endDate);
 				let sonstigesPromise =  untis.getTimetableForRange(startDate, endDate, 2232, 1).catch(err => {return []});
 				let lk = untis.getOwnClassTimetableForRange(startDate, endDate).catch(err => {return []});
-				let fachRichtung  = untis.getTimetableForRange(startDate, endDate, decoded['fachRichtung'], 1).catch(err => {return []});
+				console.log(decoded)
+				let fachRichtung  = untis.getTimetableForRange(startDate, endDate, decoded['fachrichtung'], 1).catch(err => {console.log(err);return []});
 
 				let out = [];
 				let sonstiges = await sonstigesPromise;
@@ -284,9 +285,8 @@ app.post('/getTimeTableWeek', (req, res) => {
 						}
 					}
 				}
-				out = out.concat(await lk).concat(await fachRichtung);
-
-
+				out = out.concat(await lk);
+				out = out.concat(await fachRichtung);
 
 				out = out.filter(element => {
 					return startTimes.includes(element.startTime);
