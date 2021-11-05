@@ -8,41 +8,18 @@ if ('serviceWorker' in navigator) {
 let stage = 1;
 let submitForm = document.getElementById('form');
 let qrButton = document.getElementById('qrButton');
-let manuelButton = document.getElementById('manuelButton');
+document.getElementById('manuelButton');
 
-let barcodeDetector;
-if ('BarcodeDetector' in window) {
-	// @ts-ignore
-	qrButton.disabled = false;
-	// @ts-ignore
-	barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
-}
-const videoSettings = {
-	video: {
-		width: {
-			min: 270,
-			ideal: 1080,
-			max: 1080
-		},
-		height: {
-			min: 270,
-			ideal: 1080,
-			max: 1080
-		},
-		aspectRatio: 1,
-		frameRate: { max: 30 },
-		facingMode: 'environment'
-	}
-};
+barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+
 async function startVideo() {
 	return new Promise((resolve, reject) => {
-		navigator.mediaDevices
-			.getUserMedia(videoSettings)
+		window.navigator.mediaDevices
+			.getUserMedia({video: true})
 			.then((mStream) => {
 				resolve(mStream);
-				return;
 			})
-			.catch((err) => {
+			.catch(() => {
 				reject('Keine Kamera');
 			});
 	});
@@ -68,8 +45,7 @@ async function detectQR(bitmap) {
 						.forEach((/** @type {string} */ element) => {
 							const e = element.split('=');
 							const key = e[0];
-							const val = e[1];
-							obj[key] = val;
+							obj[key] = e[1];
 						});
 
 					resolve(obj);
@@ -100,7 +76,7 @@ function submitHandler() {
 
 		formBody += `&${element.name}=${value}`;
 	}
-	var xhr = new XMLHttpRequest();
+	let xhr = new XMLHttpRequest();
 
 	xhr.addEventListener('load', () => {
 		if (!(xhr.status === 200)) {
@@ -152,7 +128,7 @@ function setStage(number) {
 // QR / Video handler
 qrButton.addEventListener('click', async () => {
 	let videoStream = document.getElementById('videoStream');
-	let captureButton = document.getElementById('captureButton');
+	document.getElementById('captureButton');
 	startVideo()
 		.then((mStream) => {
 			// @ts-ignore
@@ -160,7 +136,7 @@ qrButton.addEventListener('click', async () => {
 			// @ts-ignore
 			let imageCp = new ImageCapture(mStream.getTracks()[0]);
 
-			captureButton.addEventListener('click', async () => {
+			let interval = window.setInterval(async () => {
 				imageCp.grabFrame().then((bitmap) => {
 					detectQR(bitmap)
 						.then((qrCode) => {
@@ -169,6 +145,7 @@ qrButton.addEventListener('click', async () => {
 							document.getElementById('usernameInput').value = qrCode.user;
 							// @ts-ignore
 							document.getElementById('secretInput').value = qrCode.key;
+							clearInterval(interval);
 							submitHandler();
 
 							mStream
@@ -181,7 +158,15 @@ qrButton.addEventListener('click', async () => {
 							(err) => (document.getElementById('qrStatus').innerHTML = err)
 						);
 				});
-			});
+			}, 1000);
+			document.getElementById("qrBackButton").addEventListener("click", () => {
+				clearInterval(interval);
+				mStream
+					.getTracks()
+					.forEach((/** @type {{ stop: () => void; }} */ track) => {
+						track.stop();
+					});
+			})
 		})
 		.catch((error) => {
 			document.getElementById('qrStatus').innerHTML = error;

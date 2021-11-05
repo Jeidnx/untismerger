@@ -16,7 +16,7 @@
 <body>
 <form id="form">
     <div id="stage0" class="stage">
-        <button type="button" id="qrButton" disabled
+        <button type="button" id="qrButton"
                 onclick="document.getElementById('stage0').style.display = 'none'; document.getElementById('stage1qr').style.display = '';">Mit
             QR Code Registrieren</button>
         <button type="button" id="passwordButton"
@@ -51,13 +51,12 @@
         <button type="submit">Absenden</button>
     </div>
     <div id="stage1qr" class="stage" style="display:none">
-        <button type="button" class="backButton"
+        <button type="button" class="backButton" id="qrBackButton"
                 onclick="document.getElementById('stage0').style.display = ''; document.getElementById('stage1qr').style.display = 'none'; resetInputs();">Zurück</button>
         <h3 id="qrStatus"></h3>
         <video id="videoStream" autoplay>
 
         </video>
-        <button type="button" id="captureButton">Aufnehmen</button>
     </div>
     <div id="stage1jwt" class="stage" style="display:none">
         <button type="button" class="backButton"
