@@ -151,6 +151,11 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
         return;
     }
     jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
+
+        if(!decoded.type){
+            res.status(400).send({error: true, message: "Outdated JWT"})
+            return
+        }
         let untis;
         if(decoded.type == 'secret'){
             untis = new WebUntisLib.WebUntisSecretAuth(
@@ -166,8 +171,6 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
                 decrypt(decoded.password),
                 config.secrets.SCHOOL_DOMAIN
             )
-        }else{
-            throw new Error("catch me");
         }
             untis.login().then(async () => {
                 const startDate = new Date(req.body.startDate);
