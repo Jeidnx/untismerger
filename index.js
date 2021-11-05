@@ -151,7 +151,6 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
         return;
     }
     jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
-        if (decoded.type == "secret") {
             const untis = new WebUntisLib.WebUntisSecretAuth(
                 config.secrets.SCHOOL_NAME,
                 decoded.username,
@@ -161,14 +160,14 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
             untis.login().then(async () => {
                 const startDate = new Date(req.body.startDate);
                 const endDate = new Date(req.body.endDate);
-                let lk = untis.getOwnClassTimetableForRange(startDate, endDate).catch(err => {
+                let lk = untis.getOwnClassTimetableForRange(startDate, endDate).catch(() => {
                     return []
                 });
                 let fachRichtung = untis.getTimetableForRange(startDate, endDate, decoded['fachrichtung'], 1).catch(err => {
                     console.log(err);
                     return []
                 });
-                let sonstiges = untis.getTimetableForRange(startDate, endDate, 2232, 1).catch(err => {
+                let sonstiges = untis.getTimetableForRange(startDate, endDate, 2232, 1).catch(() => {
                     return []
                 });
 
@@ -220,7 +219,6 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
 
                 res.send({message: "OK", data: sendArr});
             })
-        }
     })
 })
 app.post(path + '/setup', (req, res) => {
@@ -263,7 +261,7 @@ app.post(path + '/setup', (req, res) => {
                                     res.status(500).send({error: true, message: e});
                                 });
                         })
-                        .catch((err) => {
+                        .catch(() => {
                             res
                                 .status(400)
                                 .send({error: true, message: 'Invalid Credentials'});
@@ -284,12 +282,9 @@ app.post(path + '/setup', (req, res) => {
                             if (bool) {
                                 getUserPreferences(req.body['username'])
                                     .then((prefs) => {
-                                        // TODO Add username + secret to jwt
                                         getUserData(req.body['username']).then((data) => {
                                             data.username = req.body.username;
                                             data.secret = encrypt(req.body.secret);
-                                            // TODO: In the future this could be password, depending on what the  user chose
-                                            data.type = "secret";
 
                                             res.status(200).send({
                                                 message: 'OK',
@@ -306,7 +301,7 @@ app.post(path + '/setup', (req, res) => {
                             res.status(200).send({message: 'OK'});
                         });
                     })
-                    .catch((err) => {
+                    .catch(() => {
                         res
                             .status(400)
                             .send({error: true, message: 'Invalid Credentials'});
@@ -348,8 +343,6 @@ app.post(path + '/setup', (req, res) => {
                 lk: classIdEnum[req.body['lk']],
                 fachRichtung: classIdEnum[req.body['fachRichtung']],
                 sonstiges: selectedCourses,
-                //TODO: could be password in the future
-                type: "secret"
             };
             userObj['secureid'] = registerUser(userObj);
             res.send({message: 'OK', jwt: jwt.sign(userObj, jwtSecret)});
