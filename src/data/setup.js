@@ -9,9 +9,10 @@ let stage = 1;
 let submitForm = document.getElementById('form');
 let qrButton = document.getElementById('qrButton');
 document.getElementById('manuelButton');
-
-barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
-
+let barcodeDetector;
+if ('BarcodeDetector' in window) {
+	barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+}
 async function startVideo() {
 	return new Promise((resolve, reject) => {
 		window.navigator.mediaDevices
@@ -131,10 +132,19 @@ qrButton.addEventListener('click', async () => {
 	document.getElementById('captureButton');
 	startVideo()
 		.then((mStream) => {
-			// @ts-ignore
+			let imageCp;
+			if('ImageCapture' in window){
+				imageCp = new ImageCapture(mStream.getTracks()[0]);
+			}else{
+				mStream
+					.getTracks()
+					.forEach((/** @type {{ stop: () => void; }} */ track) => {
+						track.stop();
+					});
+				throw new Error("ImageCapture API wird nicht unterstützt.");
+				return;
+			}
 			videoStream.srcObject = mStream;
-			// @ts-ignore
-			let imageCp = new ImageCapture(mStream.getTracks()[0]);
 
 			let interval = window.setInterval(async () => {
 				imageCp.grabFrame().then((bitmap) => {
