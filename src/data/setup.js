@@ -187,3 +187,11 @@ qrButton.addEventListener('click', async () => {
 			document.getElementById('qrStatus').innerHTML = error;
 		});
 });
+
+function resetInputs(){
+	document.getElementById("usernameInputPw").value = "";
+	document.getElementById("password").value = "";
+	document.getElementById("secretInput").value = "";
+	document.getElementById("usernameInput").value = "";
+	document.getElementById("jwtInput").value = "";
+}

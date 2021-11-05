@@ -32,7 +32,7 @@
     </div>
     <div id="stage1manuel" class="stage" style="display:none">
         <button type="button" class="backButton"
-                onclick="document.getElementById('stage0').style.display = ''; document.getElementById('stage1manuel').style.display = 'none'">Zurück</button>
+                onclick="document.getElementById('stage0').style.display = ''; document.getElementById('stage1manuel').style.display = 'none'; resetInputs();">Zurück</button>
         <label for="usernameInput">Username</label>
         <input type="text" name="username" id="usernameInput">
         <label for="secretInput">Untis Key</label>
@@ -42,7 +42,7 @@
     </div>
     <div id="stage1password" class="stage" style="display:none">
         <button type="button" class="backButton"
-                onclick="document.getElementById('stage0').style.display = ''; document.getElementById('stage1password').style.display = 'none'">Zurück</button>
+                onclick="document.getElementById('stage0').style.display = ''; document.getElementById('stage1password').style.display = 'none'; resetInputs();">Zurück</button>
         <label for="usernameInputPw">Username</label>
         <input type="text" name="usernamePw" id="usernameInputPw">
         <label for="secretInput">Untis Passwort</label>
@@ -51,6 +51,8 @@
         <button type="submit">Absenden</button>
     </div>
     <div id="stage1qr" class="stage" style="display:none">
+        <button type="button" class="backButton"
+                onclick="document.getElementById('stage0').style.display = ''; document.getElementById('stage1qr').style.display = 'none'; resetInputs();">Zurück</button>
         <h3 id="qrStatus"></h3>
         <video id="videoStream" autoplay>
 
@@ -59,14 +61,14 @@
     </div>
     <div id="stage1jwt" class="stage" style="display:none">
         <button type="button" class="backButton"
-                onclick="document.getElementById('stage0').style.display = ''; document.getElementById('stage1jwt').style.display = 'none'; setStage(1)">Zurück</button>
+                onclick="document.getElementById('stage0').style.display = ''; document.getElementById('stage1jwt').style.display = 'none'; setStage(1); resetInputs();">Zurück</button>
         <input type="password" name="jwt" placeholder="jwt" id="jwtInput">
         <h3 id="returnJwt"></h3>
         <button type="submit">Absenden</button>
     </div>
     <div id="stage2" class="stage" style="display:none;">
         <button type="button" class="backButton"
-                onclick="document.getElementById('stage1manuel').style.display = ''; document.getElementById('stage2').style.display = 'none'; setStage(1)">Zurück</button>
+                onclick="document.getElementById('stage1manuel').style.display = ''; document.getElementById('stage2').style.display = 'none'; setStage(1);">Zurück</button>
         <label for="lk">Leistungskurs</label>
         <select name="lk" id="lk">
             <option>BG12a</option>
