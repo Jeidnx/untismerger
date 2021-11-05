@@ -16,7 +16,9 @@ if ('BarcodeDetector' in window) {
 async function startVideo() {
 	return new Promise((resolve, reject) => {
 		window.navigator.mediaDevices
-			.getUserMedia({video: true})
+			.getUserMedia({video: {
+					facingMode: "environment",
+				}, audio: false})
 			.then((mStream) => {
 				resolve(mStream);
 			})
