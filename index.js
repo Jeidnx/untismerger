@@ -151,12 +151,24 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
         return;
     }
     jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
-            const untis = new WebUntisLib.WebUntisSecretAuth(
+        let untis;
+        if(decoded.type == 'secret'){
+            untis = new WebUntisLib.WebUntisSecretAuth(
                 config.secrets.SCHOOL_NAME,
                 decoded.username,
                 decrypt(decoded.secret),
                 config.secrets.SCHOOL_DOMAIN
-            );
+            )}
+        else if(decoded.type == 'password'){
+            untis = new WebUntisLib(
+                config.secrets.SCHOOL_NAME,
+                decoded.username,
+                decrypt(decoded.password),
+                config.secrets.SCHOOL_DOMAIN
+            )
+        }else{
+            throw new Error("catch me");
+        }
             untis.login().then(async () => {
                 const startDate = new Date(req.body.startDate);
                 const endDate = new Date(req.body.endDate);
@@ -268,7 +280,8 @@ app.post(path + '/setup', (req, res) => {
                         });
                 });
                 return;
-            } else if (req.body['secret'] && req.body['username']) {
+            }
+            else if ((req.body['secret'] !== "") && (req.body['username'] !== '')) {
                 const untis = new WebUntisLib.WebUntisSecretAuth(
                     schoolName,
                     req.body['username'],
@@ -285,7 +298,7 @@ app.post(path + '/setup', (req, res) => {
                                         getUserData(req.body['username']).then((data) => {
                                             data.username = req.body.username;
                                             data.secret = encrypt(req.body.secret);
-
+                                            data.type = "secret";
                                             res.status(200).send({
                                                 message: 'OK',
                                                 prefs: prefs,
@@ -308,8 +321,47 @@ app.post(path + '/setup', (req, res) => {
                     });
                 return;
             }
-            res.status(400).send({error: true, message: 'Missing Arguments'});
+            else if ((req.body["usernamePw"] !== '') && (req.body["password"] !== '')){
+                const untis = new WebUntisLib(config.secrets.SCHOOL_NAME, req.body["usernamePw"], req.body['password'], config.secrets.SCHOOL_DOMAIN);
+                untis
+                    .login()
+                    .then(() => {
+                        isUserRegistered(req.body['usernamePw']).then((bool) => {
+                            if (bool) {
+                                getUserPreferences(req.body['usernamePw'])
+                                    .then((prefs) => {
+                                        getUserData(req.body['usernamePw']).then((data) => {
+                                            data.username = req.body.usernamePw;
+                                            data.password = encrypt(req.body.password);
+                                            data.type = "password";
+
+                                            res.status(200).send({
+                                                message: 'OK',
+                                                prefs: prefs,
+                                                jwt: jwt.sign(data, config.secrets.JWT_SECRET)
+                                            });
+                                        });
+                                    })
+                                    .catch((e) => {
+                                        res.status(500).send({error: true, message: e});
+                                    });
+                                return;
+                            }
+                            res.status(200).send({message: 'OK'});
+                        });
+                    })
+                    .catch(() => {
+                        res
+                            .status(400)
+                            .send({error: true, message: 'Invalid Credentials'});
+                    });
+            }
+            else{
+                res.status(400).send({error: true, message: 'Missing Arguments'});
             return;
+            }
+            return;
+            break;
         }
         case '2': {
             if (
@@ -319,6 +371,7 @@ app.post(path + '/setup', (req, res) => {
                 !req.body['sp'] ||
                 !req.body['naWi']
             ) {
+                console.log("here")
                 res.status(400).send({error: true, message: 'Missing Arguments'});
                 return;
             }
@@ -338,12 +391,25 @@ app.post(path + '/setup', (req, res) => {
 
             selectedCourses.push(req.body['sp'], req.body['ek']);
             let userObj = {
-                username: req.body['username'],
-                secret: req.body['secret'],
                 lk: classIdEnum[req.body['lk']],
                 fachRichtung: classIdEnum[req.body['fachRichtung']],
                 sonstiges: selectedCourses,
             };
+
+            if(req.body["secret"] !== ""){
+                userObj.secret = encrypt(req.body['secret']);
+                userObj.username = req.body['username'];
+                userObj.type= "secret";
+            }
+            else if(req.body['password'] !== "") {
+                userObj.password = encrypt(req.body["password"]);
+                userObj.username = req.body["usernamePw"];
+                userObj.type = "password";
+            }
+            else {
+                throw new Error("Invalid");
+            }
+            console.log(req.body['username']);
             userObj['secureid'] = registerUser(userObj);
             res.send({message: 'OK', jwt: jwt.sign(userObj, jwtSecret)});
             return;
@@ -597,7 +663,6 @@ function getUserData(user) {
                             res2.forEach(fach => {
                                 result[0]["sonstiges"].push(fach["fach"])
                             })
-                            console.log(result[0]);
                             resolve(result[0]);
                         })
                     return;

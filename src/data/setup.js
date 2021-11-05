@@ -104,12 +104,10 @@ function submitHandler() {
 
 	xhr.addEventListener('load', () => {
 		if (!(xhr.status === 200)) {
-			document.getElementById('return1').innerHTML = JSON.parse(
-				xhr.response
-			).message;
-			document.getElementById('returnJwt').innerHTML = JSON.parse(
-				xhr.response
-			).message;
+			const message = JSON.parse(xhr.response).message;
+			document.getElementById('return1').innerHTML = message;
+			document.getElementById('returnJwt').innerHTML = message;
+			document.getElementById("return2").innerHTML = message;
 			return;
 		}
 
@@ -124,6 +122,7 @@ function submitHandler() {
 				stage++;
 				document.getElementById('stage1qr').style.display = 'none';
 				document.getElementById('stage1manuel').style.display = 'none';
+				document.getElementById("stage1password").style.display = 'none';
 				document.getElementById('stage2').style.display = '';
 				return;
 			}

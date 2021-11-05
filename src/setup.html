@@ -14,109 +14,121 @@
 </head>
 
 <body>
-    <form id="form">
-        <div id="stage0" class="stage">
-            <button type="button" id="qrButton" disabled
+<form id="form">
+    <div id="stage0" class="stage">
+        <button type="button" id="qrButton" disabled
                 onclick="document.getElementById('stage0').style.display = 'none'; document.getElementById('stage1qr').style.display = '';">Mit
-                QR Code Registrieren</button>
-
-            <button type="button" id="manuelButton"
+            QR Code Registrieren</button>
+        <button type="button" id="passwordButton"
+                onclick="document.getElementById('stage0').style.display = 'none'; document.getElementById('stage1password').style.display = '';">Mit
+            Nutzername und Passwort Registrieren</button>
+        <button type="button" id="manuelButton"
                 onclick="document.getElementById('stage0').style.display = 'none'; document.getElementById('stage1manuel').style.display = '';">Mit
-                Nutzername und Schlüssel Registrieren</button>
-            <button type="button" id="jwtButton"
+            Nutzername und Schlüssel Registrieren</button>
+        <button type="button" id="jwtButton"
                 onclick="document.getElementById('stage0').style.display = 'none'; document.getElementById('stage1jwt').style.display = '';">Mit
-                JWT Schlüssel Registrieren</button>
+            JWT Schlüssel Registrieren</button>
 
-        </div>
-        <div id="stage1manuel" class="stage" style="display:none">
-            <button type="button" class="backButton"
+    </div>
+    <div id="stage1manuel" class="stage" style="display:none">
+        <button type="button" class="backButton"
                 onclick="document.getElementById('stage0').style.display = ''; document.getElementById('stage1manuel').style.display = 'none'">Zurück</button>
-            <label for="usernameInput">Username</label>
-            <input type="text" name="username" id="usernameInput">
-            <label for="secretInput">Untis Key</label>
-            <input type="password" name="secret" id="secretInput">
-            <h3 id="return1"></h3>
-            <button type="submit">Absenden</button>
-        </div>
-        <div id="stage1qr" class="stage" style="display:none">
-            <h3 id="qrStatus"></h3>
-            <video id="videoStream" autoplay>
+        <label for="usernameInput">Username</label>
+        <input type="text" name="username" id="usernameInput">
+        <label for="secretInput">Untis Key</label>
+        <input type="password" name="secret" id="secretInput">
+        <h3 id="return1"></h3>
+        <button type="submit">Absenden</button>
+    </div>
+    <div id="stage1password" class="stage" style="display:none">
+        <button type="button" class="backButton"
+                onclick="document.getElementById('stage0').style.display = ''; document.getElementById('stage1password').style.display = 'none'">Zurück</button>
+        <label for="usernameInputPw">Username</label>
+        <input type="text" name="usernamePw" id="usernameInputPw">
+        <label for="secretInput">Untis Passwort</label>
+        <input type="password" name="password" id="password">
+        <h3 id="return2"></h3>
+        <button type="submit">Absenden</button>
+    </div>
+    <div id="stage1qr" class="stage" style="display:none">
+        <h3 id="qrStatus"></h3>
+        <video id="videoStream" autoplay>
 
-            </video>
-            <button type="button" id="captureButton">Aufnehmen</button>
-        </div>
-        <div id="stage1jwt" class="stage" style="display:none">
-            <button type="button" class="backButton"
+        </video>
+        <button type="button" id="captureButton">Aufnehmen</button>
+    </div>
+    <div id="stage1jwt" class="stage" style="display:none">
+        <button type="button" class="backButton"
                 onclick="document.getElementById('stage0').style.display = ''; document.getElementById('stage1jwt').style.display = 'none'; setStage(1)">Zurück</button>
-            <input type="password" name="jwt" placeholder="jwt" id="jwtInput">
-            <h3 id="returnJwt"></h3>
-            <button type="submit">Absenden</button>
-        </div>
-        <div id="stage2" class="stage" style="display:none;">
-            <button type="button" class="backButton"
+        <input type="password" name="jwt" placeholder="jwt" id="jwtInput">
+        <h3 id="returnJwt"></h3>
+        <button type="submit">Absenden</button>
+    </div>
+    <div id="stage2" class="stage" style="display:none;">
+        <button type="button" class="backButton"
                 onclick="document.getElementById('stage1manuel').style.display = ''; document.getElementById('stage2').style.display = 'none'; setStage(1)">Zurück</button>
-            <label for="lk">Leistungskurs</label>
-            <select name="lk" id="lk">
-                <option>BG12a</option>
-                <option>BG12b</option>
-                <option>BG12c</option>
-                <option>BG12d</option>
-                <option>BG12e</option>
-                <option>BG12f</option>
-            </select>
-            <label for="fachRichtung">Fach Richtung </label>
-            <select name="fachRichtung" id="fachRichtung">
-                <option>BG12-2</option>
-                <option>BG12-3</option>
-                <option>BG12-4</option>
-                <option>BG12-5</option>
-                <option>BG12-6</option>
-                <option>BG12-7</option>
-            </select>
-            <label for="naWi"> Naturwissenschaft </label>
-            <select name="naWi" id="naWi">
-                <option>false</option>
-                <option>ph1</option>
-                <option>ch1</option>
-                <option>bio1</option>
-                <option>bio2</option>
-            </select>
-            <label for="ek">Ethik / Religionskurs</label>
-            <select name="ek" id="ek">
-                <option>ek1</option>
-                <option>ek2</option>
-                <option>ek3</option>
-                <option>ek4</option>
-                <option>rv1</option>
-                <option>rv2</option>
-            </select>
-            <label for="sp">Sport kurs</label>
-            <select name="sp" id="sp">
-                <option>sp1</option>
-                <option>sp2</option>
-                <option>sp3</option>
-                <option>sp4</option>
-                <option>sp5</option>
-                <option>sp6</option>
-            </select>
+        <label for="lk">Leistungskurs</label>
+        <select name="lk" id="lk">
+            <option>BG12a</option>
+            <option>BG12b</option>
+            <option>BG12c</option>
+            <option>BG12d</option>
+            <option>BG12e</option>
+            <option>BG12f</option>
+        </select>
+        <label for="fachRichtung">Fach Richtung </label>
+        <select name="fachRichtung" id="fachRichtung">
+            <option>BG12-2</option>
+            <option>BG12-3</option>
+            <option>BG12-4</option>
+            <option>BG12-5</option>
+            <option>BG12-6</option>
+            <option>BG12-7</option>
+        </select>
+        <label for="naWi"> Naturwissenschaft </label>
+        <select name="naWi" id="naWi">
+            <option>false</option>
+            <option>ph1</option>
+            <option>ch1</option>
+            <option>bio1</option>
+            <option>bio2</option>
+        </select>
+        <label for="ek">Ethik / Religionskurs</label>
+        <select name="ek" id="ek">
+            <option>ek1</option>
+            <option>ek2</option>
+            <option>ek3</option>
+            <option>ek4</option>
+            <option>rv1</option>
+            <option>rv2</option>
+        </select>
+        <label for="sp">Sport kurs</label>
+        <select name="sp" id="sp">
+            <option>sp1</option>
+            <option>sp2</option>
+            <option>sp3</option>
+            <option>sp4</option>
+            <option>sp5</option>
+            <option>sp6</option>
+        </select>
 
-            <p> Sontiges </p>
-            <label for="DS">Darstellendes Spiel</label>
-            <input type="checkbox" name="DS" id="DS">
-            <label for="Ku">Kunst</label>
-            <input type="checkbox" name="Ku" id="Ku">
-            <label for="sn1">Spanisch 1</label>
-            <input type="checkbox" name="sn1" id="sn1">
-            <label for="sn2">Spanisch 2</label>
-            <input type="checkbox" name="sn2" id="sn2">
-            <button type="submit">Absenden</button>
-        </div>
-    </form>
-    <footer>
-        <a href="/faq">FAQ</a>
-        <a href="/imprint">Impressum</a>
-    </footer>
-    <script src="/data/setup.js"></script>
+        <p> Sontiges </p>
+        <label for="DS">Darstellendes Spiel</label>
+        <input type="checkbox" name="DS" id="DS">
+        <label for="Ku">Kunst</label>
+        <input type="checkbox" name="Ku" id="Ku">
+        <label for="sn1">Spanisch 1</label>
+        <input type="checkbox" name="sn1" id="sn1">
+        <label for="sn2">Spanisch 2</label>
+        <input type="checkbox" name="sn2" id="sn2">
+        <button type="submit">Absenden</button>
+    </div>
+</form>
+<footer>
+    <a href="/faq">FAQ</a>
+    <a href="/imprint">Impressum</a>
+</footer>
+<script src="/data/setup.js"></script>
 </body>
 
 </html>
