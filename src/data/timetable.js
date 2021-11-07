@@ -6,13 +6,13 @@ if ('serviceWorker' in navigator) {
 }
 
 function urlBase64ToUint8Array(base64String) {
-	var padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-	var base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+	let padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+	let base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
 
-	var rawData = window.atob(base64);
+	let rawData = window.atob(base64);
 	var outputArray = new Uint8Array(rawData.length);
 
-	for (var i = 0; i < rawData.length; ++i) {
+	for (let i = 0; i < rawData.length; ++i) {
 		outputArray[i] = rawData.charCodeAt(i);
 	}
 	return outputArray;
@@ -35,7 +35,7 @@ function getNotificationSubscription() {
 
 							// Get the server's public key
 							const response = await fetch(
-								'http://localhost:8081/vapidPublicKey'
+								'/notification/vapidPublicKey'
 							);
 							const vapidPublicKey = await response.text();
 							// Chrome doesn't accept the base64-encoded (string) vapidPublicKey yet
@@ -52,12 +52,12 @@ function getNotificationSubscription() {
 				})
 				.then(function (subscription) {
 					let xhr = new XMLHttpRequest();
-					xhr.open('POST', 'http://localhost:8081/register', true);
+					xhr.open('POST', '/notification/register', true);
 					xhr.setRequestHeader(
 						'Content-type',
 						'application/x-www-form-urlencoded'
 					);
-					xhr.send('subscription=' + JSON.stringify(subscription));
+					xhr.send('subscription=' + JSON.stringify(subscription) + '&jwt=' + localStorage.getItem("jwt"));
 				});
 		}
 	});

@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const http = require('http');
 const crypto = require('crypto');
 const mysql = require('mysql2');
+const axios = require('axios');
 
 // Statics
 const saveInterval = 10; // Interval in minutes when data is saved to database
@@ -189,9 +190,15 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
                 let out = [];
 
                 lk = (await lk).filter(element => {
+                    if(element.code === "cancelled"){
+                        cancelHandler(element, decoded['lk']);
+                    }
                     return startTimes.includes(element.startTime);
                 })
                 fachRichtung = (await fachRichtung).filter(element => {
+                    if(element.code === "cancelled"){
+                        cancelHandler(element, decoded['fachRichtung']);
+                    }
                     return startTimes.includes((element.startTime));
                 })
 
@@ -204,6 +211,9 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
                 outer: for (let i = 0; i < sonstiges.length; i++) {
                     if (sonstiges[i]['su'].length < 1) continue;
                     let element = sonstiges[i];
+                    if(element.code === "cancelled"){
+                        cancelHandler(element, element.su[0].name);
+                    }
                     for (let j = 0; j < decoded['sonstiges'].length; j++) {
                         if (element['su'][0]['name'] === decoded['sonstiges'][j]) {
                             out.push(element);
@@ -625,6 +635,7 @@ function getUserPreferences(user) {
                 if (err) {
                     console.log(err);
                     reject(err);
+                    return;
                 }
                 // @ts-ignore
                 if (result.length === 1) {
@@ -674,4 +685,54 @@ function getUserData(user) {
             }
         );
     });
+}
+
+/**
+ * Handling cancelled classes for Notifications etc.
+ * @param {WebUntisLib.lesson}elem The WebuntisLib Element which is getting cancelled
+ * @returns void
+ */
+async function cancelHandler(elem, lessonNr){
+    db.query('INSERT IGNORE INTO canceled_lessons (fach, lessonid) VALUES (?, ?)',
+        [elem["su"][0]["name"], elem["id"]], (err, result) => {
+            if(err){
+                console.log(err);
+                return;
+            }
+            if(result.affectedRows > 0){
+                sendNotification(elem.su[0].name, convertUntisDateToDate(elem.date), lessonNr)
+            }
+        })
+}
+
+/**
+ *
+ * @param {int} date Untis date format
+ * @return {Date} JS Date Object
+ */
+function convertUntisDateToDate(date){
+
+    const year = Math.floor(date / 10000)
+    const month = Math.floor((date - (year * 10000)) / 100);
+    const day = (date - (year * 10000) - month * 100);
+
+    return new Date(year, month - 1, day, 8)
+}
+
+function sendNotification(lesson, date, lessonNr){
+    console.log("sending notification for: ", lesson, date);
+
+    const params = new URLSearchParams();
+    params.append("lesson", lessonNr);
+    params.append("payload", JSON.stringify({type: 'notification', message: `${lesson} fällt aus.`}));
+
+    const config = {
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+    }
+
+    axios.post("http://localhost:8091/notification/sendNotification", params, config).then(() => {
+        console.log("done");
+    }).catch(console.log);
 }

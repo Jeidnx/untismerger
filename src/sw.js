@@ -7,11 +7,11 @@ const toCache = [
 	'/data/timetable.js',
 	'/data/settings.js',
 	'/data/manifest.webmanifest',
-	'/icons/icon_apple.png',
-	'/icons/icon.png',
+	//'/icons/icon_apple.png',
+	//'/icons/icon.png',
 	'/settings.html',
 	'/data/settings.css',
-	'icons/background.png'
+	//'icons/background.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -93,6 +93,7 @@ self.addEventListener('message', (event) => {
 });
 
 self.addEventListener('push', function (event) {
+	console.log("Got Push: ", event.data.text());
 	const payload = event.data.json();
 	if (payload.type === 'notification') {
 		event.waitUntil(
