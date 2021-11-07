@@ -45,17 +45,17 @@ self.addEventListener('fetch', (event) => {
 	}
 	event.respondWith(
 		caches.match(event.request).then((response) => {
-			if(response){
+			if (response) {
 				return response;
 			}
-			return fetch(event.request)
+			return fetch(event.request);
 		})
-	)
+	);
 });
 
 self.addEventListener('message', (event) => {
 	if (event.data && event.data.type === 'INIT_PORT') {
-		let getVersionPort = event.ports[0];
+		getVersionPort = event.ports[0];
 		getVersionPort.onmessage = (event) => {
 			switch (event.data.type) {
 				case 'GET':
@@ -89,5 +89,17 @@ self.addEventListener('message', (event) => {
 					}
 			}
 		};
+	}
+});
+
+self.addEventListener('push', function (event) {
+	const payload = event.data.json();
+	if (payload.type === 'notification') {
+		event.waitUntil(
+			self.registration.showNotification('Untismerger', {
+				body: payload.body
+			})
+		);
+		return;
 	}
 });
