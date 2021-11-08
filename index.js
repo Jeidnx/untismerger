@@ -6,6 +6,8 @@ const crypto = require('crypto');
 const mysql = require('mysql2');
 const axios = require('axios');
 
+const notificationServer = require('./notificationServer');
+
 // Statics
 const saveInterval = 10; // Interval in minutes when data is saved to database
 const classIdEnum = {
@@ -732,7 +734,7 @@ function sendNotification(lesson, date, lessonNr){
         }
     }
 
-    axios.post("http://localhost:8091/notification/sendNotification", params, config).then(() => {
+    axios.post("http://localhost/notification/sendNotification", params, config).then(() => {
         console.log("done");
     }).catch(console.log);
 }

@@ -3,14 +3,14 @@ const config = require("./data/config.json")
 
 const TTL = config.constants.ttl;
 
-if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+if (!process.env.NOTIFICATION_PORT) {
 	console.log('Missing env vars');
 }
 // Set the keys used for encrypting the push messages.
 webPush.setVapidDetails(
 	'https://github.com/Jeidnx',
-	process.env.VAPID_PUBLIC_KEY,
-	process.env.VAPID_PRIVATE_KEY
+	config.secrets.VAPID_PUBLIC,
+	config.secrets.VAPID_PRIVATE
 );
 /* 
 Notification Payload should always be formatted as json with the following format:
@@ -24,7 +24,7 @@ Notification Payload should always be formatted as json with the following forma
 
 
 const iv = new Buffer.alloc(16, config.secrets.SCHOOL_NAME);
-let port = process.env.PORT;
+let notificationPort = process.env.NOTIFICATION_PORT;
 let route = '/notification/';
 
 const express = require('express');
@@ -38,10 +38,10 @@ const jwtSecret = config.secrets.JWT_SECRET;
 const db = mysql.createPool(config.mysql);
 
 app.use(express.urlencoded({ extended: true }));
-http.createServer(app).listen(port);
+http.createServer(app).listen(notificationPort);
 
 app.get(route + 'vapidPublicKey', (req, res) => {
-	res.status(200).send(process.env.VAPID_PUBLIC_KEY);
+	res.status(200).send(config.secrets.VAPID_PUBLIC);
 })
 
 app.post(route + 'register', function (req, res) {
@@ -69,8 +69,8 @@ app.post(route + 'sendNotification', async (req, res) => {
 		TTL: TTL
 	};
 	let sent = false;
-	let subscriptions = await getSubscriptions(req.body.lesson).catch((err) => {
-		res.status(200).send({message: err});
+	let subscriptions = await getSubscriptions(req.body.lesson).catch((msg) => {
+		res.status(200).send({message: msg});
 		sent = true;
 	}) || [];
 	if(sent){
@@ -127,13 +127,6 @@ function addSubscription(username, subscription){
 					}
 				);
 			})
-
-
-
-
-
-
-
 	})
 }
 

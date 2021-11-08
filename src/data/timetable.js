@@ -374,3 +374,7 @@ document.getElementById('refreshButton').addEventListener('click', () => {
 	document.getElementById('slide').checked = false;
 	refreshHandler(true);
 });
+
+document.getElementById("notificationRequest").addEventListener('click', () => {
+	getNotificationSubscription();
+})
