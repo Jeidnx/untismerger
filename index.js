@@ -208,7 +208,7 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
                     }
                     return startTimes.includes((element.startTime));
                 })
-
+                untis.logout().catch(console.log);
                 out = out.concat(lk);
                 out = out.concat(fachRichtung);
 
