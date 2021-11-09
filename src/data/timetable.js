@@ -10,7 +10,7 @@ function urlBase64ToUint8Array(base64String) {
 	let base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
 
 	let rawData = window.atob(base64);
-	var outputArray = new Uint8Array(rawData.length);
+	let outputArray = new Uint8Array(rawData.length);
 
 	for (let i = 0; i < rawData.length; ++i) {
 		outputArray[i] = rawData.charCodeAt(i);
@@ -28,22 +28,16 @@ function getNotificationSubscription() {
 					return registration.pushManager
 						.getSubscription()
 						.then(async function (subscription) {
-							// If a subscription was found, return it.
 							if (subscription) {
 								return subscription;
 							}
 
-							// Get the server's public key
 							const response = await fetch(
-								'/notification/vapidPublicKey'
+								'/api/vapidPublicKey'
 							);
 							const vapidPublicKey = await response.text();
-							// Chrome doesn't accept the base64-encoded (string) vapidPublicKey yet
-							// urlBase64ToUint8Array() is defined in /tools.js
 							const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
 
-							// Otherwise, subscribe the user (userVisibleOnly allows to specify that we don't plan to
-							// send notifications that don't have a visible effect for the user).
 							return registration.pushManager.subscribe({
 								userVisibleOnly: true,
 								applicationServerKey: convertedVapidKey
@@ -51,8 +45,12 @@ function getNotificationSubscription() {
 						});
 				})
 				.then(function (subscription) {
+					if(!subscription){
+						return;
+					}
+
 					let xhr = new XMLHttpRequest();
-					xhr.open('POST', '/notification/register', true);
+					xhr.open('POST', '/api/register', true);
 					xhr.setRequestHeader(
 						'Content-type',
 						'application/x-www-form-urlencoded'

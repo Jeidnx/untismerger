@@ -4,9 +4,7 @@ const jwt = require('jsonwebtoken');
 const http = require('http');
 const crypto = require('crypto');
 const mysql = require('mysql2');
-const axios = require('axios');
-
-const notificationServer = require('./notificationServer');
+const webPush = require('web-push');
 
 // Statics
 const saveInterval = 10; // Interval in minutes when data is saved to database
@@ -122,7 +120,14 @@ const jwtSecret = config.secrets.JWT_SECRET;
 const schoolName = config.secrets.SCHOOL_NAME;
 const schoolDomain = config.secrets.SCHOOL_DOMAIN;
 const port = process.env.PORT;
+const TTL = config.constants.ttl;
+const path = config.constants.apiPath;
 const db = mysql.createPool(config.mysql);
+webPush.setVapidDetails(
+    'https://github.com/Jeidnx',
+    config.secrets.VAPID_PUBLIC,
+    config.secrets.VAPID_PRIVATE
+);
 if (!jwtSecret || !schoolName || !schoolDomain || !port) {
     console.log('Missing environment or config.json Variables');
     process.exit(1);
@@ -140,7 +145,7 @@ let stats = loadData();
 // initScheduler();
 // createUserArray();
 
-const path = config.constants.apiPath;
+
 
 const app = express();
 
@@ -370,13 +375,12 @@ app.post(path + '/setup', (req, res) => {
                             .status(400)
                             .send({error: true, message: 'Invalid Credentials'});
                     });
+                break;
             }
             else{
                 res.status(400).send({error: true, message: 'Missing Arguments'});
-            return;
-            }
-            return;
             break;
+            }
         }
         case '2': {
             if (
@@ -464,7 +468,22 @@ app.post(path + 'updateUserPrefs', (req, res) => {
     }
     res.status(201).send({message: "created"});
 });
+app.get(path + '/vapidPublicKey', (req, res) => {
+    res.status(200).send(config.secrets.VAPID_PUBLIC);
+})
+app.post(path + '/register', function (req, res) {
+    if(!req.body["subscription"] || !req.body['jwt']) {
+        res.status(400).send({error: true, message: "Missing Arguments"});
+        return;
+    }
+    jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
+        addSubscription(decoded['username'],JSON.parse(req.body.subscription))
+        res.status(201).send({message: "created"});
+    })
 
+
+
+});
 
 /**
  * Loads the statistic data
@@ -657,6 +676,7 @@ function getUserPreferences(user) {
  */
 function getUserData(user) {
     return new Promise((resolve, reject) => {
+        //TODO: This really should be one query to reduce overhead
         db.query(
             'SELECT id, lk, fachrichtung, secureid FROM user WHERE username = ?',
             [hash(user)],
@@ -691,7 +711,8 @@ function getUserData(user) {
 
 /**
  * Handling cancelled classes for Notifications etc.
- * @param {WebUntisLib.lesson}elem The WebuntisLib Element which is getting cancelled
+ * @param {Lesson}elem The WebuntisLib Element which is getting cancelled
+ * @param {String} lessonNr The courses to search
  * @returns void
  */
 async function cancelHandler(elem, lessonNr){
@@ -702,7 +723,7 @@ async function cancelHandler(elem, lessonNr){
                 return;
             }
             if(result.affectedRows > 0){
-                sendNotification(elem.su[0].name, convertUntisDateToDate(elem.date), lessonNr)
+                sendNotification(elem.su[0].longname, convertUntisDateToDate(elem.date), lessonNr)
             }
         })
 }
@@ -721,20 +742,108 @@ function convertUntisDateToDate(date){
     return new Date(year, month - 1, day, 8)
 }
 
-function sendNotification(lesson, date, lessonNr){
-    console.log("sending notification for: ", lesson, date);
+/**
+ *
+ * @param {String} lesson Welcher Unterricht entfällt.
+ * @param {Date} date Datum, an dem die Stunde entfällt.
+ * @param {String} lessonNr Welche Kurse betrroffen sind.
+ */
+async function sendNotification(lesson, date, lessonNr){
+    console.log("Sendet Benachrichtigung für: ", lesson, date.toISOString().slice(0, 10))
+    const payload = {
+        type: "notification",
+        body: `${lesson} am ${String(date.getDay() + "."+ (date.getMonth() + 1))} entfällt.`
+    };
+    const options = {
+        TTL: TTL
+    };
+    let sent = false;
+    getSubscriptions(lessonNr).then(subscriptions => {
+        subscriptions.forEach((/** @type {webPush.PushSubscription} */ user) => {
+            webPush
+                .sendNotification(user, JSON.stringify(payload), options)
+                .then((response) => {
+                    if (response.statusCode !== 201) {
+                        console.log(response.statusCode, response);
+                    }
+                })
+                .catch(function (error) {
+                    console.log("Error: ",error);
+                });
+        });
+    }).catch((msg) => {
+        console.log(msg);
+    })
 
-    const params = new URLSearchParams();
-    params.append("lesson", lessonNr);
-    params.append("payload", JSON.stringify({type: 'notification', message: `${lesson} fällt aus.`}));
+}
 
-    const config = {
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        }
-    }
+/**
+ *
+ * @param {String} username Username in Plaintext
+ * @param {webPush.PushSubscription} subscription Matching Subscription
+ * @returns {Promse<boolean>} if Operation was successful
+ */
+function addSubscription(username, subscription){
+    return new Promise((resolve, reject) => {
+        db.query('SELECT subscription FROM user WHERE username=?',
+            [hash(username)],
+            (err, result) => {
+                if(err) {
+                    console.log(err);
+                    reject(err);
+                    return;
+                }
+                if(result < 1){
+                    reject("User not in DB");
+                    return;
+                }
+                let subscriptionArr = JSON.parse(result[0]['subscription']);
+                subscriptionArr.push(subscription);
 
-    axios.post("http://localhost/notification/sendNotification", params, config).then(() => {
-        console.log("done");
-    }).catch(console.log);
+                db.query(
+                    'UPDATE user SET subscription=?  WHERE username=?',
+                    [JSON.stringify(subscriptionArr), hash(username)],
+                    function (err, result, fields) {
+                        if (err) {
+                            console.log(err);
+                            reject(err);
+                            return;
+                        }
+                        resolve(true);
+                    }
+                );
+            })
+    })
+}
+
+/**
+ *
+ * @param {String} lesson String describing the lesson to search for
+ * @returns {Promise<webPush.PushSubscription[]>} List of all matching subscriptions
+ */
+function getSubscriptions(lesson){
+    return new Promise((resolve, reject) => {
+        db.query(
+            'SELECT subscription FROM user WHERE ? in (lk, fachrichtung) UNION SELECT subscription FROM user LEFT JOIN fach on user.id = fach.user WHERE ? = fach.fach',
+            [lesson, lesson],
+            function (err, result, fields) {
+                if (err) {
+                    console.log(err);
+                    reject(err);
+                    return;
+                }
+                if(result.length < 1){
+                    reject("Keine Ergebnisse");
+                    return;
+                }
+                let res = [];
+                result.forEach(element => {
+                    JSON.parse(element['subscription']).forEach(subscription => {
+                        res.push(subscription);
+                    })
+                })
+                resolve(res);
+            }
+        );
+    })
 }

@@ -1,5 +1,5 @@
 // @ts-nocheck
-const cacheVersion = '1.86';
+const cacheVersion = '2.00';
 const cacheName = 'untmerger_v' + cacheVersion;
 const toCache = [
 	'/',
@@ -7,11 +7,11 @@ const toCache = [
 	'/data/timetable.js',
 	'/data/settings.js',
 	'/data/manifest.webmanifest',
-	//'/icons/icon_apple.png',
-	//'/icons/icon.png',
+	'/icons/icon_apple.png',
+	'/icons/icon.png',
 	'/settings.html',
 	'/data/settings.css',
-	//'icons/background.png'
+	'icons/background.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -55,7 +55,7 @@ self.addEventListener('fetch', (event) => {
 
 self.addEventListener('message', (event) => {
 	if (event.data && event.data.type === 'INIT_PORT') {
-		getVersionPort = event.ports[0];
+		let getVersionPort = event.ports[0];
 		getVersionPort.onmessage = (event) => {
 			switch (event.data.type) {
 				case 'GET':
@@ -101,6 +101,5 @@ self.addEventListener('push', function (event) {
 				body: payload.body
 			})
 		);
-		return;
 	}
 });

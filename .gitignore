@@ -5,5 +5,4 @@ config.json
 config.env
 .vscode
 data
-notification.env
 .idea/
