@@ -292,11 +292,13 @@ app.post(path + '/setup', (req, res) => {
                                             data.username = req.body.username;
                                             data.secret = encrypt(req.body.secret);
                                             data.type = "secret";
-                                            res.status(200).send({
-                                                message: 'OK',
-                                                prefs: prefs,
-                                                jwt: jwt.sign(data, config.secrets.JWT_SECRET)
-                                            });
+                                            signJwt(data).then(signed => {
+                                                res.send({
+                                                    message: 'OK',
+                                                    prefs: prefs,
+                                                    jwt: signed,
+                                                })
+                                            })
                                         });
                                     })
                                     .catch((e) => {
@@ -327,12 +329,13 @@ app.post(path + '/setup', (req, res) => {
                                             data.username = req.body.usernamePw;
                                             data.password = encrypt(req.body.password);
                                             data.type = "password";
-
-                                            res.status(200).send({
-                                                message: 'OK',
-                                                prefs: prefs,
-                                                jwt: jwt.sign(data, config.secrets.JWT_SECRET)
-                                            });
+                                            signJwt(data).then(signed => {
+                                                res.send({
+                                                    message: "OK",
+                                                    prefs: prefs,
+                                                    jwt: signed
+                                                })
+                                            })
                                         });
                                     })
                                     .catch((e) => {
