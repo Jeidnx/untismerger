@@ -449,18 +449,14 @@ app.post(path + '/getStats', (req, res) => {
             return;
         }
         res.setHeader('Content-Type', 'application/json');
-        isUserAdmin(decoded['username']).then(bool => {
+        isUserAdmin(decoded['username']).then(async  bool => {
             if (bool) {
                 let st = {};
 
-                // Is there a better way for this?
-                getStatistics().then(stats => {
-                    st.requests = stats;
-                    getUserCount().then(value => {
-                        st['users'] = value;
-                        res.status(200).send(JSON.stringify(st));
-                    });
-                });
+                st.requests = await getStatistics().catch(console.log) || {};
+                st.users = await getUserCount().catch(console.log) || 0;
+                res.send(st);
+
             } else {
                 res.status(403).send({error: true, message: 'Keine Rechte'});
             }
@@ -475,7 +471,7 @@ app.post(path + 'updateUserPrefs', (req, res) => {
     res.status(201).send({message: "created"});
 });
 app.get(path + '/vapidPublicKey', (req, res) => {
-    updateUserPrefs("vapidPublicKey")
+    newRequest("vapidPublicKey")
     res.status(200).send(config.secrets.VAPID_PUBLIC);
 })
 app.post(path + '/register', function (req, res) {
