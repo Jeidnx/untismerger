@@ -64,8 +64,22 @@ document.getElementById('localStorageDelJWT').addEventListener('click', () => {
 	}
 });
 // JWT Kopieren
-document.getElementById('copyJwt').addEventListener('click', () => {
-	navigator.clipboard.writeText(localStorage.getItem('jwt'));
+document.getElementById('resetProfile').addEventListener('click', () => {
+	if(window.confirm("Bist du dir sicher? Alle Daten werden gelöscht.")){
+		fetch('/api/deleteUser', {
+			method: 'POST',
+			body: new URLSearchParams({
+				'jwt': localStorage.getItem("jwt")
+			})
+		}).then(res => {
+			if(res.status === 200){
+				localStorage.removeItem('jwt');
+				window.location.href = '/setup';
+			}else{
+				console.log(res);
+			}
+		});
+	}
 });
 // Back Button
 document.getElementById('backButton').addEventListener('click', () => {
@@ -75,9 +89,9 @@ document.getElementById('backButton').addEventListener('click', () => {
 //Setup color picker
 const colorEnum = JSON.parse(localStorage.getItem('colorEnum'));
 function colorPickerInit() {
-	var colorPickerHTML =
+	let colorPickerHTML =
 		'<h3>Farben für deine Fächer Auswählen</h3><table><tr><th>Fach</th><th>Farbe</th></tr>';
-	for (var key in colorEnum) {
+	for (let key in colorEnum) {
 		colorPickerHTML += `<tr><td>${key}</td><td><input type="color" id="${key}" value="${colorEnum[key]}"/></td></tr>`;
 	}
 	colorPickerHTML +=
@@ -86,7 +100,7 @@ function colorPickerInit() {
 }
 colorPickerInit();
 document.getElementById('colorPickerSubmit').addEventListener('click', () => {
-	for (var key in colorEnum) {
+	for (let key in colorEnum) {
 		// @ts-ignore
 		colorEnum[key] = document.getElementById(key).value;
 	}
@@ -162,3 +176,4 @@ function urlBase64ToUint8Array(base64String) {
 	}
 	return outputArray;
 }
+

@@ -173,7 +173,6 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
         return;
     }
     jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
-
         if(!decoded.type){
             res.status(400).send({error: true, message: "Outdated JWT"})
             return
@@ -275,42 +274,7 @@ app.post(path + '/setup', (req, res) => {
     switch (req.body['stage']) {
         case '1': {
             // Stage 1
-            if (req.body['jwt'] && req.body['jwt'] !== '') {
-                jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
-                    if (err) {
-                        res.status(400).send({error: true, message: 'Invalid JWT'});
-                        return;
-                    }
-                    const untis = new WebUntisLib.WebUntisSecretAuth(
-                        schoolName,
-                        decoded['username'],
-                        decoded['secret'],
-                        schoolDomain
-                    );
-                    untis
-                        .login()
-                        .then(() => {
-                            if (!isUserRegistered(decoded['username'])) {
-                                res.status(418).send({error: true, message: 'how?'});
-                                return;
-                            }
-                            getUserPreferences(decoded['username'])
-                                .then((prefs) => {
-                                    res.status(200).send({message: 'OK', prefs: prefs});
-                                })
-                                .catch((e) => {
-                                    res.status(500).send({error: true, message: e});
-                                });
-                        })
-                        .catch(() => {
-                            res
-                                .status(400)
-                                .send({error: true, message: 'Invalid Credentials'});
-                        });
-                });
-                return;
-            }
-            else if ((req.body['secret'] !== "") && (req.body['username'] !== '')) {
+            if ((req.body['secret'] !== "") && (req.body['username'] !== '')) {
                 const untis = new WebUntisLib.WebUntisSecretAuth(
                     schoolName,
                     req.body['username'],
@@ -437,9 +401,10 @@ app.post(path + '/setup', (req, res) => {
             else {
                 throw new Error("Invalid");
             }
-            console.log(req.body['username']);
             userObj['secureid'] = registerUser(userObj);
-            res.send({message: 'OK', jwt: jwt.sign(userObj, jwtSecret)});
+            signJwt(userObj).then(signed => res.send({message: "OK", jwt: signed})).catch(msg => {
+                res.status(500).send({error: true, message: msg});
+            })
             return;
         }
         default: {
@@ -485,7 +450,7 @@ app.get(path + '/vapidPublicKey', (req, res) => {
     newRequest("vapidPublicKey")
     res.status(200).send(config.secrets.VAPID_PUBLIC);
 })
-app.post(path + '/register', function (req, res) {
+app.post(path + '/register', (req, res) => {
     newRequest("register");
     if(!req.body["subscription"] || !req.body['jwt']) {
         res.status(400).send({error: true, message: "Missing Arguments"});
@@ -499,7 +464,21 @@ app.post(path + '/register', function (req, res) {
 
 
 });
-
+app.post(path + '/deleteUser', (req, res) => {
+    if(!req.body['jwt']){
+        res.status(400).send({error: true, message: "Missing args"});
+        return;
+    }
+    jwt.verify(req.body['jwt'], config.secrets.JWT_SECRET, (err, decoded) => {
+        if(err){
+            res.status(400).send({error: true, message: "Invalid JWT"});
+            return;
+        }
+        deleteUser(decoded['username']).then(() => {
+            res.send({message: "Deleted"});
+        })
+    })
+})
 
 /**
  * Saves statistic data
@@ -617,7 +596,7 @@ function registerUser(userdata) {
     let randomid = getRandomInt(100000);
     db.execute(
         'INSERT INTO user (username, lk, fachrichtung, secureid) VALUES (?, ?, ?, ?)',
-        [hash(userdata.username), userdata.lk, userdata.fachRichtung, randomid],
+        [hash(userdata.username), userdata.lk, userdata.fachrichtung, randomid],
         function (err, result, _) {
             if (err) {
                 console.log(err);
@@ -888,5 +867,30 @@ function getSubscriptions(lesson){
                 resolve(res);
             }
         );
+    })
+}
+
+/**
+ *
+ * @param {Object} userObj User Obj with data to sign
+ * @returns {Promise<String>} Signed Key, Base64URL encoded
+ */
+function signJwt(userObj){
+    return new Promise((resolve, reject) => {
+    userObj.version = config.constants.jwtVersion;
+    resolve(jwt.sign(userObj, config.secrets.JWT_SECRET));
+    })
+}
+
+function deleteUser(user){
+    return new Promise((resolve, reject) => {
+    db.query("DELETE user, fach FROM user JOIN fach on user.id = fach.user where username = ?", [hash(user)], (err, result) => {
+        if(err){
+            console.log(err);
+            reject(err);
+            return;
+        }
+        resolve();
+    })
     })
 }
