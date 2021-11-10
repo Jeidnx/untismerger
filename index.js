@@ -201,7 +201,6 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
                     return []
                 });
                 let fachRichtung = untis.getTimetableForRange(startDate, endDate, decoded['fachrichtung'], 1).catch(err => {
-                    console.log(err);
                     return []
                 });
                 let sonstiges = untis.getTimetableForRange(startDate, endDate, 2232, 1).catch(() => {
@@ -421,7 +420,7 @@ app.post(path + '/setup', (req, res) => {
             selectedCourses.push(req.body['sp'], req.body['ek']);
             let userObj = {
                 lk: classIdEnum[req.body['lk']],
-                fachRichtung: classIdEnum[req.body['fachRichtung']],
+                fachrichtung: classIdEnum[req.body['fachRichtung']],
                 sonstiges: selectedCourses,
             };
 
