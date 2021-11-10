@@ -8,41 +8,21 @@ if ('serviceWorker' in navigator) {
 let stage = 1;
 let submitForm = document.getElementById('form');
 let qrButton = document.getElementById('qrButton');
-let manuelButton = document.getElementById('manuelButton');
-
+document.getElementById('manuelButton');
 let barcodeDetector;
 if ('BarcodeDetector' in window) {
-	// @ts-ignore
-	qrButton.disabled = false;
-	// @ts-ignore
 	barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
 }
-const videoSettings = {
-	video: {
-		width: {
-			min: 270,
-			ideal: 1080,
-			max: 1080
-		},
-		height: {
-			min: 270,
-			ideal: 1080,
-			max: 1080
-		},
-		aspectRatio: 1,
-		frameRate: { max: 30 },
-		facingMode: 'environment'
-	}
-};
 async function startVideo() {
 	return new Promise((resolve, reject) => {
-		navigator.mediaDevices
-			.getUserMedia(videoSettings)
+		window.navigator.mediaDevices
+			.getUserMedia({video: {
+					facingMode: "environment",
+				}, audio: false})
 			.then((mStream) => {
 				resolve(mStream);
-				return;
 			})
-			.catch((err) => {
+			.catch(() => {
 				reject('Keine Kamera');
 			});
 	});
@@ -68,8 +48,7 @@ async function detectQR(bitmap) {
 						.forEach((/** @type {string} */ element) => {
 							const e = element.split('=');
 							const key = e[0];
-							const val = e[1];
-							obj[key] = val;
+							obj[key] = e[1];
 						});
 
 					resolve(obj);
@@ -100,19 +79,21 @@ function submitHandler() {
 
 		formBody += `&${element.name}=${value}`;
 	}
-	var xhr = new XMLHttpRequest();
+	let xhr = new XMLHttpRequest();
 
 	xhr.addEventListener('load', () => {
 		if (!(xhr.status === 200)) {
-			document.getElementById('return1').innerHTML = xhr.response;
-			document.getElementById('returnJwt').innerHTML = xhr.response;
+			const message = JSON.parse(xhr.response).message;
+			document.getElementById('return1').innerHTML = message;
+			document.getElementById('returnJwt').innerHTML = message;
+			document.getElementById("return2").innerHTML = message;
 			return;
 		}
 
 		switch (stage) {
 			case 1: {
-				if (xhr.response !== 'OK') {
-					localStorage.setItem('jwt', xhr.response);
+				if (JSON.parse(xhr.response).jwt) {
+					localStorage.setItem('jwt', JSON.parse(xhr.response).jwt);
 					window.location.href = '/';
 					return;
 				}
@@ -120,17 +101,18 @@ function submitHandler() {
 				stage++;
 				document.getElementById('stage1qr').style.display = 'none';
 				document.getElementById('stage1manuel').style.display = 'none';
+				document.getElementById("stage1password").style.display = 'none';
 				document.getElementById('stage2').style.display = '';
 				return;
 			}
 			case 2: {
-				localStorage.setItem('jwt', xhr.response);
+				localStorage.setItem('jwt', JSON.parse(xhr.response)["jwt"]);
 				window.location.href = '/';
 				return;
 			}
 		}
 	});
-	xhr.open('POST', '/setup');
+	xhr.open('POST', '/api/setup');
 	xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 	xhr.send(formBody);
 }
@@ -149,15 +131,24 @@ function setStage(number) {
 // QR / Video handler
 qrButton.addEventListener('click', async () => {
 	let videoStream = document.getElementById('videoStream');
-	let captureButton = document.getElementById('captureButton');
+	document.getElementById('captureButton');
 	startVideo()
 		.then((mStream) => {
-			// @ts-ignore
+			let imageCp;
+			if('ImageCapture' in window){
+				imageCp = new ImageCapture(mStream.getTracks()[0]);
+			}else{
+				mStream
+					.getTracks()
+					.forEach((/** @type {{ stop: () => void; }} */ track) => {
+						track.stop();
+					});
+				throw new Error("ImageCapture API wird nicht unterstützt.");
+				return;
+			}
 			videoStream.srcObject = mStream;
-			// @ts-ignore
-			let imageCp = new ImageCapture(mStream.getTracks()[0]);
 
-			captureButton.addEventListener('click', async () => {
+			let interval = window.setInterval(async () => {
 				imageCp.grabFrame().then((bitmap) => {
 					detectQR(bitmap)
 						.then((qrCode) => {
@@ -166,6 +157,7 @@ qrButton.addEventListener('click', async () => {
 							document.getElementById('usernameInput').value = qrCode.user;
 							// @ts-ignore
 							document.getElementById('secretInput').value = qrCode.key;
+							clearInterval(interval);
 							submitHandler();
 
 							mStream
@@ -178,9 +170,25 @@ qrButton.addEventListener('click', async () => {
 							(err) => (document.getElementById('qrStatus').innerHTML = err)
 						);
 				});
-			});
+			}, 1000);
+			document.getElementById("qrBackButton").addEventListener("click", () => {
+				clearInterval(interval);
+				mStream
+					.getTracks()
+					.forEach((/** @type {{ stop: () => void; }} */ track) => {
+						track.stop();
+					});
+			})
 		})
 		.catch((error) => {
 			document.getElementById('qrStatus').innerHTML = error;
 		});
 });
+
+function resetInputs(){
+	document.getElementById("usernameInputPw").value = "";
+	document.getElementById("password").value = "";
+	document.getElementById("secretInput").value = "";
+	document.getElementById("usernameInput").value = "";
+	document.getElementById("jwtInput").value = "";
+}

@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no maximum-scale=1.0">
     <title>Einstellungen</title>
     <link rel="stylesheet" href="/data/settings.css">
+    <link rel="manifest" href="/data/manifest.webmanifest" type="application/json">
 </head>
 
 <body>
@@ -16,6 +17,11 @@
         <h4 id="serviceWorkerVersion">Version: Wird Geladen...</h4>
         <button type="button" id="serviceWorkerReregister">Update</button>
         <button type="button" id="localStorageDelJWT">Abmelden</button>
+    </section>
+    <section id="notifications">
+        <h3>Benachrichtigungen</h3>
+        <h4 id="notificationsReturn"></h4>
+        <button type="button" id="notificationsGet">Benachrichtigungen Erhalten</button>
     </section>
 
     <section id="colorPicker">

@@ -1,5 +1,5 @@
 // @ts-nocheck
-const cacheVersion = '1.86';
+const cacheVersion = '2.00';
 const cacheName = 'untmerger_v' + cacheVersion;
 const toCache = [
 	'/',
@@ -43,18 +43,19 @@ self.addEventListener('fetch', (event) => {
 	if (event.request.method === 'POST') {
 		return;
 	}
-
-	caches.match(event.request).then((response) => {
-		if (response) {
-			event.respondWith(response);
-		}
-		return;
-	});
+	event.respondWith(
+		caches.match(event.request).then((response) => {
+			if (response) {
+				return response;
+			}
+			return fetch(event.request);
+		})
+	);
 });
 
 self.addEventListener('message', (event) => {
 	if (event.data && event.data.type === 'INIT_PORT') {
-		getVersionPort = event.ports[0];
+		let getVersionPort = event.ports[0];
 		getVersionPort.onmessage = (event) => {
 			switch (event.data.type) {
 				case 'GET':
@@ -88,5 +89,17 @@ self.addEventListener('message', (event) => {
 					}
 			}
 		};
+	}
+});
+
+self.addEventListener('push', function (event) {
+	console.log("Got Push: ", event.data.text());
+	const payload = event.data.json();
+	if (payload.type === 'notification') {
+		event.waitUntil(
+			self.registration.showNotification('Untismerger', {
+				body: payload.body
+			})
+		);
 	}
 });

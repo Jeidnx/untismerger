@@ -4,3 +4,5 @@ config.json
 *.sh
 config.env
 .vscode
+data
+.idea/
