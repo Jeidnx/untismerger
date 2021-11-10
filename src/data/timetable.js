@@ -5,61 +5,8 @@ if ('serviceWorker' in navigator) {
 	navigator.serviceWorker.register('/sw.js').then((registration) => {});
 }
 
-function urlBase64ToUint8Array(base64String) {
-	let padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-	let base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
 
-	let rawData = window.atob(base64);
-	let outputArray = new Uint8Array(rawData.length);
 
-	for (let i = 0; i < rawData.length; ++i) {
-		outputArray[i] = rawData.charCodeAt(i);
-	}
-	return outputArray;
-}
-
-// Service worker push notification
-function getNotificationSubscription() {
-	Notification.requestPermission().then((permission) => {
-		if (permission === 'granted') {
-			navigator.serviceWorker.ready
-				.then(function (registration) {
-					// Use the PushManager to get the user's subscription to the push service.
-					return registration.pushManager
-						.getSubscription()
-						.then(async function (subscription) {
-							if (subscription) {
-								return subscription;
-							}
-
-							const response = await fetch(
-								'/api/vapidPublicKey'
-							);
-							const vapidPublicKey = await response.text();
-							const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
-
-							return registration.pushManager.subscribe({
-								userVisibleOnly: true,
-								applicationServerKey: convertedVapidKey
-							});
-						});
-				})
-				.then(function (subscription) {
-					if(!subscription){
-						return;
-					}
-
-					let xhr = new XMLHttpRequest();
-					xhr.open('POST', '/api/register', true);
-					xhr.setRequestHeader(
-						'Content-type',
-						'application/x-www-form-urlencoded'
-					);
-					xhr.send('subscription=' + JSON.stringify(subscription) + '&jwt=' + localStorage.getItem("jwt"));
-				});
-		}
-	});
-}
 
 let colorEnum = JSON.parse(localStorage.getItem('colorEnum')) || {};
 

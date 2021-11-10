@@ -95,3 +95,70 @@ document.getElementById('colorPickerSubmit').addEventListener('click', () => {
 document.getElementById('colorPickerRefresh').addEventListener('click', () => {
 	colorPickerInit();
 });
+document.getElementById("notificationsGet").addEventListener("click", () => {
+	let notificationReturn = document.getElementById("notificationsReturn");
+	getNotificationSubscription().then(e => notificationReturn.innerText = e).catch(e => notificationReturn.innerText = e);
+})
+// Service worker push notification
+function getNotificationSubscription() {
+	return new Promise((resolve, reject) => {
+	Notification.requestPermission().then((permission) => {
+		if (permission === 'granted') {
+			navigator.serviceWorker.ready
+				.then(function (registration) {
+					// Use the PushManager to get the user's subscription to the push service.
+					return registration.pushManager
+						.getSubscription()
+						.then(async function (subscription) {
+							if (subscription) {
+								return subscription;
+							}
+
+							const response = await fetch(
+								'/api/vapidPublicKey'
+							);
+							const vapidPublicKey = await response.text();
+							const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+
+							return registration.pushManager.subscribe({
+								userVisibleOnly: true,
+								applicationServerKey: convertedVapidKey
+							});
+						});
+				})
+				.then(function (subscription) {
+					if(!subscription){
+						return;
+					}
+
+					let xhr = new XMLHttpRequest();
+					xhr.addEventListener('load', () => {
+						if (!(xhr.status === 201)) {
+							reject("Konnte Subscription Object nicht an den Server Senden.");
+						}else{
+							resolve("Erfolgreich Angelegt");
+						}
+					})
+					xhr.open('POST', '/api/register', true);
+					xhr.setRequestHeader(
+						'Content-type',
+						'application/x-www-form-urlencoded'
+					);
+					xhr.send('subscription=' + JSON.stringify(subscription) + '&jwt=' + localStorage.getItem("jwt"));
+				});
+		}
+	}).catch(reject);
+	})
+}
+function urlBase64ToUint8Array(base64String) {
+	let padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+	let base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+
+	let rawData = window.atob(base64);
+	let outputArray = new Uint8Array(rawData.length);
+
+	for (let i = 0; i < rawData.length; ++i) {
+		outputArray[i] = rawData.charCodeAt(i);
+	}
+	return outputArray;
+}

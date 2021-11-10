@@ -122,7 +122,19 @@ const schoolDomain = config.secrets.SCHOOL_DOMAIN;
 const port = process.env.PORT;
 const TTL = config.constants.ttl;
 const path = config.constants.apiPath;
-const db = mysql.createPool(config.mysql);
+let db;
+if(typeof process.env.DEV == 'undefined'){
+    console.log("Missing env vars");
+    process.exit(1);
+}
+
+if(!(process.env.DEV === 'FALSE')){
+    console.log("Running in DEV Environment");
+    db = mysql.createPool(config.mysqlDev);
+}else{
+    console.log("Running in PROD Environment");
+    db = mysql.createPool(config.mysql);
+}
 webPush.setVapidDetails(
     'https://github.com/Jeidnx',
     config.secrets.VAPID_PUBLIC,
