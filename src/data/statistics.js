@@ -1,40 +1,31 @@
-// localStorage.getItem('jwt')
-var items = [];
-$.post("/getStats", {jwt: localStorage.getItem('jwt')}, function (data) {
-    try {
-        const d = data;
-        if(d.error) {
-            $("#visualize").text(d.message);
-            console.log("ERROR:");
-            console.log(d.message);
-            return;
+let items = [];
+fetch('/api/getStats', {
+    method: 'POST',
+    body: new URLSearchParams({
+        'jwt': localStorage.getItem("jwt")
+    })
+}).then(res => res.json()).then(json => {
+    document.getElementById("registered").innerText = json.users;
+    const days = json.requests;
+
+    for(const k in days) {
+        if(days.hasOwnProperty(k)) {
+            const day = days[k];
+            const count = day.getTimeTableWeek +day.setup + day.getStats + day.updateUserPrefs + day.vapidPublicKey + day.register;
+            items.push({x: day.date, y: count});
         }
-        const users = d.users;
-        const days = d.requests;
-        $("#registered").text(users);
-        for(const k in days) {
-            if(days.hasOwnProperty(k)) {
-                const day = days[k];
-                const count = day.get["/"] +day.get["/setup"] + day.get["*"] + day.post["/setup"] + day.post["/getTimeTable"];
-                items.push({x: k, y: count});
-            }
-        }
+    }
 
+    let container = document.getElementById("visualize");
 
-        var container = document.getElementById("visualize");
+    let dataset = new vis.DataSet(items);
+    let options = {
+        start: "2021-11-01",
+        end: getDate(),
+    };
+    let graph2d = new vis.Graph2d(container, dataset, options);
 
-        var dataset = new vis.DataSet(items);
-        var options = {
-            start: "2021-11-01",
-            end: getDate(),
-        };
-        var graph2d = new vis.Graph2d(container, dataset, options);
-
-
-    } catch (e) {console.log(e)}
-})
-
-
+}).catch(console.error);
 
 
 

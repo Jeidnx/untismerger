@@ -136,15 +136,16 @@ if (!jwtSecret || !schoolName || !schoolDomain || !port) {
 const iv = new Buffer.alloc(16, config.secrets.SCHOOL_NAME);
 
 
-//TODO: Port this to database
-
-// Init stats
-// Overall request counting
-// User hashed list
-let stats = loadData();
-// initScheduler();
-// createUserArray();
-
+// SQL Statistics
+let stats = {
+    "getTimeTableWeek": 0,
+    "setup": 0,
+    "getStats": 0,
+    "updateUserPrefs": 0,
+    "register": 0,
+    "vapidPublicKey": 0,
+};
+initScheduler();
 
 
 const app = express();
@@ -154,6 +155,7 @@ http.createServer(app).listen(port);
 app.use(express.urlencoded({extended: true}));
 
 app.post(path + '/getTimeTableWeek', (req, res) => {
+    newRequest("getTimeTableWeek");
     if (!req.body['jwt'] || !req.body['startDate'] || !req.body.endDate) {
         res.status(406).send('Missing args');
         return;
@@ -254,11 +256,7 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
     })
 })
 app.post(path + '/setup', (req, res) => {
-    const date = getDate();
-    /*if (!stats.requests.hasOwnProperty(date)) {
-        constructDateStruct(date);
-    }
-    stats.requests[date]['post']['/setup'] += 1;*/
+    newRequest("setup");
     if (!req.body['stage']) {
         res.status(400).send({error: true, message: 'Missing Arguments'});
         return;
@@ -440,6 +438,7 @@ app.post(path + '/setup', (req, res) => {
     }
 });
 app.post(path + '/getStats', (req, res) => {
+    newRequest("getStats");
     if (!req.body['jwt']) {
         res.status(406).send('Missing args');
         return;
@@ -453,9 +452,15 @@ app.post(path + '/getStats', (req, res) => {
         isUserAdmin(decoded['username']).then(bool => {
             if (bool) {
                 let st = {};
-                st['requests'] = stats.requests;
-                st['users'] = stats.registeredUsers.length;
-                res.status(200).send(JSON.stringify(st));
+
+                // Is there a better way for this?
+                getStatistics().then(stats => {
+                    st.requests = stats;
+                    getUserCount().then(value => {
+                        st['users'] = value;
+                        res.status(200).send(JSON.stringify(st));
+                    });
+                });
             } else {
                 res.status(403).send({error: true, message: 'Keine Rechte'});
             }
@@ -463,15 +468,18 @@ app.post(path + '/getStats', (req, res) => {
     });
 });
 app.post(path + 'updateUserPrefs', (req, res) => {
+    newRequest("updateUserPrefs");
     if (!req.body['jwt'] || !req.body['prefs']) {
         res.status(400).send({error: true, message: 'Invalid JWT'});
     }
     res.status(201).send({message: "created"});
 });
 app.get(path + '/vapidPublicKey', (req, res) => {
+    updateUserPrefs("vapidPublicKey")
     res.status(200).send(config.secrets.VAPID_PUBLIC);
 })
 app.post(path + '/register', function (req, res) {
+    newRequest("register");
     if(!req.body["subscription"] || !req.body['jwt']) {
         res.status(400).send({error: true, message: "Missing Arguments"});
         return;
@@ -485,22 +493,31 @@ app.post(path + '/register', function (req, res) {
 
 });
 
-/**
- * Loads the statistic data
- * @returns {Object} Returns JSON Object with the statistics
- */
-function loadData() {
-    //TODO: Implement with Database
-    return null;
-}
 
 /**
  * Saves statistic data
  */
 function saveData() {
-    //TODO: Implement with Database
+    let date = getDate();
+    db.execute("INSERT INTO statistics(date, getTimeTableWeek, setup, getStats, updateUserPrefs, vapidPublicKey, register) VALUES (?, ?,?,?,?,?,?)" +
+        " ON DUPLICATE KEY UPDATE getTimeTableWeek = getTimeTableWeek + ?, setup = setup + ?, getStats = getStats + ?," +
+        " updateUserPrefs = updateUserPrefs + ?, vapidPublicKey = vapidPublicKey + ?, register = register + ?",
+        [date, stats.getTimeTableWeek, stats.setup, stats.getStats, stats.updateUserPrefs, stats.vapidPublicKey, stats.register,
+        stats.getTimeTableWeek, stats.setup, stats.getStats, stats.updateUserPrefs, stats.vapidPublicKey, stats.register],
+        function (err) {
+            if(err) {
+                console.log("[STATISTICS] " + err.message);
+            }
+        });
 }
 
+function newRequest(endpoint) {
+    stats[endpoint] = stats[endpoint] + 1;
+}
+
+/**
+ * Creates sheduler
+ */
 function initScheduler() {
     setInterval(function () {
         saveData();
@@ -511,27 +528,6 @@ function getDate() {
     return new Date().toISOString().slice(0, 10);
 }
 
-//TODO: What need to happen with this shitshow
-function constructDateStruct(s) {
-    // Please dont kill me
-    stats.requests[s] = {};
-    stats.requests[s].get = {};
-    stats.requests[s].get['/'] = 0;
-    stats.requests[s].get['/setup'] = 0;
-    stats.requests[s].get['*'] = 0;
-    stats.requests[s].post = {};
-    stats.requests[s].post['/setup'] = 0;
-    stats.requests[s].post['/getTimeTable'] = 0;
-}
-
-function createUserArray() {
-    if (!stats.hasOwnProperty('registeredUsers')) {
-        stats.registeredUsers = [];
-    }
-    if (!stats.hasOwnProperty('requests')) {
-        stats.requests = {};
-    }
-}
 
 /**
  * Basic hashing function
@@ -640,6 +636,36 @@ function registerUser(userdata) {
 
 function getRandomInt(max) {
     return Math.floor(Math.random() * max);
+}
+
+/**
+ * Count of registered users
+ * @returns {Promise<int>}
+ */
+async function getUserCount() {
+    return new Promise((resolve, reject) => {
+        db.query("SELECT COUNT(id) as c FROM user;", function (err, res) {
+            if(err) {
+                reject(err.message);
+            }
+            resolve(res[0].c);
+        });
+    });
+}
+
+/**
+ * Returns statistics
+ * @returns {Promise<Object>}
+ */
+async function getStatistics() {
+    return new Promise((resolve, reject) => {
+        db.query("SELECT * FROM statistics;", function (err, res) {
+            if(err) {
+                reject(err.message);
+            }
+            resolve(res);
+        });
+    });
 }
 
 /**
