@@ -723,7 +723,7 @@ async function cancelHandler(elem, lessonNr){
                 return;
             }
             if(result.affectedRows > 0){
-                sendNotification(elem.su[0].longname, convertUntisDateToDate(elem.date), lessonNr)
+                sendNotification(elem.su[0].longname, convertUntisTimeDatetoDate(elem.date, elem.startTime), lessonNr)
             }
         })
 }
@@ -731,15 +731,21 @@ async function cancelHandler(elem, lessonNr){
 /**
  *
  * @param {int} date Untis date format
+ * @param {int} startTime Untis Time format
  * @return {Date} JS Date Object
  */
-function convertUntisDateToDate(date){
+function convertUntisTimeDatetoDate(date, startTime){
 
     const year = Math.floor(date / 10000)
     const month = Math.floor((date - (year * 10000)) / 100);
-    const day = (date - (year * 10000) - month * 100);
+    const day = (date - (year * 10000) - month * 100)
 
-    return new Date(year, month - 1, day, 8)
+    let index;
+    startTime >= 100 ? index = 2 : index = 1;
+    const hour = Math.floor(startTime / Math.pow(10, index))
+    const minutes = Math.floor(((startTime / 100) - hour) *100)
+
+    return new Date(year, month - 1, day, hour, minutes)
 }
 
 /**
@@ -749,6 +755,10 @@ function convertUntisDateToDate(date){
  * @param {String} lessonNr Welche Kurse betrroffen sind.
  */
 async function sendNotification(lesson, date, lessonNr){
+    if(date > new Date()){
+        return;
+    }
+
     console.log("Sendet Benachrichtigung für: ", lesson, date.toISOString().slice(0, 10))
     const payload = {
         type: "notification",
@@ -767,8 +777,8 @@ async function sendNotification(lesson, date, lessonNr){
                         console.log(response.statusCode, response);
                     }
                 })
-                .catch(function (error) {
-                    console.log("Error: ",error);
+                .catch(error => {
+                    console.log("Invalid  subscription Object");
                 });
         });
     }).catch((msg) => {
