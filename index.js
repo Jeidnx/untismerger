@@ -173,6 +173,10 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
         return;
     }
     jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
+        if(err){
+            res.status(400).send({error: true, message: "Invalid JWT"});
+            return;
+        }
         if(!decoded.type){
             res.status(400).send({error: true, message: "Outdated JWT"})
             return
