@@ -293,12 +293,14 @@ function scrollWeeks(boolIn) {
 	let curr = currentDay.getTime();
 
 	if (boolIn) {
+		//TODO: Fix this.
 		curr += 7 * 60 * 60 * 24 * 1000;
 		currentDay = new Date(curr);
 		refreshHandler(false).then(function () {
 			body.classList.remove('switching');
 		});
 	} else {
+
 		curr -= 7 * 60 * 60 * 24 * 1000;
 
 		if (curr < new Date().getTime()) {

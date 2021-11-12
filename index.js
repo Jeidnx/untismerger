@@ -178,6 +178,10 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
             return
         }
         let untis;
+        if(!decoded.type || !decoded.version){
+            res.status(400).send({error: true, message: "Outdated JWT"});
+            return;
+        }
         if(decoded.type == 'secret'){
             untis = new WebUntisLib.WebUntisSecretAuth(
                 config.secrets.SCHOOL_NAME,
@@ -196,7 +200,7 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
             untis.login().then(async () => {
                 const startDate = new Date(req.body.startDate);
                 const endDate = new Date(req.body.endDate);
-                let lk = untis.getOwnClassTimetableForRange(startDate, endDate).catch(() => {
+                let lk = untis.getTimetableForRange(startDate, endDate, decoded['lk']).catch(() => {
                     return []
                 });
                 let fachRichtung = untis.getTimetableForRange(startDate, endDate, decoded['fachrichtung'], 1).catch(err => {
@@ -790,6 +794,8 @@ async function sendNotification(lesson, date, lessonNr){
                 .then((response) => {
                     if (response.statusCode !== 201) {
                         console.log(response.statusCode, response);
+                    }else{
+                        console.log("Sent Notificatin");
                     }
                 })
                 .catch(error => {
@@ -881,6 +887,7 @@ function getSubscriptions(lesson){
 function signJwt(userObj){
     return new Promise((resolve, reject) => {
     userObj.version = config.constants.jwtVersion;
+    console.log(userObj);
     resolve(jwt.sign(userObj, config.secrets.JWT_SECRET));
     })
 }
