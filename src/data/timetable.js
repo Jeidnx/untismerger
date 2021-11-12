@@ -94,7 +94,7 @@ function displayWeek(purge, date){
 			if(timeTable[week[1]]){
 				addWeek(week).then(resolve);
 			}else{
-				displayWeek(true, new Date(week[1])).then(resolve);
+				displayWeek(true, new Date(week[1])).then(resolve).catch(reject);
 			}
 		}
 	})
@@ -200,8 +200,6 @@ function getWeek(week){
 		return new Date(year, month - 1, day, 8)
 	}
 }
-
-refreshHandler(false);
 
 body.addEventListener(
 	'touchstart',
@@ -332,3 +330,4 @@ function displayError(error){
 		body.classList.remove('error');
 	}, 3000);
 }
+refreshHandler(false);
