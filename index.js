@@ -200,7 +200,7 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
             untis.login().then(async () => {
                 const startDate = new Date(req.body.startDate);
                 const endDate = new Date(req.body.endDate);
-                let lk = untis.getTimetableForRange(startDate, endDate, decoded['lk']).catch(() => {
+                let lk = untis.getTimetableForRange(startDate, endDate, decoded['lk'], 1).catch(() => {
                     return []
                 });
                 let fachRichtung = untis.getTimetableForRange(startDate, endDate, decoded['fachrichtung'], 1).catch(err => {
