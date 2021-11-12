@@ -89,7 +89,7 @@ function displayWeek(purge, date){
 			})
 			getWeek(week).then(() => {
 				addWeek(week).then(resolve);
-			});
+			}).catch(reject);
 		}else{
 			if(timeTable[week[1]]){
 				addWeek(week).then(resolve);
@@ -257,20 +257,15 @@ async function refreshHandler(purge) {
 	return new Promise((resolve, reject) => {
 		if (body.classList.contains('refreshing')) {
 			resolve(false);
+			return;
 		}
 		if (!window.navigator.onLine) {
 			if (purge) {
-				body.classList.add('offline');
-				setTimeout(() => {
-					body.classList.remove('offline');
-				}, 3000);
+				displayError("Offline");
 				resolve(false);
 				return;
 			} else if (!timeTable[currentDay.toISOString().slice(0, 10)]) {
-				body.classList.add('offline');
-				setTimeout(() => {
-					body.classList.remove('offline');
-				}, 3000);
+				displayError("Offline");
 				resolve(false);
 				return;
 			}
@@ -279,7 +274,11 @@ async function refreshHandler(purge) {
 		displayWeek(purge, currentDay).then(() => {
 			body.classList.remove('refreshing');
 			resolve(true);
-		});
+		}).catch((err) => {
+			body.classList.remove('refreshing');
+			displayError(err);
+			resolve(false);
+		})
 	});
 }
 /**
@@ -321,3 +320,15 @@ document.getElementById('refreshButton').addEventListener('click', () => {
 	document.getElementById('slide').checked = false;
 	refreshHandler(true);
 });
+
+/**
+ *
+ * @param {String} error Error to display;
+ */
+function displayError(error){
+	body.classList.add('error');
+	document.getElementById("errorMessage").innerText = error;
+	setTimeout(() => {
+		body.classList.remove('error');
+	}, 3000);
+}

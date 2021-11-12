@@ -79,7 +79,7 @@ body.refreshing .refresher {
     border-bottom-style: solid;*/
 	border-style: solid;
 	border-color: #121212;
-	border-width: 1%;
+	border-width: 1px;
 	border-radius: 5%;
 	flex-wrap: nowrap;
 	background-color: #1d1d1d;
@@ -94,14 +94,13 @@ body {
 	flex-direction: row;
 	overscroll-behavior: none;
 	overflow: hidden;
-	scroll-behavior: none;
 	touch-action: manipulation;
 	position: fixed;
 	background-color: #121212;
 	color: #bebebe;
 	font-family: sans-serif;
 }
-.offlineMessage {
+.errorMessage {
 	visibility: hidden;
 	position: absolute;
 	width: 100vw;
@@ -114,7 +113,7 @@ body {
 	font-weight: bold;
 	font-size: 1.2vmax;
 }
-body.offline .offlineMessage {
+body.error .errorMessage {
 	visibility: visible;
 }
 #variableContent {
@@ -141,9 +140,9 @@ body.offline .offlineMessage {
 	text-decoration: none;
 	font-size: 4em;
 	color: #bb86fc;
-	-webkit-transition: all 0.15s ease-out 0;
-	-moz-transition: all 0.15s ease-out 0;
-	transition: all 0.45s ease-out 0;
+	-webkit-transition: all 0.15s ease-out;
+	-moz-transition: all 0.15s ease-out;
+	transition: all 0.45s ease-out;
 	position: fixed;
 	bottom: 2%;
 	right: 2%;
@@ -159,9 +158,9 @@ body.offline .offlineMessage {
 	bottom: 11%;
 	position: fixed;
 	right: -190px;
-	-webkit-transition: all 0.15s ease-out 0;
-	-moz-transition: all 0.15s ease-out 0;
-	transition: all 0.15s ease-out 0;
+	-webkit-transition: all 0.15s ease-out;
+	-moz-transition: all 0.15s ease-out;
+	transition: all 0.15s ease-out;
 	width: 8rem;
 	padding: 1.5em;
 }
@@ -169,17 +168,16 @@ body.offline .offlineMessage {
 .sidebar a {
 	color: white;
 	display: block;
-	font-family: Arial;
+	font-family: Arial, serif;
 	font-size: 1.6em;
-	margin: 0;
 	cursor: pointer;
 	text-decoration: none;
 	background-color: #121212;
-	padding: 0.5em 0em 0.5em 0.5em;
+	padding: 0.5em 0 0.5em 0.5em;
 	border-radius: 20vh;
 	border-style: solid;
 	border-color: white;
-	margin-bottom: 3vh;
+	margin: 0 0 3vh;
 }
 
 .sidebar a:hover {
@@ -197,7 +195,6 @@ body.offline .offlineMessage {
 	-webkit-transform: translate(-26vw, 0);
 	-moz-transform: translate(-26vw, 0);
 	transform: translate(-26vw, 0);
-	transition: translate(-26vw, 0);
 }
 #slide:checked + .container .toggle {
 	right: 2%;
