@@ -266,6 +266,8 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
                 });
 
                 res.send({message: "OK", data: sendArr});
+            }).catch((err) => {
+                res.status(400).send({error: true, message: "Invalid credentials"});
             })
     })
 })
