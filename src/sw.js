@@ -7,11 +7,11 @@ const toCache = [
 	'/data/timetable.js',
 	'/data/settings.js',
 	'/data/manifest.webmanifest',
-	'/icons/icon_apple.png',
-	'/icons/icon.png',
+	//'/icons/icon_apple.png',
+	//'/icons/icon.png',
 	'/settings.html',
 	'/data/settings.css',
-	'icons/background.png'
+	//'icons/background.png'
 ];
 
 self.addEventListener('install', (event) => {

@@ -492,6 +492,19 @@ app.post(path + '/deleteUser', (req, res) => {
         })
     })
 })
+app.post(path + '/sendNotification', (req, res) =>  {
+    if(!req.body['text'] || !req.body['jwt']){
+        res.status(400).send({error:true, message: "Missing args"})
+    }
+    sendCustomNotification(req.body['text']).then((result) => {
+        console.log(result);
+        res.send(result);
+    }).catch(err => {
+        console.log(err);
+        res.send(err);
+    });
+
+})
 
 /**
  * Saves statistic data
@@ -813,6 +826,33 @@ async function sendNotification(lesson, date, lessonNr){
     })
 
 }
+function sendCustomNotification(text){
+    return new Promise((resolve, reject) => {
+        const options = {
+            TTL: TTL
+        };
+        getAllSubscriptions().then(subscriptions => {
+            subscriptions.forEach((/** @type {webPush.PushSubscription} */ user) => {
+                console.log(user);
+                webPush
+                    .sendNotification(user, JSON.stringify({type: "notification", body: text}), options)
+                    .then((response) => {
+                        if (response.statusCode !== 201) {
+                            console.log(response.statusCode, response);
+                        }else{
+                            console.log("Sent Notificatin");
+                        }
+                    })
+                    .catch(error => {
+                        console.log(error);
+                        console.log("Invalid  subscription Object");
+                    });
+            }).then(() => {
+                resolve({message: "created"});
+            });
+        }).catch(reject);
+    })
+}
 
 /**
  *
@@ -882,6 +922,25 @@ function getSubscriptions(lesson){
                 resolve(res);
             }
         );
+    })
+}
+function getAllSubscriptions(){
+    return new Promise((resolve, reject) => {
+        db.query('SELECT subscription FROM user', (err, result) => {
+            if(err){
+                console.log(err);
+                reject(err);
+                return;
+            }
+
+            let res = [];
+            result.forEach(element => {
+                JSON.parse(element['subscription']).forEach(subscription => {
+                    res.push(subscription);
+                })
+            })
+            resolve(res);
+        })
     })
 }
 

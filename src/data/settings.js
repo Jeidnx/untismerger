@@ -63,7 +63,7 @@ document.getElementById('localStorageDelJWT').addEventListener('click', () => {
 		window.location.href = '/setup';
 	}
 });
-// JWT Kopieren
+// Profil Löschen
 document.getElementById('resetProfile').addEventListener('click', () => {
 	if(window.confirm("Bist du dir sicher? Alle Daten werden gelöscht.")){
 		fetch('/api/deleteUser', {
@@ -111,6 +111,7 @@ document.getElementById('colorPickerRefresh').addEventListener('click', () => {
 });
 document.getElementById("notificationsGet").addEventListener("click", () => {
 	let notificationReturn = document.getElementById("notificationsReturn");
+	notificationReturn.innerText = "Laden...";
 	getNotificationSubscription().then(e => notificationReturn.innerText = e).catch(e => notificationReturn.innerText = e);
 })
 // Service worker push notification
@@ -144,7 +145,7 @@ function getNotificationSubscription() {
 					if(!subscription){
 						return;
 					}
-
+					console.log(subscription);
 					let xhr = new XMLHttpRequest();
 					xhr.addEventListener('load', () => {
 						if (!(xhr.status === 201)) {
@@ -176,4 +177,3 @@ function urlBase64ToUint8Array(base64String) {
 	}
 	return outputArray;
 }
-
