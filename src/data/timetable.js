@@ -168,12 +168,19 @@ function getWeek(week){
 			let data = JSON.parse(xhr.response).data;
 
 			data.forEach(element => {
-				let d = convertUntisDateToDate(element.date);
+				let d = convertUntisDateToDate(element.date).toISOString().slice(0, 10)
 				let start = startTimeEnum[element.startTime]
 				delete element.startTime;
 				delete element.date;
-
-				timeTable[d.toISOString().slice(0, 10)][start] = element;
+				if(timeTable[d][start]){
+					console.log("Got conflict at: ", d, start);
+					console.log("Old: ", timeTable[d][start]);
+					console.log("New: ", element);
+					if(element.code === 'cancelled'){
+						return;
+					}
+				}
+				timeTable[d][start] = element;
 
 			})
 			localStorage.setItem("timeTable", JSON.stringify(timeTable))

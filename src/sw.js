@@ -1,5 +1,5 @@
 // @ts-nocheck
-const cacheVersion = '2.01';
+const cacheVersion = '2.02';
 const cacheName = 'untmerger_v' + cacheVersion;
 const toCache = [
 	'/',
@@ -7,11 +7,11 @@ const toCache = [
 	'/data/timetable.js',
 	'/data/settings.js',
 	'/data/manifest.webmanifest',
-	//'/icons/icon_apple.png',
-	//'/icons/icon.png',
+	'/icons/icon_apple.png',
+	'/icons/icon.png',
 	'/settings.html',
 	'/data/settings.css',
-	//'icons/background.png'
+	'icons/background.png'
 ];
 
 self.addEventListener('install', (event) => {
