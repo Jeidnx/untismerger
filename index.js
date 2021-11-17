@@ -520,6 +520,11 @@ function saveData() {
             if(err) {
                 console.log("[STATISTICS] " + err.message);
             }
+            for(let k in stats) {
+                if(stats.hasOwnProperty(k)) {
+                    stats[k] = 0;
+                }
+            }
         });
 }
 
