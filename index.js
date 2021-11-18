@@ -521,9 +521,7 @@ function saveData() {
                 console.log("[STATISTICS] " + err.message);
             }
             for(let k in stats) {
-                if(stats.hasOwnProperty(k)) {
-                    stats[k] = 0;
-                }
+                stats[k] = 0;
             }
         });
 }
