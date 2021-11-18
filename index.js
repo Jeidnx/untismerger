@@ -520,6 +520,9 @@ function saveData() {
             if(err) {
                 console.log("[STATISTICS] " + err.message);
             }
+            for(let k in stats) {
+                stats[k] = 0;
+            }
         });
 }
 
