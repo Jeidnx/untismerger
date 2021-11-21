@@ -5,6 +5,7 @@ const http = require('http');
 const crypto = require('crypto');
 const mysql = require('mysql2');
 const webPush = require('web-push');
+let dm = require('djs-messenger');
 
 // Statics
 const saveInterval = 10; // Interval in minutes when data is saved to database
@@ -123,6 +124,11 @@ const port = process.env.PORT;
 const TTL = config.constants.ttl;
 const path = config.constants.apiPath;
 let db;
+
+dm.login(config.secrets.DISCORD_TOKEN).then(client => {
+    console.log("[djs-messenger] Logged in as", client.user.tag);
+})
+
 if(typeof process.env.DEV == 'undefined'){
     console.log("Missing env vars");
     process.exit(1);
@@ -160,6 +166,7 @@ let stats = {
 initScheduler();
 
 
+//region Express Server
 const app = express();
 
 http.createServer(app).listen(port);
@@ -505,7 +512,9 @@ app.post(path + '/sendNotification', (req, res) =>  {
     });
 
 })
+//endregion
 
+//region Statistic functions
 /**
  * Saves statistic data
  */
@@ -542,8 +551,10 @@ function initScheduler() {
 function getDate() {
     return new Date().toISOString().slice(0, 10);
 }
+//endregion
 
 
+//region Cryptography functions
 /**
  * Basic hashing function
  * @param str cleartext input
@@ -562,7 +573,9 @@ function decrypt(encrypted) {
     const decipher = crypto.createDecipheriv('aes128', config.secrets.ENCRYPT, iv);
     return decipher.update(encrypted, 'hex', 'utf-8') + decipher.final('utf8');
 }
+//endregion
 
+//region DB Stuff
 /**
  * Checks if the user is admin [SYNC]
  * @param name Name of the user
@@ -590,7 +603,6 @@ function isUserAdmin(name) {
     });
 }
 
-// Database stuff
 
 /**
  * Checks if the user is already in the database [SYNC]
@@ -749,6 +761,35 @@ function getUserData(user) {
         );
     });
 }
+
+function deleteUser(user){
+    return new Promise((resolve, reject) => {
+        db.query("DELETE user, fach FROM user JOIN fach on user.id = fach.user where username = ?", [hash(user)], (err, result) => {
+            if(err){
+                console.log(err);
+                reject(err);
+                return;
+            }
+            resolve();
+        })
+    })
+}
+
+function addDiscordId(id, username){
+    return new Promise((resolve, reject) => {
+        db.query("UPDATE user SET discordid = ? WHERE username = ?",
+            [id, hash(username)],
+            (err, result) => {
+                if(err){
+                    reject(err);
+                    return;
+                }
+                resolve(result);
+            })
+    })
+}
+
+//endregion
 
 /**
  * Handling cancelled classes for Notifications etc.
@@ -947,6 +988,31 @@ function getAllSubscriptions(){
     })
 }
 
+
+//region Discord stuff
+dm.onMessage = (msg, id, reply) => {
+    // Expect user Input to be untis name
+    if(/\d/.test(msg)){
+        reply("Der Input muss dein Untis Name sein.");
+        return;
+    }
+    isUserRegistered(msg).then(bool => {
+        if(!bool){
+            reply("Du bist nicht in unserer Datenbank. Erstelle zunächst einen Account auf https://untismerger.tk");
+            return;
+        }
+        addDiscordId(msg).then(reply).catch((err) => {
+            console.error(err);
+            reply("Das hat leider nicht geklappt. Versuche es erneut oder Kontaktiere uns")
+        })
+
+
+    })
+
+}
+//endregion
+
+
 /**
  *
  * @param {Object} userObj User Obj with data to sign
@@ -960,15 +1026,3 @@ function signJwt(userObj){
     })
 }
 
-function deleteUser(user){
-    return new Promise((resolve, reject) => {
-    db.query("DELETE user, fach FROM user JOIN fach on user.id = fach.user where username = ?", [hash(user)], (err, result) => {
-        if(err){
-            console.log(err);
-            reject(err);
-            return;
-        }
-        resolve();
-    })
-    })
-}
