@@ -8,7 +8,7 @@ const webPush = require('web-push');
 let dm = require('djs-messenger');
 
 // Statics
-const saveInterval = 1; // Interval in minutes when data is saved to database
+const saveInterval = 10; // Interval in minutes when data is saved to database
 const classIdEnum = {
     'BG12-1': 2232,
     'BG12-2': 2237,
