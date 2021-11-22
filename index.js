@@ -164,7 +164,7 @@ let stats = {
     "vapidPublicKey": 0,
 };
 initScheduler();
-
+initCancelScheduler();
 
 //region Express Server
 const app = express();
@@ -550,7 +550,7 @@ function newRequest(endpoint) {
 }
 
 /**
- * Creates sheduler
+ * Creates scheduler
  */
 function initScheduler() {
     setInterval(function () {

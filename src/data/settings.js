@@ -177,3 +177,8 @@ function urlBase64ToUint8Array(base64String) {
 	}
 	return outputArray;
 }
+
+// Discord notifs
+document.getElementById("notificationsDiscord").addEventListener("click", () => {
+	window.open("https://discord.gg/P8adQc8N63", '_blank').focus();
+})
