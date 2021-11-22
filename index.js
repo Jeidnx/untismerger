@@ -8,20 +8,8 @@ const webPush = require('web-push');
 let dm = require('djs-messenger');
 
 // Statics
-const saveInterval = 10; // Interval in minutes when data is saved to database
+const saveInterval = 1; // Interval in minutes when data is saved to database
 const classIdEnum = {
-    'BBVZ10-1': 2176,
-    'BFS10a': 2181,
-    'BFS10b': 2186,
-    'BFS11a': 2191,
-    'BFS11b': 2196,
-    'BG11a': 2201,
-    'BG11b': 2202,
-    'BG11c': 2207,
-    'BG11d': 2212,
-    'BG11e': 2217,
-    'BG11f': 2222,
-    'BG11g': 2227,
     'BG12-1': 2232,
     'BG12-2': 2237,
     'BG12-3': 2242,
@@ -35,85 +23,26 @@ const classIdEnum = {
     'BG12d': 2282,
     'BG12e': 2287,
     'BG12f': 2292,
-    'BG13-1': 2297,
-    'BG13-2': 2302,
-    'BG13-3': 2307,
-    'BG13-4': 2311,
-    'BG13-5': 2316,
-    'BG13-6': 2321,
-    'BG13-7': 2326,
-    'BG13a': 2331,
-    'BG13b': 2336,
-    'BG13c': 2341,
-    'BG13d': 2346,
-    'BG13e': 2351,
-    'BG13f': 2356,
-    'BI11': 2361,
-    'BI12': 2366,
-    'BS10H1': 2371,
-    'BS10H2': 2376,
-    'BS10I1': 2381,
-    'BS10I2': 2386,
-    'BS10IT1A': 2391,
-    'BS10IT1B': 2396,
-    'BS10IT2A': 2401,
-    'BS10IT2B': 2406,
-    'BS10IT3A': 2411,
-    'BS10IT3B': 2416,
-    'BS10MTS3': 2421,
-    'BS11H1': 2422,
-    'BS11H2': 2427,
-    'BS11I1': 2432,
-    'BS11I2': 2437,
-    'BS11I3': 2442,
-    'BS12IDB': 2447,
-    'BS11IT1A': 2452,
-    'BS11IT1B': 2457,
-    'BS11IT2A': 2462,
-    'BS11IT2B': 2467,
-    'BS11IT3A': 2472,
-    'BS11IT3B': 2477,
-    'BS11MTS2': 2482,
-    'BS12H1': 2487,
-    'BS12H2': 2492,
-    'BS12I1': 2497,
-    'BS12I2': 2502,
-    'BS12I3': 2507,
-    'BS12IT1A': 2512,
-    'BS12IT1B': 2517,
-    'BS12IT2A': 2522,
-    'BS12IT2B': 2527,
-    'BS12IT3A': 2532,
-    'BS12IT3B': 2537,
-    'BS12MTS2': 2542,
-    'BS13H1': 2547,
-    'BS13I1': 2552,
-    'BS13I3': 2557,
-    'FLS': 2562,
-    'Fö BFS BS FOS': 2567,
-    'FöDeu': 2572,
-    'FöDeZ': 2577,
-    'FöEng': 2582,
-    'FöIT': 2587,
-    'FöLRS': 2592,
-    'FöMa': 2597,
-    'FOS11A1': 2602,
-    'FOS11A2': 2607,
-    'FOS12A1': 2612,
-    'FOS12A2': 2617,
-    'FOS12B1': 2622,
-    'FS01V': 2627,
-    'FS03V': 2632,
-    'FSBW': 2637,
-    'SLT': 2642,
-    'Lehrersport': 2647,
-    'FS05T': 2652,
-    'FS01T': 2657,
-    'BS10I3': 2661
+
 };
 const startTimes = [
     800, 945, 1130, 1330, 1515
 ]
+const idsToCheck = [
+    2267,
+    2272,
+    2277,
+    2282,
+    2287,
+    2292,
+    2232,
+    2237,
+    2242,
+    2247,
+    2252,
+    2257,
+    2262,
+];
 
 // Config
 const config = require('./data/config.json');
@@ -560,6 +489,7 @@ function initScheduler() {
 
 function initCancelScheduler(){
     setInterval(function () {
+        console.log("Checking for cancelled classes");
         let date = new Date();
         date.setDate(date.getDate() + 7);
         checkCancelled(new Date(), date);
@@ -572,7 +502,36 @@ function initCancelScheduler(){
  * @param {Date} endDate
  */
 function checkCancelled(startDate, endDate){
-    //TODO: make this work;
+    const untis = new WebUntisLib.WebUntisSecretAuth(
+        config.secrets.SCHOOL_NAME,
+        config.secrets.UNTIS_USERNAME,
+        config.secrets.UNTIS_SECRET,
+        config.secrets.SCHOOL_DOMAIN
+    )
+    untis.login().then(async () => {
+        await untis.getTimetableForRange(startDate, endDate, 2232, 1).then(lessons => {
+            lessons.forEach(lesson => {
+                if (lesson.code === "cancelled") {
+                    cancelHandler(lesson, lesson.su[0].name)
+                }
+            })
+        }).catch(console.error);
+        // General courses
+        for(let i = 0; i < idsToCheck.length; i++){
+            await untis.getTimetableForRange(startDate, endDate, idsToCheck[i], 1).then(lessons => {
+                lessons.forEach(lesson => {
+                    if(lesson.code === "cancelled"){
+                        cancelHandler(lesson, idsToCheck[i].toString());
+                    }
+                })
+            }).catch(console.error);
+        }
+        untis.logout().then(() => {
+            console.log("Logged out");
+        });
+
+
+    }).catch(console.error);
 }
 
 function getDate() {
@@ -832,7 +791,6 @@ async function cancelHandler(elem, lessonNr){
                 return;
             }
             if(result.affectedRows > 0){
-                console.log("Sending: ", lessonNr);
                 sendNotification(elem.su[0].longname, convertUntisTimeDatetoDate(elem.date, elem.startTime), lessonNr)
             }
         })
@@ -894,8 +852,6 @@ async function sendNotification(lesson, date, lessonNr){
                     console.log("Invalid  subscription Object");
                 });
         });
-    }).catch((msg) => {
-        console.log(msg);
     })
     getDiscordIds(lessonNr).then(ids => {
         ids.forEach((id) => {
