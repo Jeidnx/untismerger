@@ -177,10 +177,11 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
                 }
                 untis.logout().catch(console.log);
 
-                outer: for (let i = 0; i < sonstiges.length; i++) {
-                    if (!startTimes.includes(sonstiges[i].startTime)) continue;
-                    if (sonstiges[i]['su'].length < 1) continue;
-                    let element = sonstiges[i];
+                const stArr = await sonstiges;
+                outer: for (let i = 0; i < stArr.length; i++) {
+                    if (!startTimes.includes(stArr[i].startTime)) continue;
+                    if (stArr[i]['su'].length < 1) continue;
+                    let element = stArr[i];
                     if(element.code === "cancelled"){
                         cancelHandler(element, element.su[0].name);
                     }
@@ -214,7 +215,6 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
 
                 res.send({message: "OK", data: sendArr});
             }).catch((err) => {
-                console.log(err);
                 res.status(400).send({error: true, message: "Invalid credentials"});
             })
     })
@@ -320,7 +320,6 @@ app.post(path + '/setup', (req, res) => {
                 !req.body['sp'] ||
                 !req.body['naWi']
             ) {
-                console.log("here")
                 res.status(400).send({error: true, message: 'Missing Arguments'});
                 return;
             }
@@ -442,7 +441,6 @@ app.post(path + '/sendNotification', (req, res) =>  {
         res.status(400).send({error:true, message: "Missing args"})
     }
     sendCustomNotification(req.body['text']).then((result) => {
-        console.log(result);
         res.send(result);
     }).catch(err => {
         console.log(err);
@@ -847,9 +845,6 @@ async function sendNotification(lesson, date, lessonNr){
                         console.log("Sent Notificatin");
                     }
                 })
-                .catch(() => {
-                    console.log("Invalid  subscription Object");
-                });
         });
     })
     getDiscordIds(lessonNr).then(ids => {
@@ -902,12 +897,10 @@ function sendCustomNotification(text){
         };
         getAllSubscriptions().then(subscriptions => {
             subscriptions.forEach((user) => {
-                console.log(user);
                 webPush
                     .sendNotification(user, JSON.stringify({type: "notification", body: text}), options)
                     .then((response) => {
                         if (response.statusCode !== 201) {
-                            console.log(response.statusCode, response);
                         }else{
                             console.log("Sent Notificatin");
                         }
@@ -1047,7 +1040,6 @@ dm.onUserAdd = (name, id) => {
 function signJwt(userObj){
     return new Promise((resolve) => {
     userObj.version = config.constants.jwtVersion;
-    console.log(userObj);
     resolve(jwt.sign(userObj, config.secrets.JWT_SECRET));
     })
 }
