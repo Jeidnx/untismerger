@@ -223,23 +223,30 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
 
                 let out = [];
 
-                lk = (await lk).filter(element => {
+                for(let i = 0; i < (await lk).length; i++){
+                    let element = lk[i];
                     if(element.code === "cancelled"){
-                        cancelHandler(element, decoded['lk']);
-                    }
-                    return startTimes.includes(element.startTime);
-                })
-                fachRichtung = (await fachRichtung).filter(element => {
-                    if(element.code === "cancelled"){
+                        console.log("LK cancelled: ", element);
                         cancelHandler(element, decoded['fachRichtung']);
                     }
-                    return startTimes.includes((element.startTime));
-                })
-                untis.logout().catch(console.log);
-                out = out.concat(lk);
-                out = out.concat(fachRichtung);
+                    if(!startTimes.includes(element.startTime)){
+                        out.push(element);
+                    }
+                }
 
-                sonstiges = (await sonstiges).filter(element => {
+                for(let i = 0; i < (await fachRichtung).length; i++){
+                    let element = fachRichtung[i];
+                    if(element.code === "cancelled"){
+                        console.log("FR cancelled: ", element);
+                        cancelHandler(element, decoded['fachRichtung']);
+                    }
+                    if(startTimes.includes(element.startTime)){
+                        out.push(element);
+                    }
+                }
+                untis.logout().catch(console.log);
+
+                sonstiges = (await sonstiges).filter((element) => {
                     return startTimes.includes(element.startTime);
                 })
                 outer: for (let i = 0; i < sonstiges.length; i++) {
@@ -862,7 +869,7 @@ async function sendNotification(lesson, date, lessonNr){
                         console.log("Sent Notificatin");
                     }
                 })
-                .catch(error => {
+                .catch(() => {
                     console.log("Invalid  subscription Object");
                 });
         });
@@ -962,7 +969,7 @@ function addSubscription(username, subscription){
                 db.query(
                     'UPDATE user SET subscription=?  WHERE username=?',
                     [JSON.stringify(subscriptionArr), hash(username)],
-                    function (err, result, fields) {
+                    function (err) {
                         if (err) {
                             console.log(err);
                             reject(err);
@@ -1058,7 +1065,7 @@ dm.onUserAdd = (name, id) => {
  * @returns {Promise<String>} Signed Key, Base64URL encoded
  */
 function signJwt(userObj){
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
     userObj.version = config.constants.jwtVersion;
     console.log(userObj);
     resolve(jwt.sign(userObj, config.secrets.JWT_SECRET));
