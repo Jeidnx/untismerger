@@ -226,25 +226,25 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
                 const lkArr = await lk;
                 for(let i = 0; i < lkArr.length; i++){
                     let element = lkArr[i];
-                    if(element.code === "cancelled"){
-                        console.log("LK cancelled: ", element);
-                        cancelHandler(element, decoded['fachRichtung']);
-                    }
-                    if(!startTimes.includes(element.startTime)){
+                    if(startTimes.includes(element.startTime)){
                         out.push(element);
+                        if(element.code === "cancelled"){
+                            cancelHandler(element, decoded['lk']);
+                        }
                     }
                 }
 
                 const frArr = await fachRichtung;
                 for(let i = 0; i < frArr.length; i++){
                     let element = frArr[i];
-                    if(element.code === "cancelled"){
-                        console.log("FR cancelled: ", element);
-                        cancelHandler(element, decoded['fachRichtung']);
-                    }
                     if(startTimes.includes(element.startTime)){
                         out.push(element);
+                        if(element.code === "cancelled"){
+                            cancelHandler(element, decoded['fachrichtung']);
+                        }
                     }
+
+
                 }
                 untis.logout().catch(console.log);
 
@@ -487,7 +487,7 @@ app.post(path + '/register', (req, res) => {
         return;
     }
     jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
-        addSubscription(decoded['username'],JSON.parse(req.body.subscription))
+        addSubscription(decoded['username'],JSON.parse(req.body.subscription));
         res.status(201).send({message: "created"});
     })
 
@@ -556,6 +556,23 @@ function initScheduler() {
     setInterval(function () {
         saveData();
     }, saveInterval * 60 * 1000);
+}
+
+function initCancelScheduler(){
+    setInterval(function () {
+        let date = new Date();
+        date.setDate(date.getDate() + 7);
+        checkCancelled(new Date(), date);
+    }, saveInterval * 60 * 1000);
+}
+
+/**
+ *
+ * @param {Date} startDate
+ * @param {Date} endDate
+ */
+function checkCancelled(startDate, endDate){
+    //TODO: make this work;
 }
 
 function getDate() {
@@ -815,6 +832,7 @@ async function cancelHandler(elem, lessonNr){
                 return;
             }
             if(result.affectedRows > 0){
+                console.log("Sending: ", lessonNr);
                 sendNotification(elem.su[0].longname, convertUntisTimeDatetoDate(elem.date, elem.startTime), lessonNr)
             }
         })
@@ -847,11 +865,11 @@ function convertUntisTimeDatetoDate(date, startTime){
  * @param {String} lessonNr Welche Kurse betrroffen sind.
  */
 async function sendNotification(lesson, date, lessonNr){
-    if(date > new Date()){
+    if(date < new Date()){
         return;
     }
 
-    console.log("Sendet Benachrichtigung für: ", lesson, date.toISOString().slice(0, 10))
+    console.log("Sendet Benachrichtigung für: ", lesson, date.toISOString().slice(0, 10));
     const notificationBody = `${lesson} am ${String(date.getDay() + "."+ (date.getMonth() + 1))} entfällt.`;
 
     const payload = {
