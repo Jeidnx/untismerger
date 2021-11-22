@@ -143,7 +143,7 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
                 let lk = untis.getTimetableForRange(startDate, endDate, decoded['lk'], 1).catch(() => {
                     return []
                 });
-                let fachRichtung = untis.getTimetableForRange(startDate, endDate, decoded['fachrichtung'], 1).catch(err => {
+                let fachRichtung = untis.getTimetableForRange(startDate, endDate, decoded['fachrichtung'], 1).catch(() => {
                     return []
                 });
                 let sonstiges = untis.getTimetableForRange(startDate, endDate, 2232, 1).catch(() => {
@@ -177,10 +177,8 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
                 }
                 untis.logout().catch(console.log);
 
-                sonstiges = (await sonstiges).filter((element) => {
-                    return startTimes.includes(element.startTime);
-                })
                 outer: for (let i = 0; i < sonstiges.length; i++) {
+                    if (!startTimes.includes(sonstiges[i].startTime)) continue;
                     if (sonstiges[i]['su'].length < 1) continue;
                     let element = sonstiges[i];
                     if(element.code === "cancelled"){
@@ -416,8 +414,9 @@ app.post(path + '/register', (req, res) => {
         return;
     }
     jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
-        addSubscription(decoded['username'],JSON.parse(req.body.subscription));
-        res.status(201).send({message: "created"});
+        addSubscription(decoded['username'],JSON.parse(req.body["subscription"])).then(() => {
+            res.status(201).send({message: "created"});
+        })
     })
 
 
@@ -572,7 +571,7 @@ function isUserAdmin(name) {
         db.query(
             'SELECT isadmin FROM user WHERE username = ?',
             [hash(name)],
-            function (err, result, fields) {
+            function (err, result) {
                 if (err) {
                     console.log(err);
                     reject(err);
@@ -600,7 +599,7 @@ function isUserRegistered(username) {
         db.query(
             'SELECT id FROM user WHERE username = ?',
             [hash(username)],
-            function (err, result, fields) {
+            function (err, result) {
                 if (err) {
                     console.log(err);
                     reject(err);
@@ -691,7 +690,7 @@ function getUserPreferences(user) {
         db.query(
             'SELECT settings FROM user WHERE username = ?',
             [hash(user)],
-            function (err, result, fields) {
+            function (err, result) {
                 if (err) {
                     console.log(err);
                     reject(err);
@@ -719,7 +718,7 @@ function getUserData(user) {
         db.query(
             'SELECT id, lk, fachrichtung, secureid FROM user WHERE username = ?',
             [hash(user)],
-            function (err, result, fields) {
+            function (err, result) {
                 if (err) {
                     console.log(err);
                     reject(err);
@@ -750,7 +749,7 @@ function getUserData(user) {
 
 function deleteUser(user){
     return new Promise((resolve, reject) => {
-        db.query("DELETE user, fach FROM user JOIN fach on user.id = fach.user where username = ?", [hash(user)], (err, result) => {
+        db.query("DELETE user, fach FROM user JOIN fach on user.id = fach.user where username = ?", [hash(user)], (err) => {
             if(err){
                 console.log(err);
                 reject(err);
@@ -765,7 +764,7 @@ function addDiscordId(id, username){
     return new Promise((resolve, reject) => {
         db.query("UPDATE user SET discordid = ? WHERE username = ?",
             [id, hash(username)],
-            (err, result) => {
+            (err) => {
                 if(err){
                     reject(err);
                     return;
@@ -838,7 +837,7 @@ async function sendNotification(lesson, date, lessonNr){
         TTL: TTL
     };
     getSubscriptions(lessonNr).then(subscriptions => {
-        subscriptions.forEach((/** @type {webPush.PushSubscription} */ user) => {
+        subscriptions.forEach((user) => {
             webPush
                 .sendNotification(user, JSON.stringify(payload), options)
                 .then((response) => {
@@ -857,7 +856,11 @@ async function sendNotification(lesson, date, lessonNr){
         ids.forEach((id) => {
             dm.sendMessage(notificationBody, id).catch(console.error);
         })
-    }).catch(console.error);
+    }).catch((err) => {
+        if(err !== "Keine Ergebnisse"){
+            console.log(err);
+        }
+    });
 
 }
 
@@ -865,7 +868,7 @@ async function sendNotification(lesson, date, lessonNr){
 /**
  *
  * @param lesson Lesson String
- * @returns {Promise<String>}
+ * @returns {Promise<String[]>}
  */
 function getDiscordIds(lesson){
     return new Promise((resolve, reject) => {
@@ -898,7 +901,7 @@ function sendCustomNotification(text){
             TTL: TTL
         };
         getAllSubscriptions().then(subscriptions => {
-            subscriptions.forEach((/** @type {webPush.PushSubscription} */ user) => {
+            subscriptions.forEach((user) => {
                 console.log(user);
                 webPush
                     .sendNotification(user, JSON.stringify({type: "notification", body: text}), options)
@@ -924,7 +927,7 @@ function sendCustomNotification(text){
  *
  * @param {String} username Username in Plaintext
  * @param {webPush.PushSubscription} subscription Matching Subscription
- * @returns {Promse<boolean>} if Operation was successful
+ * @returns {Promise<boolean>} if Operation was successful
  */
 function addSubscription(username, subscription){
     return new Promise((resolve, reject) => {
@@ -969,7 +972,7 @@ function getSubscriptions(lesson){
         db.query(
             'SELECT subscription FROM user WHERE ? in (lk, fachrichtung) UNION SELECT subscription FROM user LEFT JOIN fach on user.id = fach.user WHERE ? = fach.fach',
             [lesson, lesson],
-            function (err, result, fields) {
+            function (err, result) {
                 if (err) {
                     console.log(err);
                     reject(err);

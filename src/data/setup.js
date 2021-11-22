@@ -144,7 +144,6 @@ qrButton.addEventListener('click', async () => {
 						track.stop();
 					});
 				throw new Error("ImageCapture API wird nicht unterstützt.");
-				return;
 			}
 			videoStream.srcObject = mStream;
 
