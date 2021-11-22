@@ -784,7 +784,7 @@ function addDiscordId(id, username){
                     reject(err);
                     return;
                 }
-                resolve(result);
+                resolve("Erfolgreich Eingetragen");
             })
     })
 }
@@ -842,14 +842,15 @@ async function sendNotification(lesson, date, lessonNr){
     }
 
     console.log("Sendet Benachrichtigung für: ", lesson, date.toISOString().slice(0, 10))
+    const notificationBody = `${lesson} am ${String(date.getDay() + "."+ (date.getMonth() + 1))} entfällt.`;
+
     const payload = {
         type: "notification",
-        body: `${lesson} am ${String(date.getDay() + "."+ (date.getMonth() + 1))} entfällt.`
+        body: notificationBody
     };
     const options = {
         TTL: TTL
     };
-    let sent = false;
     getSubscriptions(lessonNr).then(subscriptions => {
         subscriptions.forEach((/** @type {webPush.PushSubscription} */ user) => {
             webPush
@@ -868,8 +869,45 @@ async function sendNotification(lesson, date, lessonNr){
     }).catch((msg) => {
         console.log(msg);
     })
+    getDiscordIds(lessonNr).then(ids => {
+        ids.forEach((id) => {
+            dm.sendMessage(notificationBody, id).catch(console.error);
+        })
+    }).catch(console.error);
 
 }
+
+
+/**
+ *
+ * @param lesson Lesson String
+ * @returns {Promise<String>}
+ */
+function getDiscordIds(lesson){
+    return new Promise((resolve, reject) => {
+        db.query(
+            'SELECT discordid FROM user WHERE ? in (lk, fachrichtung) UNION SELECT subscription FROM user LEFT JOIN fach on user.id = fach.user WHERE ? = fach.fach',
+            [lesson, lesson],
+            function (err, result) {
+                if (err) {
+                    console.log(err);
+                    reject(err);
+                    return;
+                }
+                if(result.length < 1){
+                    reject("Keine Ergebnisse");
+                    return;
+                }
+                let res = [];
+                result.forEach(element => {
+                    res.push(element["discordid"]);
+                })
+                resolve(res);
+            }
+        );
+    })
+}
+
 function sendCustomNotification(text){
     return new Promise((resolve, reject) => {
         const options = {
@@ -993,22 +1031,23 @@ function getAllSubscriptions(){
 dm.onMessage = (msg, id, reply) => {
     // Expect user Input to be untis name
     if(/\d/.test(msg)){
-        reply("Der Input muss dein Untis Name sein.");
+        reply("Die Eingabe darf keine Zahlen enthalten.");
         return;
     }
     isUserRegistered(msg).then(bool => {
         if(!bool){
-            reply("Du bist nicht in unserer Datenbank. Erstelle zunächst einen Account auf https://untismerger.tk");
+            reply("`" + msg + "`" + " ist leider nicht vorhanden.");
             return;
         }
-        addDiscordId(msg).then(reply).catch((err) => {
+        addDiscordId(id, msg).then(reply).catch((err) => {
             console.error(err);
-            reply("Das hat leider nicht geklappt. Versuche es erneut oder Kontaktiere uns")
+            reply("Das hat leider nicht geklappt. Versuche es erneut oder Kontaktiere uns");
         })
-
-
     })
+}
 
+dm.onUserAdd = (name, id) => {
+    dm.sendMessage(`Hallo ${name}, um über deinen Discord Account benachrichtigungen zu erhalten, antworte bitte mit deinem Untis Namen.`, id);
 }
 //endregion
 
