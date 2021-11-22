@@ -223,8 +223,9 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
 
                 let out = [];
 
-                for(let i = 0; i < (await lk).length; i++){
-                    let element = lk[i];
+                const lkArr = await lk;
+                for(let i = 0; i < lkArr.length; i++){
+                    let element = lkArr[i];
                     if(element.code === "cancelled"){
                         console.log("LK cancelled: ", element);
                         cancelHandler(element, decoded['fachRichtung']);
@@ -234,8 +235,9 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
                     }
                 }
 
-                for(let i = 0; i < (await fachRichtung).length; i++){
-                    let element = fachRichtung[i];
+                const frArr = await fachRichtung;
+                for(let i = 0; i < frArr.length; i++){
+                    let element = frArr[i];
                     if(element.code === "cancelled"){
                         console.log("FR cancelled: ", element);
                         cancelHandler(element, decoded['fachRichtung']);
@@ -285,6 +287,7 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
 
                 res.send({message: "OK", data: sendArr});
             }).catch((err) => {
+                console.log(err);
                 res.status(400).send({error: true, message: "Invalid credentials"});
             })
     })
