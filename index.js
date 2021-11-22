@@ -1075,7 +1075,7 @@ dm.onMessage = (msg, id, reply) => {
 }
 
 dm.onUserAdd = (name, id) => {
-    dm.sendMessage(`Hallo ${name}, um über deinen Discord Account benachrichtigungen zu erhalten, antworte bitte mit deinem Untis Namen.`, id);
+    dm.sendMessage(`Hallo ${name}, um über deinen Discord Account benachrichtigungen zu erhalten, antworte bitte mit deinem Untis Namen.`, id).catch(console.log);
 }
 //endregion
 
