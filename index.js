@@ -796,10 +796,13 @@ function addDiscordId(id, username){
     return new Promise((resolve, reject) => {
         db.query("UPDATE user SET discordid = ? WHERE username = ?",
             [id, hash(username)],
-            (err) => {
+            (err, result) => {
                 if(err){
                     reject(err);
                     return;
+                }
+                if(result.affectedRows < 1){
+                    reject("ID nicht gefunden");
                 }
                 resolve("Erfolgreich Eingetragen");
             })
