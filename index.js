@@ -908,6 +908,7 @@ async function sendNotification(lesson, date, lessonNr){
     })
     getDiscordIds(lessonNr).then(ids => {
         ids.forEach((id) => {
+            console.log(id);
             dm.sendMessage(notificationBody, id).catch(console.error);
         })
     }).catch((err) => {
@@ -934,8 +935,11 @@ function getDiscordIds(lesson){
                     return;
                 }
                 let res = [];
+                console.log(result);
                 result.forEach(element => {
-                    res.push(element["discordid"]);
+                    if(element["discordid"]){
+                        res.push(element["discordid"]);
+                    }
                 })
                 resolve(res);
             }
@@ -1114,9 +1118,9 @@ dm.onMessage = (msg, id, send, waitFor) => {
             chats.id = msg;
             setTimeout(() => {
                 delete chats.id;
-            }, 300000)
+            }, 300000);
             send("Du musst als nächstes einen Token von der Website anfordern." +
-                " Gehe dazu auf https://untismerger.tk/settings" +
+                "Gehe dazu auf https://untismerger.tk/settings" +
                 "\nAnschließend kannst du den Token einfach hier einfügen.");
         })
     }
@@ -1146,3 +1150,6 @@ function signJwt(userObj){
     })
 }
 
+let date = new Date();
+date.setDate(date.getDate() + 7);
+checkCancelled(new Date(), date);
