@@ -5,22 +5,11 @@ const http = require('http');
 const crypto = require('crypto');
 const mysql = require('mysql2');
 const webPush = require('web-push');
+let dm = require('djs-messenger');
 
 // Statics
 const saveInterval = 10; // Interval in minutes when data is saved to database
 const classIdEnum = {
-    'BBVZ10-1': 2176,
-    'BFS10a': 2181,
-    'BFS10b': 2186,
-    'BFS11a': 2191,
-    'BFS11b': 2196,
-    'BG11a': 2201,
-    'BG11b': 2202,
-    'BG11c': 2207,
-    'BG11d': 2212,
-    'BG11e': 2217,
-    'BG11f': 2222,
-    'BG11g': 2227,
     'BG12-1': 2232,
     'BG12-2': 2237,
     'BG12-3': 2242,
@@ -34,85 +23,26 @@ const classIdEnum = {
     'BG12d': 2282,
     'BG12e': 2287,
     'BG12f': 2292,
-    'BG13-1': 2297,
-    'BG13-2': 2302,
-    'BG13-3': 2307,
-    'BG13-4': 2311,
-    'BG13-5': 2316,
-    'BG13-6': 2321,
-    'BG13-7': 2326,
-    'BG13a': 2331,
-    'BG13b': 2336,
-    'BG13c': 2341,
-    'BG13d': 2346,
-    'BG13e': 2351,
-    'BG13f': 2356,
-    'BI11': 2361,
-    'BI12': 2366,
-    'BS10H1': 2371,
-    'BS10H2': 2376,
-    'BS10I1': 2381,
-    'BS10I2': 2386,
-    'BS10IT1A': 2391,
-    'BS10IT1B': 2396,
-    'BS10IT2A': 2401,
-    'BS10IT2B': 2406,
-    'BS10IT3A': 2411,
-    'BS10IT3B': 2416,
-    'BS10MTS3': 2421,
-    'BS11H1': 2422,
-    'BS11H2': 2427,
-    'BS11I1': 2432,
-    'BS11I2': 2437,
-    'BS11I3': 2442,
-    'BS12IDB': 2447,
-    'BS11IT1A': 2452,
-    'BS11IT1B': 2457,
-    'BS11IT2A': 2462,
-    'BS11IT2B': 2467,
-    'BS11IT3A': 2472,
-    'BS11IT3B': 2477,
-    'BS11MTS2': 2482,
-    'BS12H1': 2487,
-    'BS12H2': 2492,
-    'BS12I1': 2497,
-    'BS12I2': 2502,
-    'BS12I3': 2507,
-    'BS12IT1A': 2512,
-    'BS12IT1B': 2517,
-    'BS12IT2A': 2522,
-    'BS12IT2B': 2527,
-    'BS12IT3A': 2532,
-    'BS12IT3B': 2537,
-    'BS12MTS2': 2542,
-    'BS13H1': 2547,
-    'BS13I1': 2552,
-    'BS13I3': 2557,
-    'FLS': 2562,
-    'Fö BFS BS FOS': 2567,
-    'FöDeu': 2572,
-    'FöDeZ': 2577,
-    'FöEng': 2582,
-    'FöIT': 2587,
-    'FöLRS': 2592,
-    'FöMa': 2597,
-    'FOS11A1': 2602,
-    'FOS11A2': 2607,
-    'FOS12A1': 2612,
-    'FOS12A2': 2617,
-    'FOS12B1': 2622,
-    'FS01V': 2627,
-    'FS03V': 2632,
-    'FSBW': 2637,
-    'SLT': 2642,
-    'Lehrersport': 2647,
-    'FS05T': 2652,
-    'FS01T': 2657,
-    'BS10I3': 2661
+
 };
 const startTimes = [
     800, 945, 1130, 1330, 1515
 ]
+const idsToCheck = [
+    2267,
+    2272,
+    2277,
+    2282,
+    2287,
+    2292,
+    2232,
+    2237,
+    2242,
+    2247,
+    2252,
+    2257,
+    2262,
+];
 
 // Config
 const config = require('./data/config.json');
@@ -123,6 +53,10 @@ const port = process.env.PORT;
 const TTL = config.constants.ttl;
 const path = config.constants.apiPath;
 let db;
+let discordAuthObj = {};
+
+
+
 if(typeof process.env.DEV == 'undefined'){
     console.log("Missing env vars");
     process.exit(1);
@@ -131,9 +65,15 @@ if(typeof process.env.DEV == 'undefined'){
 if(!(process.env.DEV === 'FALSE')){
     console.log("Running in DEV Environment");
     db = mysql.createPool(config.mysqlDev);
+    dm.login(config.secrets.DISCORD_TOKEN_DEV).then(client => {
+        console.log("[djs-messenger] Logged in as", client.user.tag);
+    })
 }else{
     console.log("Running in PROD Environment");
     db = mysql.createPool(config.mysql);
+    dm.login(config.secrets.DISCORD_TOKEN).then(client => {
+        console.log("[djs-messenger] Logged in as", client.user.tag);
+    })
 }
 webPush.setVapidDetails(
     'https://github.com/Jeidnx',
@@ -158,8 +98,9 @@ let stats = {
     "vapidPublicKey": 0,
 };
 initScheduler();
+initCancelScheduler();
 
-
+//region Express Server
 const app = express();
 
 http.createServer(app).listen(port);
@@ -207,7 +148,7 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
                 let lk = untis.getTimetableForRange(startDate, endDate, decoded['lk'], 1).catch(() => {
                     return []
                 });
-                let fachRichtung = untis.getTimetableForRange(startDate, endDate, decoded['fachrichtung'], 1).catch(err => {
+                let fachRichtung = untis.getTimetableForRange(startDate, endDate, decoded['fachrichtung'], 1).catch(() => {
                     return []
                 });
                 let sonstiges = untis.getTimetableForRange(startDate, endDate, 2232, 1).catch(() => {
@@ -216,28 +157,36 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
 
                 let out = [];
 
-                lk = (await lk).filter(element => {
-                    if(element.code === "cancelled"){
-                        cancelHandler(element, decoded['lk']);
+                const lkArr = await lk;
+                for(let i = 0; i < lkArr.length; i++){
+                    let element = lkArr[i];
+                    if(startTimes.includes(element.startTime)){
+                        out.push(element);
+                        if(element.code === "cancelled"){
+                            cancelHandler(element, decoded['lk']);
+                        }
                     }
-                    return startTimes.includes(element.startTime);
-                })
-                fachRichtung = (await fachRichtung).filter(element => {
-                    if(element.code === "cancelled"){
-                        cancelHandler(element, decoded['fachRichtung']);
-                    }
-                    return startTimes.includes((element.startTime));
-                })
-                untis.logout().catch(console.log);
-                out = out.concat(lk);
-                out = out.concat(fachRichtung);
+                }
 
-                sonstiges = (await sonstiges).filter(element => {
-                    return startTimes.includes(element.startTime);
-                })
-                outer: for (let i = 0; i < sonstiges.length; i++) {
-                    if (sonstiges[i]['su'].length < 1) continue;
-                    let element = sonstiges[i];
+                const frArr = await fachRichtung;
+                for(let i = 0; i < frArr.length; i++){
+                    let element = frArr[i];
+                    if(startTimes.includes(element.startTime)){
+                        out.push(element);
+                        if(element.code === "cancelled"){
+                            cancelHandler(element, decoded['fachrichtung']);
+                        }
+                    }
+
+
+                }
+                untis.logout().catch(console.log);
+
+                const stArr = await sonstiges;
+                outer: for (let i = 0; i < stArr.length; i++) {
+                    if (!startTimes.includes(stArr[i].startTime)) continue;
+                    if (stArr[i]['su'].length < 1) continue;
+                    let element = stArr[i];
                     if(element.code === "cancelled"){
                         cancelHandler(element, element.su[0].name);
                     }
@@ -270,7 +219,7 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
                 });
 
                 res.send({message: "OK", data: sendArr});
-            }).catch((err) => {
+            }).catch(() => {
                 res.status(400).send({error: true, message: "Invalid credentials"});
             })
     })
@@ -287,19 +236,19 @@ app.post(path + '/setup', (req, res) => {
             if ((req.body['secret'] !== "") && (req.body['username'] !== '')) {
                 const untis = new WebUntisLib.WebUntisSecretAuth(
                     schoolName,
-                    req.body['username'],
+                    req.body['username'].toLowerCase(),
                     req.body['secret'],
                     schoolDomain
                 );
                 untis
                     .login()
                     .then(() => {
-                        isUserRegistered(req.body['username']).then((bool) => {
+                        isUserRegistered(req.body['username'].toLowerCase()).then((bool) => {
                             if (bool) {
-                                getUserPreferences(req.body['username'])
+                                getUserPreferences(req.body['username'].toLowerCase())
                                     .then((prefs) => {
-                                        getUserData(req.body['username']).then((data) => {
-                                            data.username = req.body.username;
+                                        getUserData(req.body['username'].toLowerCase()).then((data) => {
+                                            data.username = req.body.username.toLowerCase();
                                             data.secret = encrypt(req.body.secret);
                                             data.type = "secret";
                                             signJwt(data).then(signed => {
@@ -327,16 +276,16 @@ app.post(path + '/setup', (req, res) => {
                 return;
             }
             else if ((req.body["usernamePw"] !== '') && (req.body["password"] !== '')){
-                const untis = new WebUntisLib(config.secrets.SCHOOL_NAME, req.body["usernamePw"], req.body['password'], config.secrets.SCHOOL_DOMAIN);
+                const untis = new WebUntisLib(config.secrets.SCHOOL_NAME, req.body["usernamePw"].toLowerCase(), req.body['password'], config.secrets.SCHOOL_DOMAIN);
                 untis
                     .login()
                     .then(() => {
-                        isUserRegistered(req.body['usernamePw']).then((bool) => {
+                        isUserRegistered(req.body['usernamePw'].toLowerCase()).then((bool) => {
                             if (bool) {
                                 getUserPreferences(req.body['usernamePw'])
                                     .then((prefs) => {
                                         getUserData(req.body['usernamePw']).then((data) => {
-                                            data.username = req.body.usernamePw;
+                                            data.username = req.body.usernamePw.toLowerCase();
                                             data.password = encrypt(req.body.password);
                                             data.type = "password";
                                             signJwt(data).then(signed => {
@@ -376,7 +325,6 @@ app.post(path + '/setup', (req, res) => {
                 !req.body['sp'] ||
                 !req.body['naWi']
             ) {
-                console.log("here")
                 res.status(400).send({error: true, message: 'Missing Arguments'});
                 return;
             }
@@ -403,12 +351,12 @@ app.post(path + '/setup', (req, res) => {
 
             if(req.body["secret"] !== ""){
                 userObj.secret = encrypt(req.body['secret']);
-                userObj.username = req.body['username'];
+                userObj.username = req.body['username'].toLowerCase();
                 userObj.type= "secret";
             }
             else if(req.body['password'] !== "") {
                 userObj.password = encrypt(req.body["password"]);
-                userObj.username = req.body["usernamePw"];
+                userObj.username = req.body["usernamePw"].toLowerCase();
                 userObj.type = "password";
             }
             else {
@@ -470,8 +418,9 @@ app.post(path + '/register', (req, res) => {
         return;
     }
     jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
-        addSubscription(decoded['username'],JSON.parse(req.body.subscription))
-        res.status(201).send({message: "created"});
+        addSubscription(decoded['username'],JSON.parse(req.body["subscription"])).then(() => {
+            res.status(201).send({message: "created"});
+        })
     })
 
 
@@ -497,7 +446,6 @@ app.post(path + '/sendNotification', (req, res) =>  {
         res.status(400).send({error:true, message: "Missing args"})
     }
     sendCustomNotification(req.body['text']).then((result) => {
-        console.log(result);
         res.send(result);
     }).catch(err => {
         console.log(err);
@@ -505,7 +453,34 @@ app.post(path + '/sendNotification', (req, res) =>  {
     });
 
 })
+app.post(path + "/getDiscordToken", (req, res) => {
+    if(!req.body['jwt']){
+        res.status(400).send({error: true, message: "Missing Arguments"});
+        return;
+    }
+    jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
+        if (err) {
+            res.status(400).send({error: true, message: 'Invalid JWT'});
+            return;
+        }
+        if(discordAuthObj[decoded['username']]){
+            res.status(400).send({error: true, message: "not so fast"});
+            return;
+        }
+        const secretToken = getRandomInt(100000);
+        discordAuthObj[decoded['username']] = secretToken;
+        setTimeout(() => {
+            delete discordAuthObj[decoded['username']];
+        }, 60000);
+        res.status(200).send({secret: secretToken});
 
+    })
+
+})
+
+//endregion
+
+//region Statistic functions
 /**
  * Saves statistic data
  */
@@ -531,7 +506,7 @@ function newRequest(endpoint) {
 }
 
 /**
- * Creates sheduler
+ * Creates scheduler
  */
 function initScheduler() {
     setInterval(function () {
@@ -539,11 +514,62 @@ function initScheduler() {
     }, saveInterval * 60 * 1000);
 }
 
+function initCancelScheduler(){
+    setInterval(function () {
+        console.log("Checking for cancelled classes");
+        let date = new Date();
+        date.setDate(date.getDate() + 7);
+        checkCancelled(new Date(), date);
+    }, saveInterval * 60 * 1000);
+}
+
+/**
+ *
+ * @param {Date} startDate
+ * @param {Date} endDate
+ */
+function checkCancelled(startDate, endDate){
+    const untis = new WebUntisLib.WebUntisSecretAuth(
+        config.secrets.SCHOOL_NAME,
+        config.secrets.UNTIS_USERNAME,
+        config.secrets.UNTIS_SECRET,
+        config.secrets.SCHOOL_DOMAIN
+    )
+    untis.login().then(async () => {
+        await untis.getTimetableForRange(startDate, endDate, 2232, 1).then(lessons => {
+            lessons.forEach(lesson => {
+                if(!startTimes.includes(lesson.startTime)) return;
+                if (lesson.code === "cancelled") {
+                    cancelHandler(lesson, lesson.su[0].name);
+                }
+            })
+        }).catch(console.error);
+        // General courses
+        for(let i = 0; i < idsToCheck.length; i++){
+            await untis.getTimetableForRange(startDate, endDate, idsToCheck[i], 1).then(lessons => {
+                lessons.forEach(lesson => {
+                    if(!startTimes.includes(lesson.startTime)) return;
+                    if(lesson.code === "cancelled"){
+                        cancelHandler(lesson, idsToCheck[i].toString());
+                    }
+                })
+            }).catch(console.error);
+        }
+        untis.logout().then(() => {
+            console.log("Logged out");
+        });
+
+
+    }).catch(console.error);
+}
+
 function getDate() {
     return new Date().toISOString().slice(0, 10);
 }
+//endregion
 
 
+//region Cryptography functions
 /**
  * Basic hashing function
  * @param str cleartext input
@@ -562,7 +588,9 @@ function decrypt(encrypted) {
     const decipher = crypto.createDecipheriv('aes128', config.secrets.ENCRYPT, iv);
     return decipher.update(encrypted, 'hex', 'utf-8') + decipher.final('utf8');
 }
+//endregion
 
+//region DB Stuff
 /**
  * Checks if the user is admin [SYNC]
  * @param name Name of the user
@@ -573,7 +601,7 @@ function isUserAdmin(name) {
         db.query(
             'SELECT isadmin FROM user WHERE username = ?',
             [hash(name)],
-            function (err, result, fields) {
+            function (err, result) {
                 if (err) {
                     console.log(err);
                     reject(err);
@@ -590,7 +618,6 @@ function isUserAdmin(name) {
     });
 }
 
-// Database stuff
 
 /**
  * Checks if the user is already in the database [SYNC]
@@ -602,7 +629,7 @@ function isUserRegistered(username) {
         db.query(
             'SELECT id FROM user WHERE username = ?',
             [hash(username)],
-            function (err, result, fields) {
+            function (err, result) {
                 if (err) {
                     console.log(err);
                     reject(err);
@@ -693,7 +720,7 @@ function getUserPreferences(user) {
         db.query(
             'SELECT settings FROM user WHERE username = ?',
             [hash(user)],
-            function (err, result, fields) {
+            function (err, result) {
                 if (err) {
                     console.log(err);
                     reject(err);
@@ -721,7 +748,7 @@ function getUserData(user) {
         db.query(
             'SELECT id, lk, fachrichtung, secureid FROM user WHERE username = ?',
             [hash(user)],
-            function (err, result, fields) {
+            function (err, result) {
                 if (err) {
                     console.log(err);
                     reject(err);
@@ -749,6 +776,67 @@ function getUserData(user) {
         );
     });
 }
+
+function deleteUser(user){
+    return new Promise((resolve, reject) => {
+        db.query("DELETE user, fach FROM user JOIN fach on user.id = fach.user where username = ?", [hash(user)], (err) => {
+            if(err){
+                console.log(err);
+                reject(err);
+                return;
+            }
+            resolve();
+        })
+    })
+}
+
+/**
+ *
+ * @param id Discord ID
+ * @param username Untis username
+ * @returns {Promise<String>}
+ */
+function addDiscordId(id, username){
+    return new Promise((resolve, reject) => {
+        db.query("UPDATE user SET discordid = ? WHERE username = ?",
+            [id, hash(username)],
+            (err, result) => {
+                if(err){
+                    reject(err);
+                    return;
+                }
+                if(result.affectedRows < 1){
+                    reject("ID nicht gefunden");
+                }
+                resolve("Erfolgreich Eingetragen");
+            })
+    })
+}
+
+/**
+ * Removes a discord ID From DB
+ * @param id the Id to remove
+ * @returns {Promise<String>}
+ */
+function rmDiscordId(id){
+    return new Promise((resolve, reject) => {
+        db.query("UPDATE user SET discordid = '' WHERE discordid = ?",
+            [id],
+            (err, result) => {
+                if(err){
+                    reject(err);
+                    return;
+                }
+                if(result.affectedRows < 1){
+                    resolve("Deine ID wurde nicht in der Datenbank gefunden.");
+                    return;
+                }
+                resolve("Erfolgreich Entfernt");
+            })
+    })
+}
+
+//endregion
 
 /**
  * Handling cancelled classes for Notifications etc.
@@ -796,52 +884,84 @@ function convertUntisTimeDatetoDate(date, startTime){
  * @param {String} lessonNr Welche Kurse betrroffen sind.
  */
 async function sendNotification(lesson, date, lessonNr){
-    if(date > new Date()){
+    if(date < new Date()){
         return;
     }
+    console.log("Sendet Benachrichtigung für: ", lesson, date.toISOString().slice(0, 10));
+    const notificationBody = `${lesson} am ${String(date.getDate() + "."+ (date.getMonth() + 1))} entfällt.`;
 
-    console.log("Sendet Benachrichtigung für: ", lesson, date.toISOString().slice(0, 10))
     const payload = {
         type: "notification",
-        body: `${lesson} am ${String(date.getDay() + "."+ (date.getMonth() + 1))} entfällt.`
+        body: notificationBody
     };
     const options = {
         TTL: TTL
     };
-    let sent = false;
     getSubscriptions(lessonNr).then(subscriptions => {
-        subscriptions.forEach((/** @type {webPush.PushSubscription} */ user) => {
+        subscriptions.forEach((user) => {
             webPush
                 .sendNotification(user, JSON.stringify(payload), options)
                 .then((response) => {
                     if (response.statusCode !== 201) {
                         console.log(response.statusCode, response);
-                    }else{
-                        console.log("Sent Notificatin");
                     }
                 })
-                .catch(error => {
-                    console.log("Invalid  subscription Object");
-                });
         });
-    }).catch((msg) => {
-        console.log(msg);
+    }).catch((err) => {
+        console.error(err);
     })
+    getDiscordIds(lessonNr).then(ids => {
+        ids.forEach((id) => {
+            console.log(id);
+            dm.sendMessage(notificationBody, id).catch(console.error);
+        })
+    }).catch((err) => {
+        console.error(err);
+    });
 
 }
+
+
+/**
+ *
+ * @param lesson Lesson String
+ * @returns {Promise<String[]>}
+ */
+function getDiscordIds(lesson){
+    return new Promise((resolve, reject) => {
+        db.query(
+            'SELECT discordid FROM user WHERE ? in (lk, fachrichtung) UNION SELECT subscription FROM user LEFT JOIN fach on user.id = fach.user WHERE ? = fach.fach',
+            [lesson, lesson],
+            function (err, result) {
+                if (err) {
+                    console.log(err);
+                    reject(err);
+                    return;
+                }
+                let res = [];
+                console.log(result);
+                result.forEach(element => {
+                    if(element["discordid"]){
+                        res.push(element["discordid"]);
+                    }
+                })
+                resolve(res);
+            }
+        );
+    })
+}
+
 function sendCustomNotification(text){
     return new Promise((resolve, reject) => {
         const options = {
             TTL: TTL
         };
         getAllSubscriptions().then(subscriptions => {
-            subscriptions.forEach((/** @type {webPush.PushSubscription} */ user) => {
-                console.log(user);
+            subscriptions.forEach((user) => {
                 webPush
                     .sendNotification(user, JSON.stringify({type: "notification", body: text}), options)
                     .then((response) => {
                         if (response.statusCode !== 201) {
-                            console.log(response.statusCode, response);
                         }else{
                             console.log("Sent Notificatin");
                         }
@@ -861,7 +981,7 @@ function sendCustomNotification(text){
  *
  * @param {String} username Username in Plaintext
  * @param {webPush.PushSubscription} subscription Matching Subscription
- * @returns {Promse<boolean>} if Operation was successful
+ * @returns {Promise<boolean>} if Operation was successful
  */
 function addSubscription(username, subscription){
     return new Promise((resolve, reject) => {
@@ -883,7 +1003,7 @@ function addSubscription(username, subscription){
                 db.query(
                     'UPDATE user SET subscription=?  WHERE username=?',
                     [JSON.stringify(subscriptionArr), hash(username)],
-                    function (err, result, fields) {
+                    function (err) {
                         if (err) {
                             console.log(err);
                             reject(err);
@@ -906,14 +1026,10 @@ function getSubscriptions(lesson){
         db.query(
             'SELECT subscription FROM user WHERE ? in (lk, fachrichtung) UNION SELECT subscription FROM user LEFT JOIN fach on user.id = fach.user WHERE ? = fach.fach',
             [lesson, lesson],
-            function (err, result, fields) {
+            function (err, result) {
                 if (err) {
                     console.log(err);
                     reject(err);
-                    return;
-                }
-                if(result.length < 1){
-                    reject("Keine Ergebnisse");
                     return;
                 }
                 let res = [];
@@ -947,28 +1063,89 @@ function getAllSubscriptions(){
     })
 }
 
+
+let chats = {};
+
+//region Discord stuff
+dm.onMessage = (msg, id, send, waitFor) => {
+    console.log(chats);
+    // Stop receiving notifs
+    if(msg.toLowerCase() === "stop"){
+        rmDiscordId(id).then((res) => {
+            send(res);
+        }).catch(() => {
+            send("Das hat leider nicht geklappt.");
+        })
+        return
+    }
+    // Help command
+    if(msg.toLowerCase() === "help"){
+        send("Hilfe: " +
+            "\nUm Benachrichtigungen über Discord zu erhalten, gib hier deinen Untis Namen ein." +
+            "\nWenn du keine Benachrichtigungen mehr erhalten möchtest, gib `stop` ein." +
+            "\nUm von vorne zu Beginnen gib `reset` ein");
+        return;
+    }
+
+    if(msg.toLowerCase() === "reset"){
+        delete chats.id;
+        send("Um Benachrichtigungen über Discord zu erhalten, gib hier deinen Untis Namen ein.");
+        return;
+    }
+    if(chats.id){
+        if(/^\d+$/.test(msg)){
+            if(msg === discordAuthObj[chats.id]?.toString()){
+                addDiscordId(id, chats.id).then(send).catch((err) => {
+                    console.error(err);
+                    send("Das hat leider nicht geklappt. Versuche es erneut oder Kontaktiere uns");
+                })
+            }else{
+                send("Der Code ist leider ungültig.");
+                return;
+            }
+        }else{
+            send("Ungültige Eingabe");
+        }
+    }else{
+        // Expect user Input to be untis name
+        if(/\d/.test(msg)){
+            send("Die Eingabe darf keine Zahlen enthalten.");
+            return;
+        }
+        isUserRegistered(msg.toLowerCase()).then(bool => {
+            if(!bool){
+                send("`" + msg + "`" + " ist leider nicht vorhanden.\nGib bitte deinen Untis Namen ein. Wenn du hilfe benötigst gib `help`");
+                return;
+            }
+            chats.id = msg;
+            setTimeout(() => {
+                delete chats.id;
+            }, 300000);
+            send("Du musst als nächstes einen Token von der Website anfordern." +
+                "Gehe dazu auf https://untismerger.tk/settings" +
+                "\nAnschließend kannst du den Token einfach hier einfügen.");
+        })
+    }
+
+
+
+}
+
+dm.onUserAdd = (name, id) => {
+    dm.sendMessage(`Hallo ${name}\n um über deinen Discord Account benachrichtigungen zu erhalten, antworte bitte mit deinem Untis Namen. \nWenn du keine Benachrichtigungen mehr erhalten möchtest, gib \`stop\` ein`, id).catch(console.log);
+}
+
+//endregion
+
+
 /**
  *
  * @param {Object} userObj User Obj with data to sign
  * @returns {Promise<String>} Signed Key, Base64URL encoded
  */
 function signJwt(userObj){
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
     userObj.version = config.constants.jwtVersion;
-    console.log(userObj);
     resolve(jwt.sign(userObj, config.secrets.JWT_SECRET));
-    })
-}
-
-function deleteUser(user){
-    return new Promise((resolve, reject) => {
-    db.query("DELETE user, fach FROM user JOIN fach on user.id = fach.user where username = ?", [hash(user)], (err, result) => {
-        if(err){
-            console.log(err);
-            reject(err);
-            return;
-        }
-        resolve();
-    })
     })
 }

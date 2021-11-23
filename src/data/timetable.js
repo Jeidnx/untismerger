@@ -2,7 +2,7 @@ if (!localStorage.getItem('jwt')) {
 	window.location.href = '/setup';
 }
 if ('serviceWorker' in navigator) {
-	navigator.serviceWorker.register('/sw.js').then((registration) => {});
+	navigator.serviceWorker.register('/sw.js');
 }
 
 
@@ -106,7 +106,7 @@ function displayWeek(purge, date){
  * @return {Promise<void>} Resolves when days have been added to the DOM
  */
 function addWeek(week){
-	return new Promise((resolve, reject) => {
+	return new Promise((resolve) => {
 	const variableContent = document.getElementById('variableContent');
 	variableContent.innerHTML = "";
 	for(let index = 0; index < 5; index++) {
@@ -259,7 +259,7 @@ window.onkeydown = function (event) {
  * @return {Promise<boolean>} true when site is reloaded, false if nothing happened
  */
 async function refreshHandler(purge) {
-	return new Promise((resolve, reject) => {
+	return new Promise((resolve) => {
 		if (body.classList.contains('refreshing')) {
 			resolve(false);
 			return;

@@ -167,7 +167,7 @@ function getNotificationSubscription() {
 }
 function urlBase64ToUint8Array(base64String) {
 	let padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-	let base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+	let base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
 
 	let rawData = window.atob(base64);
 	let outputArray = new Uint8Array(rawData.length);
@@ -177,3 +177,24 @@ function urlBase64ToUint8Array(base64String) {
 	}
 	return outputArray;
 }
+
+// Discord notifs
+document.getElementById("notificationsDiscord").addEventListener("click", () => {
+	window.open("https://discord.gg/P8adQc8N63", '_blank').focus();
+})
+let discordReturn = document.getElementById("discordReturn");
+document.getElementById("discordGetToken").addEventListener("click", () => {
+	fetch("/api/getDiscordToken",{
+		method: 'POST',
+		body: new URLSearchParams({
+			'jwt': localStorage.getItem("jwt"),
+		})
+	}).then(response => response.json()).then(data => {
+		if(data.error){
+			discordReturn.innerText = data.error;
+			return;
+		}
+		discordReturn.innerText = data.secret;
+
+	}).catch(console.error);
+})
