@@ -55,9 +55,7 @@ const path = config.constants.apiPath;
 let db;
 let discordAuthObj = {};
 
-dm.login(config.secrets.DISCORD_TOKEN).then(client => {
-    console.log("[djs-messenger] Logged in as", client.user.tag);
-})
+
 
 if(typeof process.env.DEV == 'undefined'){
     console.log("Missing env vars");
@@ -67,9 +65,15 @@ if(typeof process.env.DEV == 'undefined'){
 if(!(process.env.DEV === 'FALSE')){
     console.log("Running in DEV Environment");
     db = mysql.createPool(config.mysqlDev);
+    dm.login(config.secrets.DISCORD_TOKEN_DEV).then(client => {
+        console.log("[djs-messenger] Logged in as", client.user.tag);
+    })
 }else{
     console.log("Running in PROD Environment");
     db = mysql.createPool(config.mysql);
+    dm.login(config.secrets.DISCORD_TOKEN).then(client => {
+        console.log("[djs-messenger] Logged in as", client.user.tag);
+    })
 }
 webPush.setVapidDetails(
     'https://github.com/Jeidnx',
