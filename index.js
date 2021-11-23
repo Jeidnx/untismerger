@@ -760,6 +760,12 @@ function deleteUser(user){
     })
 }
 
+/**
+ *
+ * @param id Discord ID
+ * @param username Untis username
+ * @returns {Promise<String>}
+ */
 function addDiscordId(id, username){
     return new Promise((resolve, reject) => {
         db.query("UPDATE user SET discordid = ? WHERE username = ?",
@@ -770,6 +776,29 @@ function addDiscordId(id, username){
                     return;
                 }
                 resolve("Erfolgreich Eingetragen");
+            })
+    })
+}
+
+/**
+ * Removes a discord ID From DB
+ * @param id the Id to remove
+ * @returns {Promise<String>}
+ */
+function rmDiscordId(id){
+    return new Promise((resolve, reject) => {
+        db.query("UPDATE user SET discordid = '' WHERE discordid = ?",
+            [id],
+            (err, result) => {
+                if(err){
+                    reject(err);
+                    return;
+                }
+                if(result.affectedRows < 1){
+                    resolve("Deine ID wurde nicht in der Datenbank gefunden.");
+                    return;
+                }
+                resolve("Erfolgreich Entfernt");
             })
     })
 }
@@ -1000,6 +1029,24 @@ function getAllSubscriptions(){
 
 //region Discord stuff
 dm.onMessage = (msg, id, reply) => {
+    // Stop receiving notifs
+    if(msg.toLowerCase() === "stop"){
+        rmDiscordId(id).then((res) => {
+            reply(res);
+        }).catch(() => {
+            reply("Das hat leider nicht geklappt.");
+        })
+        return
+    }
+    // Help command
+    if(msg.toLowerCase() === "help"){
+        reply("Hilfe: " +
+            "\nUm Benachrichtigungen über Discord zu erhalten, gib hier deinen Untis Namen ein." +
+            "\nWenn du keine Benachrichtigungen mehr erhalten möchtest, gib `stop` ein.");
+        return;
+    }
+
+
     // Expect user Input to be untis name
     if(/\d/.test(msg)){
         reply("Die Eingabe darf keine Zahlen enthalten.");
@@ -1018,7 +1065,7 @@ dm.onMessage = (msg, id, reply) => {
 }
 
 dm.onUserAdd = (name, id) => {
-    dm.sendMessage(`Hallo ${name}, um über deinen Discord Account benachrichtigungen zu erhalten, antworte bitte mit deinem Untis Namen.`, id).catch(console.log);
+    dm.sendMessage(`Hallo ${name}\n um über deinen Discord Account benachrichtigungen zu erhalten, antworte bitte mit deinem Untis Namen. \nWenn du keine Benachrichtigungen mehr erhalten möchtest, gib \`stop\` ein`, id).catch(console.log);
 }
 //endregion
 
