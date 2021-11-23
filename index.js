@@ -1060,9 +1060,7 @@ function getAllSubscriptions(){
 }
 
 
-let chats = {
-    idHere: "username",
-}
+let chats = {};
 
 //region Discord stuff
 dm.onMessage = (msg, id, send, waitFor) => {
@@ -1132,8 +1130,6 @@ dm.onMessage = (msg, id, send, waitFor) => {
 dm.onUserAdd = (name, id) => {
     dm.sendMessage(`Hallo ${name}\n um über deinen Discord Account benachrichtigungen zu erhalten, antworte bitte mit deinem Untis Namen. \nWenn du keine Benachrichtigungen mehr erhalten möchtest, gib \`stop\` ein`, id).catch(console.log);
 }
-
-//Discord two step auth
 
 //endregion
 
