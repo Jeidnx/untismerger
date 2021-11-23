@@ -106,7 +106,7 @@ function displayWeek(purge, date){
  * @return {Promise<void>} Resolves when days have been added to the DOM
  */
 function addWeek(week){
-	return new Promise((resolve) => {
+	return new Promise((resolve, reject) => {
 	const variableContent = document.getElementById('variableContent');
 	variableContent.innerHTML = "";
 	for(let index = 0; index < 5; index++) {
@@ -252,7 +252,7 @@ window.onkeydown = function (event) {
  * @return {Promise<boolean>} true when site is reloaded, false if nothing happened
  */
 async function refreshHandler(purge) {
-	return new Promise((resolve) => {
+	return new Promise((resolve, reject) => {
 		if (body.classList.contains('refreshing')) {
 			resolve(false);
 			return;
