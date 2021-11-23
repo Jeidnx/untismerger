@@ -214,7 +214,7 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
                 });
 
                 res.send({message: "OK", data: sendArr});
-            }).catch((err) => {
+            }).catch(() => {
                 res.status(400).send({error: true, message: "Invalid credentials"});
             })
     })
@@ -231,19 +231,19 @@ app.post(path + '/setup', (req, res) => {
             if ((req.body['secret'] !== "") && (req.body['username'] !== '')) {
                 const untis = new WebUntisLib.WebUntisSecretAuth(
                     schoolName,
-                    req.body['username'],
+                    req.body['username'].toLowerCase(),
                     req.body['secret'],
                     schoolDomain
                 );
                 untis
                     .login()
                     .then(() => {
-                        isUserRegistered(req.body['username']).then((bool) => {
+                        isUserRegistered(req.body['username'].toLowerCase()).then((bool) => {
                             if (bool) {
-                                getUserPreferences(req.body['username'])
+                                getUserPreferences(req.body['username'].toLowerCase())
                                     .then((prefs) => {
-                                        getUserData(req.body['username']).then((data) => {
-                                            data.username = req.body.username;
+                                        getUserData(req.body['username'].toLowerCase()).then((data) => {
+                                            data.username = req.body.username.toLowerCase();
                                             data.secret = encrypt(req.body.secret);
                                             data.type = "secret";
                                             signJwt(data).then(signed => {
@@ -271,16 +271,16 @@ app.post(path + '/setup', (req, res) => {
                 return;
             }
             else if ((req.body["usernamePw"] !== '') && (req.body["password"] !== '')){
-                const untis = new WebUntisLib(config.secrets.SCHOOL_NAME, req.body["usernamePw"], req.body['password'], config.secrets.SCHOOL_DOMAIN);
+                const untis = new WebUntisLib(config.secrets.SCHOOL_NAME, req.body["usernamePw"].toLowerCase(), req.body['password'], config.secrets.SCHOOL_DOMAIN);
                 untis
                     .login()
                     .then(() => {
-                        isUserRegistered(req.body['usernamePw']).then((bool) => {
+                        isUserRegistered(req.body['usernamePw'].toLowerCase()).then((bool) => {
                             if (bool) {
                                 getUserPreferences(req.body['usernamePw'])
                                     .then((prefs) => {
                                         getUserData(req.body['usernamePw']).then((data) => {
-                                            data.username = req.body.usernamePw;
+                                            data.username = req.body.usernamePw.toLowerCase();
                                             data.password = encrypt(req.body.password);
                                             data.type = "password";
                                             signJwt(data).then(signed => {
@@ -346,12 +346,12 @@ app.post(path + '/setup', (req, res) => {
 
             if(req.body["secret"] !== ""){
                 userObj.secret = encrypt(req.body['secret']);
-                userObj.username = req.body['username'];
+                userObj.username = req.body['username'].toLowerCase();
                 userObj.type= "secret";
             }
             else if(req.body['password'] !== "") {
                 userObj.password = encrypt(req.body["password"]);
-                userObj.username = req.body["usernamePw"];
+                userObj.username = req.body["usernamePw"].toLowerCase();
                 userObj.type = "password";
             }
             else {
@@ -1005,12 +1005,12 @@ dm.onMessage = (msg, id, reply) => {
         reply("Die Eingabe darf keine Zahlen enthalten.");
         return;
     }
-    isUserRegistered(msg).then(bool => {
+    isUserRegistered(msg.toLowerCase()).then(bool => {
         if(!bool){
             reply("`" + msg + "`" + " ist leider nicht vorhanden.");
             return;
         }
-        addDiscordId(id, msg).then(reply).catch((err) => {
+        addDiscordId(id, msg.toLowerCase()).then(reply).catch((err) => {
             console.error(err);
             reply("Das hat leider nicht geklappt. Versuche es erneut oder Kontaktiere uns");
         })
