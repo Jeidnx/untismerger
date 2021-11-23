@@ -1054,19 +1054,19 @@ function getAllSubscriptions(){
 
 
 //region Discord stuff
-dm.onMessage = (msg, id, reply) => {
+dm.onMessage = (msg, id, send, waitFor) => {
     // Stop receiving notifs
     if(msg.toLowerCase() === "stop"){
         rmDiscordId(id).then((res) => {
-            reply(res);
+            send(res);
         }).catch(() => {
-            reply("Das hat leider nicht geklappt.");
+            send("Das hat leider nicht geklappt.");
         })
         return
     }
     // Help command
     if(msg.toLowerCase() === "help"){
-        reply("Hilfe: " +
+        send("Hilfe: " +
             "\nUm Benachrichtigungen über Discord zu erhalten, gib hier deinen Untis Namen ein." +
             "\nWenn du keine Benachrichtigungen mehr erhalten möchtest, gib `stop` ein.");
         return;
@@ -1075,18 +1075,35 @@ dm.onMessage = (msg, id, reply) => {
 
     // Expect user Input to be untis name
     if(/\d/.test(msg)){
-        reply("Die Eingabe darf keine Zahlen enthalten.");
+        send("Die Eingabe darf keine Zahlen enthalten.");
         return;
     }
     isUserRegistered(msg.toLowerCase()).then(bool => {
         if(!bool){
-            reply("`" + msg + "`" + " ist leider nicht vorhanden.");
+            send("`" + msg + "`" + " ist leider nicht vorhanden.");
             return;
         }
-        addDiscordId(id, msg.toLowerCase()).then(reply).catch((err) => {
-            console.error(err);
-            reply("Das hat leider nicht geklappt. Versuche es erneut oder Kontaktiere uns");
+        if(!discordAuthObj[msg]){
+            send("Du musst zunächst einen Token von der Website anfordern." +
+                " Gehe dazu auf https://untismerger.tk/settings");
+            return;
+        }
+
+        send("Bitte gib den Token von der Website ein:");
+        waitFor(6).then(reply => {
+            if(reply === discordAuthObj[msg]?.toString()){
+                addDiscordId(id, msg.toLowerCase()).then(send).catch((err) => {
+                    console.error(err);
+                    send("Das hat leider nicht geklappt. Versuche es erneut oder Kontaktiere uns");
+                })
+            }else{
+                send("Der Code ist leider ungültig");
+            }
+        }).catch(() => {
+            send("Joa oder halt nicht");
         })
+
+
     })
 }
 
