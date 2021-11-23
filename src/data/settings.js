@@ -182,3 +182,14 @@ function urlBase64ToUint8Array(base64String) {
 document.getElementById("notificationsDiscord").addEventListener("click", () => {
 	window.open("https://discord.gg/P8adQc8N63", '_blank').focus();
 })
+let discordReturn = document.getElementById("discordReturn");
+document.getElementById("discordGetToken").addEventListener("click", () => {
+	fetch("/api/getDiscordToken").then(response => response.json()).then(data => {
+		if(data.error){
+			discordReturn.innerText = data.error;
+			return;
+		}
+		discordReturn.innerText = data.secret;
+
+	});
+})

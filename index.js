@@ -53,6 +53,7 @@ const port = process.env.PORT;
 const TTL = config.constants.ttl;
 const path = config.constants.apiPath;
 let db;
+let discordAuthObj = {};
 
 dm.login(config.secrets.DISCORD_TOKEN).then(client => {
     console.log("[djs-messenger] Logged in as", client.user.tag);
@@ -448,6 +449,31 @@ app.post(path + '/sendNotification', (req, res) =>  {
     });
 
 })
+app.get(path + "/getDiscordToken", (req, res) => {
+    if(!req.body['jwt']){
+        res.status(400).send({error: true, message: "Missing Arguments"});
+        return;
+    }
+    jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
+        if (err) {
+            res.status(400).send({error: true, message: 'Invalid JWT'});
+            return;
+        }
+        if(discordAuthObj[decoded['username']]){
+            res.status(400).send({error: true, message: "not so fast"});
+            return;
+        }
+        const secretToken = getRandomInt(100000);
+        discordAuthObj[decoded['username']] = secretToken;
+        setTimeout(() => {
+            delete discordAuthObj[decoded['username']];
+        }, 60000);
+        res.status(200).send({secret: secretToken});
+
+    })
+
+})
+
 //endregion
 
 //region Statistic functions
@@ -1067,6 +1093,9 @@ dm.onMessage = (msg, id, reply) => {
 dm.onUserAdd = (name, id) => {
     dm.sendMessage(`Hallo ${name}\n um über deinen Discord Account benachrichtigungen zu erhalten, antworte bitte mit deinem Untis Namen. \nWenn du keine Benachrichtigungen mehr erhalten möchtest, gib \`stop\` ein`, id).catch(console.log);
 }
+
+//Discord two step auth
+
 //endregion
 
 
