@@ -508,8 +508,9 @@ function checkCancelled(startDate, endDate){
     untis.login().then(async () => {
         await untis.getTimetableForRange(startDate, endDate, 2232, 1).then(lessons => {
             lessons.forEach(lesson => {
+                if(!startTimes.includes(lesson.startTime)) return;
                 if (lesson.code === "cancelled") {
-                    cancelHandler(lesson, lesson.su[0].name)
+                    cancelHandler(lesson, lesson.su[0].name);
                 }
             })
         }).catch(console.error);
@@ -517,6 +518,7 @@ function checkCancelled(startDate, endDate){
         for(let i = 0; i < idsToCheck.length; i++){
             await untis.getTimetableForRange(startDate, endDate, idsToCheck[i], 1).then(lessons => {
                 lessons.forEach(lesson => {
+                    if(!startTimes.includes(lesson.startTime)) return;
                     if(lesson.code === "cancelled"){
                         cancelHandler(lesson, idsToCheck[i].toString());
                     }
@@ -823,9 +825,8 @@ async function sendNotification(lesson, date, lessonNr){
     if(date < new Date()){
         return;
     }
-
     console.log("Sendet Benachrichtigung für: ", lesson, date.toISOString().slice(0, 10));
-    const notificationBody = `${lesson} am ${String(date.getDay() + "."+ (date.getMonth() + 1))} entfällt.`;
+    const notificationBody = `${lesson} am ${String(date.getDate() + "."+ (date.getMonth() + 1))} entfällt.`;
 
     const payload = {
         type: "notification",
@@ -841,20 +842,18 @@ async function sendNotification(lesson, date, lessonNr){
                 .then((response) => {
                     if (response.statusCode !== 201) {
                         console.log(response.statusCode, response);
-                    }else{
-                        console.log("Sent Notificatin");
                     }
                 })
         });
+    }).catch((err) => {
+        console.error(err);
     })
     getDiscordIds(lessonNr).then(ids => {
         ids.forEach((id) => {
             dm.sendMessage(notificationBody, id).catch(console.error);
         })
     }).catch((err) => {
-        if(err !== "Keine Ergebnisse"){
-            console.log(err);
-        }
+        console.error(err);
     });
 
 }
@@ -874,10 +873,6 @@ function getDiscordIds(lesson){
                 if (err) {
                     console.log(err);
                     reject(err);
-                    return;
-                }
-                if(result.length < 1){
-                    reject("Keine Ergebnisse");
                     return;
                 }
                 let res = [];
@@ -969,10 +964,6 @@ function getSubscriptions(lesson){
                 if (err) {
                     console.log(err);
                     reject(err);
-                    return;
-                }
-                if(result.length < 1){
-                    reject("Keine Ergebnisse");
                     return;
                 }
                 let res = [];
