@@ -1149,7 +1149,3 @@ function signJwt(userObj){
     resolve(jwt.sign(userObj, config.secrets.JWT_SECRET));
     })
 }
-
-let date = new Date();
-date.setDate(date.getDate() + 7);
-checkCancelled(new Date(), date);
