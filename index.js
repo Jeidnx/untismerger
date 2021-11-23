@@ -1053,8 +1053,13 @@ function getAllSubscriptions(){
 }
 
 
+let chats = {
+    idHere: "username",
+}
+
 //region Discord stuff
 dm.onMessage = (msg, id, send, waitFor) => {
+    console.log(chats);
     // Stop receiving notifs
     if(msg.toLowerCase() === "stop"){
         rmDiscordId(id).then((res) => {
@@ -1068,43 +1073,53 @@ dm.onMessage = (msg, id, send, waitFor) => {
     if(msg.toLowerCase() === "help"){
         send("Hilfe: " +
             "\nUm Benachrichtigungen über Discord zu erhalten, gib hier deinen Untis Namen ein." +
-            "\nWenn du keine Benachrichtigungen mehr erhalten möchtest, gib `stop` ein.");
+            "\nWenn du keine Benachrichtigungen mehr erhalten möchtest, gib `stop` ein." +
+            "\nUm von vorne zu Beginnen gib `reset` ein");
         return;
     }
 
-
-    // Expect user Input to be untis name
-    if(/\d/.test(msg)){
-        send("Die Eingabe darf keine Zahlen enthalten.");
+    if(msg.toLowerCase() === "reset"){
+        delete chats.id;
+        send("Um Benachrichtigungen über Discord zu erhalten, gib hier deinen Untis Namen ein.");
         return;
     }
-    isUserRegistered(msg.toLowerCase()).then(bool => {
-        if(!bool){
-            send("`" + msg + "`" + " ist leider nicht vorhanden.");
-            return;
-        }
-        if(!discordAuthObj[msg]){
-            send("Du musst zunächst einen Token von der Website anfordern." +
-                " Gehe dazu auf https://untismerger.tk/settings");
-            return;
-        }
-
-        send("Bitte gib den Token von der Website ein:");
-        waitFor(6).then(reply => {
-            if(reply === discordAuthObj[msg]?.toString()){
+    if(chats.id){
+        if(/^\d+$/.test(msg)){
+            if(msg === discordAuthObj[chats.id]?.toString()){
                 addDiscordId(id, msg.toLowerCase()).then(send).catch((err) => {
                     console.error(err);
                     send("Das hat leider nicht geklappt. Versuche es erneut oder Kontaktiere uns");
                 })
             }else{
-                send("Der Code ist leider ungültig");
+                send("Der Code ist leider ungültig.");
+                return;
             }
-        }).catch(() => {
-            send("Joa oder halt nicht");
+        }else{
+            send("Ungültige Eingabe");
+        }
+    }else{
+        // Expect user Input to be untis name
+        if(/\d/.test(msg)){
+            send("Die Eingabe darf keine Zahlen enthalten.");
+            return;
+        }
+        isUserRegistered(msg.toLowerCase()).then(bool => {
+            if(!bool){
+                send("`" + msg + "`" + " ist leider nicht vorhanden.\nGib bitte deinen Untis Namen ein. Wenn du hilfe benötigst gib `help`");
+                return;
+            }
+            chats.id = msg;
+            setTimeout(() => {
+                delete chats.id;
+            }, 300000)
+            send("Du musst als nächstes einen Token von der Website anfordern." +
+                " Gehe dazu auf https://untismerger.tk/settings" +
+                "\nAnschließend kannst du den Token einfach hier einfügen.");
         })
+    }
 
 
-    })
+
 }
 
 dm.onUserAdd = (name, id) => {
