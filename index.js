@@ -1089,7 +1089,7 @@ dm.onMessage = (msg, id, send, waitFor) => {
     if(chats.id){
         if(/^\d+$/.test(msg)){
             if(msg === discordAuthObj[chats.id]?.toString()){
-                addDiscordId(id, msg.toLowerCase()).then(send).catch((err) => {
+                addDiscordId(id, chats.id).then(send).catch((err) => {
                     console.error(err);
                     send("Das hat leider nicht geklappt. Versuche es erneut oder Kontaktiere uns");
                 })
