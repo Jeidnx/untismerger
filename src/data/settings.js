@@ -184,12 +184,17 @@ document.getElementById("notificationsDiscord").addEventListener("click", () => 
 })
 let discordReturn = document.getElementById("discordReturn");
 document.getElementById("discordGetToken").addEventListener("click", () => {
-	fetch("/api/getDiscordToken").then(response => response.json()).then(data => {
+	fetch("/api/getDiscordToken",{
+		method: 'POST',
+		body: new URLSearchParams({
+			'jwt': localStorage.getItem("jwt"),
+		})
+	}).then(response => response.json()).then(data => {
 		if(data.error){
 			discordReturn.innerText = data.error;
 			return;
 		}
 		discordReturn.innerText = data.secret;
 
-	});
+	}).catch(console.error);
 })

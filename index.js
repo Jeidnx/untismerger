@@ -449,7 +449,7 @@ app.post(path + '/sendNotification', (req, res) =>  {
     });
 
 })
-app.get(path + "/getDiscordToken", (req, res) => {
+app.post(path + "/getDiscordToken", (req, res) => {
     if(!req.body['jwt']){
         res.status(400).send({error: true, message: "Missing Arguments"});
         return;
