@@ -1,4 +1,3 @@
-// @ts-nocheck
 const cacheVersion = '2.03';
 const cacheName = 'untmerger_v' + cacheVersion;
 const toCache = [
