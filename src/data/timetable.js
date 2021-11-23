@@ -2,7 +2,7 @@ if (!localStorage.getItem('jwt')) {
 	window.location.href = '/setup';
 }
 if ('serviceWorker' in navigator) {
-	navigator.serviceWorker.register('/sw.js');
+	navigator.serviceWorker.register('/sw.js').then((registration) => {});
 }
 
 
