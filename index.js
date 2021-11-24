@@ -464,7 +464,7 @@ app.post(path + "/getDiscordToken", (req, res) => {
             return;
         }
         if(discordAuthObj[decoded['username']]){
-            res.status(400).send({error: true, message: "not so fast"});
+            res.status(200).send({secret: discordAuthObj[decoded['username']]});
             return;
         }
         const secretToken = getRandomInt(100000);
