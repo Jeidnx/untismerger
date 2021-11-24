@@ -45,7 +45,7 @@ const weekDayEnum = {
 let _startY;
 let _startX;
 const body = document.body;
-let currentDay = getWeekFromDay(new Date())[0];
+let currentDay = new Date(getWeekFromDay(new Date())[0]);
 
 let timeTable = JSON.parse(localStorage.getItem('timeTable')) || {};
 /**
