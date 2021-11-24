@@ -467,7 +467,7 @@ app.post(path + "/getDiscordToken", (req, res) => {
             res.status(200).send({secret: discordAuthObj[decoded['username']]});
             return;
         }
-        const secretToken = getRandomInt(100000);
+        const secretToken = getRandomInt(1000000);
         discordAuthObj[decoded['username']] = secretToken;
         setTimeout(() => {
             delete discordAuthObj[decoded['username']];
@@ -930,7 +930,7 @@ async function sendNotification(lesson, date, lessonNr){
 function getDiscordIds(lesson){
     return new Promise((resolve, reject) => {
         db.query(
-            'SELECT discordid FROM user WHERE ? in (lk, fachrichtung) UNION SELECT subscription FROM user LEFT JOIN fach on user.id = fach.user WHERE ? = fach.fach',
+            'SELECT discordid FROM user WHERE ? in (lk, fachrichtung) UNION SELECT discordid FROM user LEFT JOIN fach on user.id = fach.user WHERE ? = fach.fach',
             [lesson, lesson],
             function (err, result) {
                 if (err) {
