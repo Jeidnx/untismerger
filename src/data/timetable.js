@@ -45,7 +45,7 @@ const weekDayEnum = {
 let _startY;
 let _startX;
 const body = document.body;
-let currentDay = new Date();
+let currentDay = getWeekFromDay(new Date())[0];
 
 let timeTable = JSON.parse(localStorage.getItem('timeTable')) || {};
 /**
@@ -287,33 +287,29 @@ async function refreshHandler(purge) {
 	});
 }
 /**
- * @param {boolean} boolIn true = +1 Week; false = -1 Week
+ * @param {boolean} forward true = +1 Week; false = -1 Week
  */
-function scrollWeeks(boolIn) {
+function scrollWeeks(forward) {
 	if (body.classList.contains('switching')) {
 		return;
 	}
 	body.classList.add('switching');
-	let curr = currentDay.getTime();
 
-	if (boolIn) {
-		//TODO: Fix this.
-		curr += 7 * 60 * 60 * 24 * 1000;
-		currentDay = new Date(curr);
+	if (forward) {
+		currentDay.setDate(currentDay.getDate() + 7);
 		refreshHandler(false).then(function () {
 			body.classList.remove('switching');
 		});
 	} else {
 
-		curr -= 7 * 60 * 60 * 24 * 1000;
-
-		if (curr < new Date().getTime()) {
+		if(currentDay.getDate() - 7 < new Date()){
 			setTimeout(() => {
 				body.classList.remove('switching');
 			}, 50);
 			return;
 		}
-		currentDay = new Date(curr);
+
+		currentDay.setDate(currentDay.getDate() - 7);
 		refreshHandler(false).then(() => {
 			body.classList.remove('switching');
 		});
