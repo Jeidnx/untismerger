@@ -310,7 +310,6 @@ function scrollWeeks(forward) {
 			return;
 		}
 
-		currentDay.setDate(currentDay.getDate() - 7);
 		refreshHandler(false).then(() => {
 			body.classList.remove('switching');
 		});
