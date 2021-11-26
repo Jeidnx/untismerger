@@ -302,7 +302,8 @@ function scrollWeeks(forward) {
 		});
 	} else {
 
-		if(currentDay.getDate() - 7 < new Date()){
+		if(currentDay.setDate(currentDay.getDate() - 7) < new Date(getWeekFromDay(new Date())[0])){
+			currentDay.setDate(currentDay.getDate() + 7);
 			setTimeout(() => {
 				body.classList.remove('switching');
 			}, 50);
