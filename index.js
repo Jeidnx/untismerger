@@ -905,7 +905,7 @@ async function sendNotification(lesson, date, lessonNr){
                     if (response.statusCode !== 201) {
                         console.log(response.statusCode, response);
                     }
-                })
+                }).catch(console.error);
         });
     }).catch((err) => {
         console.error(err);
@@ -939,7 +939,6 @@ function getDiscordIds(lesson){
                     return;
                 }
                 let res = [];
-                console.log(result);
                 result.forEach(element => {
                     if(element["discordid"]){
                         res.push(element["discordid"]);
