@@ -153,6 +153,6 @@ body.error .errorMessage {
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	height: 10vh;
-	width: 10vh;
+	height: 8vh;
+	width: 8vh;
 }

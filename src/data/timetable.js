@@ -173,6 +173,10 @@ function getWeek(week){
 		let xhr = new XMLHttpRequest();
 		xhr.addEventListener('load', () => {
 			if (!(xhr.status === 200)) {
+				if(xhr.status === 502){
+					reject("Der Server ist wegen Wartungsarbeiten nicht verfügbar.");
+					return;
+				}
 				reject(JSON.parse(xhr.response).message);
 				return;
 			}
