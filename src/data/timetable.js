@@ -328,11 +328,6 @@ function scrollWeeks(forward) {
 	}
 }
 
-document.getElementById('refreshButton').addEventListener('click', () => {
-	// @ts-ignore
-	document.getElementById('slide').checked = false;
-	refreshHandler(true);
-});
 
 /**
  *
