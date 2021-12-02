@@ -1069,7 +1069,7 @@ function getAllSubscriptions(){
 let chats = {};
 
 //region Discord stuff
-dm.onMessage = (msg, id, send, waitFor) => {
+dm.onMessage = (msg, id, send) => {
     console.log(chats);
     // Stop receiving notifs
     if(msg.toLowerCase() === "stop"){
@@ -1103,7 +1103,7 @@ dm.onMessage = (msg, id, send, waitFor) => {
                 })
             }else{
                 send("Der Code ist leider ungültig.");
-                return;
+
             }
         }else{
             send("Ungültige Eingabe");

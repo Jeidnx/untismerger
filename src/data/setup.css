@@ -7,7 +7,7 @@ html {
 body {
 	color: #bebebe;
 	text-align: center;
-	font-family: arial;
+	font-family: arial, serif;
 	background-image: url('/icons/background.png');
 	background-size: cover;
 	background-position: center;
@@ -17,7 +17,7 @@ body {
 h5 {
 	color: #bebebe;
 	font-size: 50px;
-	margin: 0px 0px 20px 0px;
+	margin: 0 0 20px 0;
 }
 
 form {
@@ -79,10 +79,7 @@ select {
 	padding: 2%;
 	border-radius: 2vh;
 	height: 70vh;
-	margin-top: 15vh;
-	margin-bottom: 15vh;
-	margin-left: 10vw;
-	margin-right: 10vw;
+	margin: 15vh 10vw;
 	width: 80vw;
 	display: flex;
 	flex-direction: column;
