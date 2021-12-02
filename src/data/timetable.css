@@ -85,7 +85,10 @@ body.refreshing .refresher {
 	background-color: #1d1d1d;
 	font-size: 3vw;
 }
-
+.row.isCurrentDay{
+	text-decoration: underline;
+	font-weight: bold;
+}
 body {
 	height: 100vh;
 	width: 100vw;

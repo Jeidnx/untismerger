@@ -112,10 +112,22 @@ function addWeek(week){
 	for(let index = 0; index < 5; index++) {
 		let date = week[index];
 		let day = document.createElement('div');
-		day.setAttribute('class', 'day');
+		day.classList.add("day");
 		let firstRow = document.createElement('div');
-		firstRow.setAttribute('class', 'row');
+		firstRow.classList.add("row");
 		firstRow.innerHTML = weekDayEnum[index];
+		let thisDate = new Date(date);
+		let currDate = new Date();
+		let isToday = (
+			thisDate.getDate() === currDate.getDate() &&
+			thisDate.getMonth() === currDate.getMonth() &&
+			thisDate.getFullYear() === currDate.getFullYear()
+		);
+
+		if(isToday){
+			firstRow.classList.add("isCurrentDay");
+		}
+
 		day.appendChild(firstRow);
 
 		for (let i = 0; i < 5; i++) {
