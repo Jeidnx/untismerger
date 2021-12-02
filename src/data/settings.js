@@ -198,3 +198,6 @@ document.getElementById("discordGetToken").addEventListener("click", () => {
 
 	}).catch(console.error);
 })
+document.getElementById("deleteLocalCache").addEventListener("click", () => {
+	localStorage.setItem("timeTable", "{}");
+})

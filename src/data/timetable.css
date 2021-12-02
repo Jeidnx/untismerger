@@ -85,7 +85,10 @@ body.refreshing .refresher {
 	background-color: #1d1d1d;
 	font-size: 3vw;
 }
-
+.row.isCurrentDay{
+	text-decoration: underline;
+	font-weight: bold;
+}
 body {
 	height: 100vh;
 	width: 100vw;
@@ -136,79 +139,20 @@ body.error .errorMessage {
 	color: #cf6679;
 }
 
-.toggle {
+#floatingActionButton {
 	text-decoration: none;
 	font-size: 4em;
 	color: #bb86fc;
-	-webkit-transition: all 0.15s ease-out;
-	-moz-transition: all 0.15s ease-out;
-	transition: all 0.45s ease-out;
 	position: fixed;
 	bottom: 2%;
 	right: 2%;
 	z-index: 1;
 	cursor: pointer;
-	padding: 0.5% 1.25% 0.5% 1.25%;
-	background-color: #1d1d1d;
-	border: 0.3vh solid #bb86fc;
+	background-color: #555;;
 	border-radius: 50%;
-}
-
-.sidebar {
-	bottom: 11%;
-	position: fixed;
-	right: -190px;
-	-webkit-transition: all 0.15s ease-out;
-	-moz-transition: all 0.15s ease-out;
-	transition: all 0.15s ease-out;
-	width: 8rem;
-	padding: 1.5em;
-}
-
-.sidebar a {
-	color: white;
-	display: block;
-	font-family: Arial, serif;
-	font-size: 1.6em;
-	cursor: pointer;
-	text-decoration: none;
-	background-color: #121212;
-	padding: 0.5em 0 0.5em 0.5em;
-	border-radius: 20vh;
-	border-style: solid;
-	border-color: white;
-	margin: 0 0 3vh;
-}
-
-.sidebar a:hover {
-	color: gray;
-}
-
-#slide + .container .sidebar {
-	right: -20.5vw;
-	-webkit-transition: -webkit-transform 0.5s;
-	-moz-transition: -moz-transform 0.5s;
-	transition: transform 0.5s;
-}
-
-#slide:checked + .container .sidebar {
-	-webkit-transform: translate(-26vw, 0);
-	-moz-transform: translate(-26vw, 0);
-	transform: translate(-26vw, 0);
-}
-#slide:checked + .container .toggle {
-	right: 2%;
-}
-
-#slide {
-	display: none;
-}
-
-.sidebar label {
-	background-color: #1a1a1a;
-	font-size: larger;
-	padding: 16%;
-	margin-left: 0.5em;
-	border-radius: 50%;
-	border: solid 1px #121212;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 8vh;
+	width: 8vh;
 }

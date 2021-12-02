@@ -49,12 +49,14 @@ let currentDay = new Date(getWeekFromDay(new Date())[0]);
 
 let timeTable = JSON.parse(localStorage.getItem('timeTable')) || {};
 /**
- * @param {Date} date
+ * @param {Date} dateIn
  * @returns {string[]}
  */
-function getWeekFromDay(date) {
-	let week = [];
+function getWeekFromDay(dateIn) {
+	// For anyone wondering why this is, try without 😃
+	let date = new Date(dateIn);
 
+	let week = [];
 	for (let i = 1; i <= 5; i++) {
 		let first = date.getDate() - date.getDay() + i;
 		let day = new Date(date.setDate(first)).toISOString().slice(0, 10);
@@ -72,21 +74,9 @@ function getWeekFromDay(date) {
  */
 function displayWeek(purge, date){
 	return new Promise((resolve, reject) => {
-		let weekDisplay = document.getElementById('weekDisplay');
 		let week = getWeekFromDay(date);
-		let firstDay = week[0].split('-');
-		let lastDay = week[4].split('-');
-
-		weekDisplay.innerHTML = `${firstDay[2]}.${firstDay[1]} - ${lastDay[2]}.${lastDay[1]}`;
-		document.getElementById('variableContent').innerHTML = '';
 
 		if(purge){
-			week.forEach(day => {
-				timeTable[day] = [];
-				for(let i = 0; i < 5; i++){
-					timeTable[day][i] = false;
-				}
-			})
 			getWeek(week).then(() => {
 				addWeek(week).then(resolve);
 			}).catch(reject);
@@ -109,13 +99,29 @@ function addWeek(week){
 	return new Promise((resolve) => {
 	const variableContent = document.getElementById('variableContent');
 	variableContent.innerHTML = "";
+	let weekDisplay = document.getElementById('weekDisplay');
+	let firstDay = week[0].split('-');
+	let lastDay = week[4].split('-');
+	weekDisplay.innerHTML = `${firstDay[2]}.${firstDay[1]} - ${lastDay[2]}.${lastDay[1]}`;
 	for(let index = 0; index < 5; index++) {
 		let date = week[index];
 		let day = document.createElement('div');
-		day.setAttribute('class', 'day');
+		day.classList.add("day");
 		let firstRow = document.createElement('div');
-		firstRow.setAttribute('class', 'row');
+		firstRow.classList.add("row");
 		firstRow.innerHTML = weekDayEnum[index];
+		let thisDate = new Date(date);
+		let currDate = new Date();
+		let isToday = (
+			thisDate.getDate() === currDate.getDate() &&
+			thisDate.getMonth() === currDate.getMonth() &&
+			thisDate.getFullYear() === currDate.getFullYear()
+		);
+
+		if(isToday){
+			firstRow.classList.add("isCurrentDay");
+		}
+
 		day.appendChild(firstRow);
 
 		for (let i = 0; i < 5; i++) {
@@ -161,9 +167,20 @@ function getWeek(week){
 		let xhr = new XMLHttpRequest();
 		xhr.addEventListener('load', () => {
 			if (!(xhr.status === 200)) {
+				if(xhr.status === 502){
+					reject("Der Server ist wegen Wartungsarbeiten nicht verfügbar.");
+					return;
+				}
 				reject(JSON.parse(xhr.response).message);
 				return;
 			}
+
+			week.forEach(day => {
+				timeTable[day] = [];
+				for(let i = 0; i < 5; i++){
+					timeTable[day][i] = false;
+				}
+			})
 
 			let data = JSON.parse(xhr.response).data;
 
@@ -295,6 +312,8 @@ function scrollWeeks(forward) {
 	}
 	body.classList.add('switching');
 
+	const initial = new Date(currentDay);
+
 	if (forward) {
 		currentDay.setDate(currentDay.getDate() + 7);
 		refreshHandler(false).then(function () {
@@ -303,34 +322,35 @@ function scrollWeeks(forward) {
 	} else {
 
 		if(currentDay.setDate(currentDay.getDate() - 7) < new Date(getWeekFromDay(new Date())[0])){
-			currentDay.setDate(currentDay.getDate() + 7);
+			currentDay = initial;
 			setTimeout(() => {
 				body.classList.remove('switching');
 			}, 50);
 			return;
 		}
 
-		refreshHandler(false).then(() => {
+		refreshHandler(false).then((bool) => {
+			if(!bool){
+				currentDay = initial;
+			}
 			body.classList.remove('switching');
 		});
 	}
 }
 
-document.getElementById('refreshButton').addEventListener('click', () => {
-	// @ts-ignore
-	document.getElementById('slide').checked = false;
-	refreshHandler(true);
-});
 
 /**
  *
  * @param {String} error Error to display;
  */
 function displayError(error){
+	if(body.classList.contains("error")){
+		return;
+	}
 	body.classList.add('error');
 	document.getElementById("errorMessage").innerText = error;
 	setTimeout(() => {
 		body.classList.remove('error');
-	}, 3000);
+	}, 5000);
 }
 refreshHandler(false);
