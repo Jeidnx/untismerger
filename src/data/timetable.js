@@ -49,12 +49,14 @@ let currentDay = new Date(getWeekFromDay(new Date())[0]);
 
 let timeTable = JSON.parse(localStorage.getItem('timeTable')) || {};
 /**
- * @param {Date} date
+ * @param {Date} dateIn
  * @returns {string[]}
  */
-function getWeekFromDay(date) {
-	let week = [];
+function getWeekFromDay(dateIn) {
+	// For anyone wondering why this is, try without 😃
+	let date = new Date(dateIn);
 
+	let week = [];
 	for (let i = 1; i <= 5; i++) {
 		let first = date.getDate() - date.getDay() + i;
 		let day = new Date(date.setDate(first)).toISOString().slice(0, 10);
@@ -310,7 +312,7 @@ function scrollWeeks(forward) {
 	}
 	body.classList.add('switching');
 
-	const initial = currentDay;
+	const initial = new Date(currentDay);
 
 	if (forward) {
 		currentDay.setDate(currentDay.getDate() + 7);
