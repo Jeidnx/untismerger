@@ -845,6 +845,9 @@ function rmDiscordId(id){
  * @returns void
  */
 async function cancelHandler(elem, lessonNr){
+    if(!elem['su'][0] || !elem["su"][0]["name"]){
+        return;
+    }
     db.query('INSERT IGNORE INTO canceled_lessons (fach, lessonid) VALUES (?, ?)',
         [elem["su"][0]["name"], elem["id"]], (err, result) => {
             if(err){
