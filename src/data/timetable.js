@@ -72,21 +72,9 @@ function getWeekFromDay(date) {
  */
 function displayWeek(purge, date){
 	return new Promise((resolve, reject) => {
-		let weekDisplay = document.getElementById('weekDisplay');
 		let week = getWeekFromDay(date);
-		let firstDay = week[0].split('-');
-		let lastDay = week[4].split('-');
-
-		weekDisplay.innerHTML = `${firstDay[2]}.${firstDay[1]} - ${lastDay[2]}.${lastDay[1]}`;
-		document.getElementById('variableContent').innerHTML = '';
 
 		if(purge){
-			week.forEach(day => {
-				timeTable[day] = [];
-				for(let i = 0; i < 5; i++){
-					timeTable[day][i] = false;
-				}
-			})
 			getWeek(week).then(() => {
 				addWeek(week).then(resolve);
 			}).catch(reject);
@@ -109,6 +97,10 @@ function addWeek(week){
 	return new Promise((resolve) => {
 	const variableContent = document.getElementById('variableContent');
 	variableContent.innerHTML = "";
+	let weekDisplay = document.getElementById('weekDisplay');
+	let firstDay = week[0].split('-');
+	let lastDay = week[4].split('-');
+	weekDisplay.innerHTML = `${firstDay[2]}.${firstDay[1]} - ${lastDay[2]}.${lastDay[1]}`;
 	for(let index = 0; index < 5; index++) {
 		let date = week[index];
 		let day = document.createElement('div');
@@ -180,6 +172,13 @@ function getWeek(week){
 				reject(JSON.parse(xhr.response).message);
 				return;
 			}
+
+			week.forEach(day => {
+				timeTable[day] = [];
+				for(let i = 0; i < 5; i++){
+					timeTable[day][i] = false;
+				}
+			})
 
 			let data = JSON.parse(xhr.response).data;
 
