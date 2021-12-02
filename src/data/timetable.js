@@ -310,6 +310,8 @@ function scrollWeeks(forward) {
 	}
 	body.classList.add('switching');
 
+	const initial = currentDay;
+
 	if (forward) {
 		currentDay.setDate(currentDay.getDate() + 7);
 		refreshHandler(false).then(function () {
@@ -318,14 +320,17 @@ function scrollWeeks(forward) {
 	} else {
 
 		if(currentDay.setDate(currentDay.getDate() - 7) < new Date(getWeekFromDay(new Date())[0])){
-			currentDay.setDate(currentDay.getDate() + 7);
+			currentDay = initial;
 			setTimeout(() => {
 				body.classList.remove('switching');
 			}, 50);
 			return;
 		}
 
-		refreshHandler(false).then(() => {
+		refreshHandler(false).then((bool) => {
+			if(!bool){
+				currentDay = initial;
+			}
 			body.classList.remove('switching');
 		});
 	}
@@ -337,10 +342,13 @@ function scrollWeeks(forward) {
  * @param {String} error Error to display;
  */
 function displayError(error){
+	if(body.classList.contains("error")){
+		return;
+	}
 	body.classList.add('error');
 	document.getElementById("errorMessage").innerText = error;
 	setTimeout(() => {
 		body.classList.remove('error');
-	}, 3000);
+	}, 5000);
 }
 refreshHandler(false);
