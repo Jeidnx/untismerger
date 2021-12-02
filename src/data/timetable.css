@@ -139,3 +139,20 @@ body.error .errorMessage {
 	color: #cf6679;
 }
 
+#floatingActionButton {
+	text-decoration: none;
+	font-size: 4em;
+	color: #bb86fc;
+	-webkit-transition: all 0.15s ease-out;
+	-moz-transition: all 0.15s ease-out;
+	transition: all 0.45s ease-out;
+	position: fixed;
+	bottom: 2%;
+	right: 2%;
+	z-index: 1;
+	cursor: pointer;
+	padding: 0.5% 1.25% 0.5% 1.25%;
+	background-color: #1d1d1d;
+	border: 0.3vh solid #bb86fc;
+	border-radius: 50%;
+}
