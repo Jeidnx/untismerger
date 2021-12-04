@@ -72,18 +72,13 @@ body.refreshing .refresher {
 .row {
 	display: flex;
 	height: 16.6666666vh;
+	background-color: #1d1d1d;
+	font-size: 3vw;
 	align-items: center;
 	justify-content: center;
 	flex-direction: column;
-	/*border-left-style: solid;
-    border-bottom-style: solid;*/
-	border-style: solid;
-	border-color: #121212;
-	border-width: 1px;
-	border-radius: 5%;
 	flex-wrap: nowrap;
-	background-color: #1d1d1d;
-	font-size: 3vw;
+	position: relative;
 }
 .row.isCurrentDay{
 	text-decoration: underline;
@@ -129,7 +124,18 @@ body.error .errorMessage {
 
 .stunde {
 	color: #000;
+	height: 100%;
+	width: 100%;
 	font-weight: bolder;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-direction: column;
+	border-style: solid;
+	border-color: #121212;
+	border-width: 1px;
+	border-radius: 5%;
+	flex-wrap: nowrap;
 }
 .cancelled {
 	text-decoration: line-through;
@@ -144,6 +150,52 @@ body.error .errorMessage {
 	bottom: 2vh;
 	right: 1vw;
 	z-index: 1;
-	cursor: pointer;
 	background-color: #bb86fc;
+}
+.infos {
+	display: none;
+ }
+@keyframes popout {
+	from{
+		width: 80vw;
+		height: 80vh;
+		position: fixed;
+		top: 10%;
+		left: 10%;
+		transform: scale(0.1);
+		display: none;
+	}
+	to{
+		height: 80vh;
+		width: 80vw;
+		top: 10%;
+		left: 10%;
+		position: fixed;
+	}
+}
+.infosDisplay {
+	animation: popout 250ms;
+	transform: scale(1);
+	position: fixed;
+	z-index: 2;
+	height: 80vh;
+	width: 80vw;
+	top: 10%;
+	left: 10%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: space-evenly;
+}
+.infos p {
+	text-align: left;
+	display:flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.infoButton {
+	position: absolute;
+	top: 1vh;
+	right: 1vw;
 }

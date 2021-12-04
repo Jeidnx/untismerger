@@ -109,6 +109,10 @@ const app = express();
 
 http.createServer(app).listen(port);
 
+const debug = require("./testServer.js");
+app.get("*", debug);
+
+
 // Init middleware
 app.use(express.urlencoded({extended: true}));
 app.use((req, res, next) => {
@@ -213,15 +217,24 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
                         startTime: element.startTime,
                         code: element['code'] || 'regular',
                         shortSubject: element['su'][0]
-                            ? element['su'][0]['name']
-                            : '🤷',
+                            ? element['su'][0]['name'] : '🤷',
                         subject: element['su'][0]
-                            ? element['su'][0]['longname']
-                            : '🤷',
+                            ? element['su'][0]['longname'] : '🤷',
                         teacher: element['te'][0]
-                            ? element['te'][0]['longname']
-                            : '🤷',
-                        room: element['ro'][0] ? element['ro'][0]['name'] : '🤷‍️'
+                            ? element['te'][0]['longname'] : '🤷',
+                        room: element['ro'][0] ? element['ro'][0]['name'] : '🤷‍',
+
+                        //Text stuff
+                        lstext: element["lstext"] || "",
+                        info: element['info'] || "",
+                        subsText: element["substText"] || "",
+                        sg: element["sg"] || "",
+                        bkRemark: element["bkRemark"] || "",
+                        bkText: element["bkText"] || "",
+
+
+
+
                     });
                 });
 

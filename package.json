@@ -26,5 +26,8 @@
   "bugs": {
     "url": "https://github.com/Jeidnx/untismerger/issues"
   },
-  "homepage": "https://github.com/Jeidnx/untismerger#readme"
+  "homepage": "https://github.com/Jeidnx/untismerger#readme",
+  "devDependencies": {
+    "mime": "^3.0.0"
+  }
 }

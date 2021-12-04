@@ -125,34 +125,61 @@ function addWeek(week){
 		day.appendChild(firstRow);
 
 		for (let i = 0; i < 5; i++) {
-			let row = document.createElement('div');
-			row.setAttribute('class', 'row');
+			let containingRow = document.createElement('div');
+			containingRow.classList.add("row");
 			if(timeTable[date][i]){
 				const element = timeTable[date][i];
-				row.classList.add('stunde')
+				let row = document.createElement("div");
+				row.classList.add('stunde');
 				row.innerHTML = `<p>${element['subject']}<p>
-                <p>${element['room']} - ${element['teacher']}</p>
-                `;
+                	<p>${element['room']} - ${element['teacher']}</p>`;
+				let infos = document.createElement("div");
+				infos.classList.add("infos");
+				infos.innerHTML = `
+					<p>Fach: ${element["subject"]}<br>Raum: ${element['room']}<br>Lehrer: ${element['teacher']}</p>`
+
+				// Text stuff
+				const text = `
+					<p>LSText: ${element["lstext"]}<br>
+					Info: ${element["info"]}<br>
+					SubsText: ${element["substText"]}<br>
+					SG: ${element["sg"]}<br>
+					bkRemark: ${element["bkRemark"]}<br>
+					bkText: ${element["bkText"]}</p>`
+
+				infos.innerHTML += text;
+
+
+				let button = document.createElement("button");
+				button.setAttribute("type", "button");
+				button.setAttribute("onclick", `hideInfo(${index}, ${i + 1});`);
+				button.classList.add("infoButton");
+				button.innerText = "Zurück"
+				infos.appendChild(button);
+				row.setAttribute("onclick", `displayInfo(${index}, ${i + 1})`);
 				if (element['code'] === 'cancelled') {
 					row.classList.add('cancelled');
 				}
 				if (element['code'] === 'irregular') {
 					row.classList.add('irregular');
 				}
-				if (colorEnum[element['subject']]) {
-					row.style.backgroundColor = colorEnum[element['subject']];
-				} else {
+				if (!colorEnum[element['subject']]) {
 					colorEnum[element['subject']] =
 						colorPalette[Math.floor(Math.random() * colorPalette.length)];
-					row.style.backgroundColor = colorEnum[element['subject']];
-					localStorage.setItem('colorEnum', JSON.stringify(colorEnum));
 				}
-			}
+				row.style.backgroundColor = colorEnum[element['subject']];
+				row.style.color = getContrastColor(colorEnum[element['subject']]);
+				infos.style.backgroundColor = colorEnum[element['subject']];
+				infos.style.color = getContrastColor(colorEnum[element['subject']]);
 
-			day.appendChild(row);
+				containingRow.appendChild(row);
+				containingRow.appendChild(infos);
+			}
+			day.appendChild(containingRow);
 		}
 		variableContent.appendChild(day)
 	}
+	localStorage.setItem('colorEnum', JSON.stringify(colorEnum));
 	resolve();
 	})
 }
@@ -354,3 +381,36 @@ function displayError(error){
 	}, 5000);
 }
 refreshHandler(false);
+
+function displayInfo(x, y){
+	document.getElementById('variableContent').children[x].children[y].children[1].classList.add("infosDisplay");
+}
+
+function hideInfo(x, y){
+	document.getElementById('variableContent').children[x].children[y].children[1].classList.remove("infosDisplay");
+}
+
+
+/**
+ *
+ * @param hex Hex color as Input
+ * @return {string} Hex code, black or white
+ */
+function getContrastColor(hex){
+	if (hex.indexOf('#') === 0) {
+		hex = hex.slice(1);
+	}
+	// convert 3-digit hex to 6-digits.
+	if (hex.length === 3) {
+		hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+	}
+	if (hex.length !== 6) {
+		throw new Error('Invalid HEX color.');
+	}
+	const r = parseInt(hex.slice(0, 2), 16),
+		g = parseInt(hex.slice(2, 4), 16),
+		b = parseInt(hex.slice(4, 6), 16);
+	return (r * 0.299 + g * 0.587 + b * 0.114) > 186
+		? '#000000'
+		: '#FFFFFF';
+}
