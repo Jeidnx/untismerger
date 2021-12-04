@@ -1123,7 +1123,7 @@ function errorHandler(error){
     }
 
     config.secrets.DISCORD_ADMIN_IDS.forEach(id => {
-        dm.sendMessage(`Error Name: ${error.name}\n\n${error.message}`, id).catch((err) => {
+        dm.sendMessage(`Error Name: ${error.name}\n\n${error}`, id).catch((err) => {
             console.error("Encountered Error while trying to handle error: ");
             console.error(err);
         })
