@@ -307,9 +307,9 @@ app.post(path + '/setup', (req, res) => {
                     .then(() => {
                         isUserRegistered(req.body['usernamePw'].toLowerCase()).then((bool) => {
                             if (bool) {
-                                getUserPreferences(req.body['usernamePw'])
+                                getUserPreferences(req.body['usernamePw'].toLowerCase())
                                     .then((prefs) => {
-                                        getUserData(req.body['usernamePw']).then((data) => {
+                                        getUserData(req.body['usernamePw'].toLowerCase()).then((data) => {
                                             data.username = req.body.usernamePw.toLowerCase();
                                             data.password = encrypt(req.body.password);
                                             data.type = "password";
