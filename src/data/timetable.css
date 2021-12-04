@@ -140,19 +140,10 @@ body.error .errorMessage {
 }
 
 #floatingActionButton {
-	text-decoration: none;
-	font-size: 4em;
-	color: #bb86fc;
 	position: fixed;
-	bottom: 2%;
-	right: 2%;
+	bottom: 2vh;
+	right: 1vw;
 	z-index: 1;
 	cursor: pointer;
-	background-color: #555;;
-	border-radius: 50%;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	height: 8vh;
-	width: 8vh;
+	background-color: #bb86fc;
 }

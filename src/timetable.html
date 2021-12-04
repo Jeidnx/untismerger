@@ -13,6 +13,7 @@
     <link rel="icon" href="/icons/icon.png">
     <link rel="apple-touch-icon" href="/icons/icon_apple.png">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" rel="stylesheet">
 </head>
 
 <body>
@@ -28,14 +29,17 @@
         <div class="row"> 15:15 - 16:45</div>
     </div>
     <div id="variableContent"></div>
-    <a href="/settings" id="floatingActionButton">
-        <span class="material-icons">
-            settings
-        </span>
-    </a>
+    <button
+            class="mdc-fab"
+            id="floatingActionButton"
+            onclick="window.location.href='/settings'">
+        <div class="mdc-fab__ripple"></div>
+        <span class="material-icons">settings</span>
+    </button>
 
 
     <script src="/data/timetable.js"></script>
+    <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
 </body>
 
 
