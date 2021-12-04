@@ -9,6 +9,8 @@ let dm = require('djs-messenger');
 
 // Statics
 const saveInterval = 10; // Interval in minutes when data is saved to database
+
+// Enums
 const classIdEnum = {
     'BG12-1': 2232,
     'BG12-2': 2237,
@@ -44,6 +46,7 @@ const idsToCheck = [
     2262,
 ];
 
+
 // Config
 const config = require('./data/config.json');
 const jwtSecret = config.secrets.JWT_SECRET;
@@ -53,7 +56,6 @@ const port = process.env.PORT;
 const TTL = config.constants.ttl;
 const path = config.constants.apiPath;
 let db;
-let discordAuthObj = {};
 
 
 
@@ -85,18 +87,20 @@ if (!jwtSecret || !schoolName || !schoolDomain || !port) {
     process.exit(1);
 }
 
+/// init vector used for encryption
 const iv = new Buffer.alloc(16, config.secrets.SCHOOL_NAME);
 
+/// Contains the users who requested an auth token, and the token
+let discordAuthObj = {};
 
-// SQL Statistics
+/// Contains the endpoints to track and their respective count. To track more / less endpoints just add / remove them here.
 let stats = {
-    "getTimeTableWeek": 0,
-    "setup": 0,
-    "getStats": 0,
-    "updateUserPrefs": 0,
-    "register": 0,
-    "vapidPublicKey": 0,
+    getTimeTableWeek: 0,
+    setup: 0,
+    getDiscordToken: 0,
 };
+
+// Init schedulers for recurring tasks
 initScheduler();
 initCancelScheduler();
 
@@ -105,10 +109,17 @@ const app = express();
 
 http.createServer(app).listen(port);
 
+// Init middleware
 app.use(express.urlencoded({extended: true}));
+app.use((req, res, next) => {
+    next();
+    const thisPath = req.path.replace(path + "/", "");
+    if(typeof stats[thisPath] !== "undefined"){
+        stats[thisPath]++;
+    }
+})
 
 app.post(path + '/getTimeTableWeek', (req, res) => {
-    newRequest("getTimeTableWeek");
     if (!req.body['jwt'] || !req.body['startDate'] || !req.body.endDate) {
         res.status(406).send('Missing args');
         return;
@@ -222,7 +233,6 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
     })
 })
 app.post(path + '/setup', (req, res) => {
-    newRequest("setup");
     if (!req.body['stage']) {
         res.status(400).send({error: true, message: 'Missing Arguments'});
         return;
@@ -377,7 +387,6 @@ app.post(path + '/setup', (req, res) => {
     }
 });
 app.post(path + '/getStats', (req, res) => {
-    newRequest("getStats");
     if (!req.body['jwt']) {
         res.status(406).send('Missing args');
         return;
@@ -402,19 +411,10 @@ app.post(path + '/getStats', (req, res) => {
         })
     });
 });
-app.post(path + 'updateUserPrefs', (req, res) => {
-    newRequest("updateUserPrefs");
-    if (!req.body['jwt'] || !req.body['prefs']) {
-        res.status(400).send({error: true, message: 'Missing Args'});
-    }
-    res.status(201).send({message: "created"});
-});
 app.get(path + '/vapidPublicKey', (req, res) => {
-    newRequest("vapidPublicKey");
     res.status(200).send(config.secrets.VAPID_PUBLIC);
 })
 app.post(path + '/register', (req, res) => {
-    newRequest("register");
     if(!req.body["subscription"] || !req.body['jwt']) {
         res.status(400).send({error: true, message: "Missing Arguments"});
         return;
@@ -481,24 +481,20 @@ app.post(path + "/getDiscordToken", (req, res) => {
  */
 function saveData() {
     let date = getDate();
-    db.execute("INSERT INTO statistics(date, getTimeTableWeek, setup, getStats, updateUserPrefs, vapidPublicKey, register) VALUES (?, ?,?,?,?,?,?)" +
-        " ON DUPLICATE KEY UPDATE getTimeTableWeek = getTimeTableWeek + ?, setup = setup + ?, getStats = getStats + ?," +
-        " updateUserPrefs = updateUserPrefs + ?, vapidPublicKey = vapidPublicKey + ?, register = register + ?",
-        [date, stats.getTimeTableWeek, stats.setup, stats.getStats, stats.updateUserPrefs, stats.vapidPublicKey, stats.register,
-        stats.getTimeTableWeek, stats.setup, stats.getStats, stats.updateUserPrefs, stats.vapidPublicKey, stats.register],
+
+    db.execute("INSERT INTO statistics(date, getTimeTableWeek, setup, getDiscordToken) VALUES (?,?,?,?)" +
+        "ON DUPLICATE KEY UPDATE getTimeTableWeek = getTimeTableWeek + ?, setup = setup + ?," +
+        "getDiscordToken = getDiscordToken + ?",
+        [date, stats.getTimeTableWeek, stats.setup, stats.getDiscordToken,
+        stats.getTimeTableWeek, stats.setup, stats.getDiscordToken],
         function (err) {
             if(err) {
                 errorHandler(err);
-                console.log("[STATISTICS] " + err.message);
             }
             for(let k in stats) {
                 stats[k] = 0;
             }
         });
-}
-
-function newRequest(endpoint) {
-    stats[endpoint] = stats[endpoint] + 1;
 }
 
 /**
@@ -560,7 +556,6 @@ function getDate() {
     return new Date().toISOString().slice(0, 10);
 }
 //endregion
-
 
 //region Cryptography functions
 /**
@@ -918,7 +913,6 @@ async function sendNotification(lesson, date, lessonNr){
 
 }
 
-
 /**
  *
  * @param lesson Lesson String
@@ -1013,9 +1007,9 @@ function getSubscriptions(lesson){
         );
     })
 }
-let chats = {};
 
 //region Discord stuff
+let chats = {};
 dm.onMessage = (msg, id, send) => {
     // Stop receiving notifs
     if(msg.toLowerCase() === "stop"){
@@ -1088,7 +1082,6 @@ dm.onUserAdd = (name, id) => {
 }
 
 //endregion
-
 
 /**
  *
