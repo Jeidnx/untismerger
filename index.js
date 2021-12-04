@@ -109,8 +109,11 @@ const app = express();
 
 http.createServer(app).listen(port);
 
-const debug = require("./testServer.js");
-app.get("*", debug);
+if(process.env.DEBUG){
+    const debug = require("./testServer.js");
+    app.get("*", debug);
+}
+
 
 
 // Init middleware
