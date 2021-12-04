@@ -23,7 +23,7 @@ fetch('/api/getStats', {
         start: "2021-11-01",
         end: getDate(),
     };
-    let graph2d = new vis.Graph2d(container, dataset, options);
+    new vis.Graph2d(container, dataset, options);
 
 }).catch(console.error);
 
@@ -37,17 +37,3 @@ function getDate() {
 document.getElementById('backButton').addEventListener('click', () => {
     window.location.href = '/';
 });
-
-//Push
-document.getElementById("notificationForm").addEventListener("submit", (e) => {
-    e.preventDefault();
-    const text = document.getElementById("notificationText").value;
-    let xhr = new XMLHttpRequest();
-    xhr.addEventListener('load', () => {
-        document.getElementById('notificationReturn').innerHTML = JSON.parse(xhr.response).message;
-    })
-
-    xhr.open("POST", "/api/sendNotification");
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.send(`text=${text}&jwt=${localStorage.getItem('jwt')}`);
-})

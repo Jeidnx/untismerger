@@ -115,26 +115,22 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
     }
     jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
         if(err){
-            res.status(400).send({error: true, message: "Invalid JWT"});
+            res.status(400).send({error: true, message: errorHandler(err)});
             return;
         }
-        if(!decoded.type){
-            res.status(400).send({error: true, message: "Outdated JWT"})
-            return
-        }
         let untis;
-        if(!decoded.type || !decoded.version){
+        if(!decoded.type || !decoded.version || decoded.version < config.constants.jwtVersion){
             res.status(400).send({error: true, message: "Outdated JWT"});
             return;
         }
-        if(decoded.type == 'secret'){
+        if(decoded.type === 'secret'){
             untis = new WebUntisLib.WebUntisSecretAuth(
                 config.secrets.SCHOOL_NAME,
                 decoded.username,
                 decrypt(decoded.secret),
                 config.secrets.SCHOOL_DOMAIN
             )}
-        else if(decoded.type == 'password'){
+        else if(decoded.type === 'password'){
             untis = new WebUntisLib(
                 config.secrets.SCHOOL_NAME,
                 decoded.username,
@@ -180,7 +176,7 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
 
 
                 }
-                untis.logout().catch(console.log);
+                untis.logout().catch(errorHandler);
 
                 const stArr = await sonstiges;
                 outer: for (let i = 0; i < stArr.length; i++) {
@@ -219,7 +215,8 @@ app.post(path + '/getTimeTableWeek', (req, res) => {
                 });
 
                 res.send({message: "OK", data: sendArr});
-            }).catch(() => {
+            }).catch((err) => {
+                errorHandler(err);
                 res.status(400).send({error: true, message: "Invalid credentials"});
             })
     })
@@ -260,15 +257,17 @@ app.post(path + '/setup', (req, res) => {
                                             })
                                         });
                                     })
-                                    .catch((e) => {
-                                        res.status(500).send({error: true, message: e});
+                                    .catch((err) => {
+                                        errorHandler(err);
+                                        res.status(500).send({error: true, message: err});
                                     });
                                 return;
                             }
                             res.status(200).send({message: 'OK'});
                         });
                     })
-                    .catch(() => {
+                    .catch((err) => {
+                        errorHandler(err);
                         res
                             .status(400)
                             .send({error: true, message: 'Invalid Credentials'});
@@ -297,15 +296,17 @@ app.post(path + '/setup', (req, res) => {
                                             })
                                         });
                                     })
-                                    .catch((e) => {
-                                        res.status(500).send({error: true, message: e});
+                                    .catch((err) => {
+                                        errorHandler(err);
+                                        res.status(500).send({error: true, message: err});
                                     });
                                 return;
                             }
                             res.status(200).send({message: 'OK'});
                         });
                     })
-                    .catch(() => {
+                    .catch((err) => {
+                        errorHandler(err);
                         res
                             .status(400)
                             .send({error: true, message: 'Invalid Credentials'});
@@ -333,12 +334,12 @@ app.post(path + '/setup', (req, res) => {
             let selectedCourses = [];
 
             potentialCourses.forEach((element) => {
-                if (req.body[element] == 'true') {
+                if (req.body[element] === 'true') {
                     selectedCourses.push(element);
                 }
             });
 
-            if (!(req.body['naWi'] == 'false')) {
+            if (!(req.body['naWi'] === 'false')) {
                 selectedCourses.push(req.body['naWi']);
             }
 
@@ -363,8 +364,9 @@ app.post(path + '/setup', (req, res) => {
                 throw new Error("Invalid");
             }
             userObj['secureid'] = registerUser(userObj);
-            signJwt(userObj).then(signed => res.send({message: "OK", jwt: signed})).catch(msg => {
-                res.status(500).send({error: true, message: msg});
+            signJwt(userObj).then(signed => res.send({message: "OK", jwt: signed})).catch(err => {
+                errorHandler(err);
+                res.status(500).send({error: true, message: err});
             })
             return;
         }
@@ -382,7 +384,7 @@ app.post(path + '/getStats', (req, res) => {
     }
     jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
         if (err) {
-            res.status(406).send({error: true, message: 'Invalid JWT'});
+            res.status(406).send({error: true, message: errorHandler(err)});
             return;
         }
         res.setHeader('Content-Type', 'application/json');
@@ -403,12 +405,12 @@ app.post(path + '/getStats', (req, res) => {
 app.post(path + 'updateUserPrefs', (req, res) => {
     newRequest("updateUserPrefs");
     if (!req.body['jwt'] || !req.body['prefs']) {
-        res.status(400).send({error: true, message: 'Invalid JWT'});
+        res.status(400).send({error: true, message: 'Missing Args'});
     }
     res.status(201).send({message: "created"});
 });
 app.get(path + '/vapidPublicKey', (req, res) => {
-    newRequest("vapidPublicKey")
+    newRequest("vapidPublicKey");
     res.status(200).send(config.secrets.VAPID_PUBLIC);
 })
 app.post(path + '/register', (req, res) => {
@@ -418,6 +420,11 @@ app.post(path + '/register', (req, res) => {
         return;
     }
     jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
+        if(err){
+            res.status(400).send({error: true, message: errorHandler(err)});
+            return;
+        }
+
         addSubscription(decoded['username'],JSON.parse(req.body["subscription"])).then(() => {
             res.status(201).send({message: "created"});
         })
@@ -433,25 +440,13 @@ app.post(path + '/deleteUser', (req, res) => {
     }
     jwt.verify(req.body['jwt'], config.secrets.JWT_SECRET, (err, decoded) => {
         if(err){
-            res.status(400).send({error: true, message: "Invalid JWT"});
+            res.status(400).send({error: true, message: errorHandler(err)});
             return;
         }
         deleteUser(decoded['username']).then(() => {
             res.send({message: "Deleted"});
         })
     })
-})
-app.post(path + '/sendNotification', (req, res) =>  {
-    if(!req.body['text'] || !req.body['jwt']){
-        res.status(400).send({error:true, message: "Missing args"})
-    }
-    sendCustomNotification(req.body['text']).then((result) => {
-        res.send(result);
-    }).catch(err => {
-        console.log(err);
-        res.send(err);
-    });
-
 })
 app.post(path + "/getDiscordToken", (req, res) => {
     if(!req.body['jwt']){
@@ -460,7 +455,7 @@ app.post(path + "/getDiscordToken", (req, res) => {
     }
     jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
         if (err) {
-            res.status(400).send({error: true, message: 'Invalid JWT'});
+            res.status(400).send({error: true, message: errorHandler(err)});
             return;
         }
         if(discordAuthObj[decoded['username']]){
@@ -493,6 +488,7 @@ function saveData() {
         stats.getTimeTableWeek, stats.setup, stats.getStats, stats.updateUserPrefs, stats.vapidPublicKey, stats.register],
         function (err) {
             if(err) {
+                errorHandler(err);
                 console.log("[STATISTICS] " + err.message);
             }
             for(let k in stats) {
@@ -516,7 +512,6 @@ function initScheduler() {
 
 function initCancelScheduler(){
     setInterval(function () {
-        console.log("Checking for cancelled classes");
         let date = new Date();
         date.setDate(date.getDate() + 7);
         checkCancelled(new Date(), date);
@@ -543,7 +538,7 @@ function checkCancelled(startDate, endDate){
                     cancelHandler(lesson, lesson.su[0].name);
                 }
             })
-        }).catch(console.error);
+        }).catch(errorHandler);
         // General courses
         for(let i = 0; i < idsToCheck.length; i++){
             await untis.getTimetableForRange(startDate, endDate, idsToCheck[i], 1).then(lessons => {
@@ -553,14 +548,12 @@ function checkCancelled(startDate, endDate){
                         cancelHandler(lesson, idsToCheck[i].toString());
                     }
                 })
-            }).catch(console.error);
+            }).catch(errorHandler);
         }
-        untis.logout().then(() => {
-            console.log("Logged out");
-        });
+        untis.logout().catch(errorHandler);
 
 
-    }).catch(console.error);
+    }).catch(errorHandler);
 }
 
 function getDate() {
@@ -603,7 +596,7 @@ function isUserAdmin(name) {
             [hash(name)],
             function (err, result) {
                 if (err) {
-                    console.log(err);
+                    errorHandler(err);
                     reject(err);
                     return;
                 }
@@ -631,7 +624,7 @@ function isUserRegistered(username) {
             [hash(username)],
             function (err, result) {
                 if (err) {
-                    console.log(err);
+                    errorHandler(err);
                     reject(err);
                     return;
                 }
@@ -655,7 +648,7 @@ function registerUser(userdata) {
         [hash(userdata.username), userdata.lk, userdata.fachrichtung, randomid],
         function (err, result, _) {
             if (err) {
-                console.log(err);
+                errorHandler(err);
                 return;
             }
             // @ts-ignore
@@ -666,7 +659,7 @@ function registerUser(userdata) {
                     [id, ele],
                     function (err) {
                         if (err) {
-                            console.log(err);
+                            errorHandler(err);
                         }
                     }
                 );
@@ -688,6 +681,7 @@ async function getUserCount() {
     return new Promise((resolve, reject) => {
         db.query("SELECT COUNT(id) as c FROM user;", function (err, res) {
             if(err) {
+                errorHandler(err);
                 reject(err.message);
             }
             resolve(res[0].c);
@@ -703,6 +697,7 @@ async function getStatistics() {
     return new Promise((resolve, reject) => {
         db.query("SELECT * FROM statistics;", function (err, res) {
             if(err) {
+                errorHandler(err);
                 reject(err.message);
             }
             resolve(res);
@@ -722,7 +717,7 @@ function getUserPreferences(user) {
             [hash(user)],
             function (err, result) {
                 if (err) {
-                    console.log(err);
+                    errorHandler(err);
                     reject(err);
                     return;
                 }
@@ -750,7 +745,7 @@ function getUserData(user) {
             [hash(user)],
             function (err, result) {
                 if (err) {
-                    console.log(err);
+                    errorHandler(err);
                     reject(err);
                     return;
                 }
@@ -760,8 +755,9 @@ function getUserData(user) {
                         [result[0].id],
                         (err, res2) => {
                             if (err) {
-                                console.log(err);
+                                errorHandler(err);
                                 reject(err);
+                                return;
                             }
                             result[0]["sonstiges"] = [];
                             res2.forEach(fach => {
@@ -781,7 +777,7 @@ function deleteUser(user){
     return new Promise((resolve, reject) => {
         db.query("DELETE user, fach FROM user JOIN fach on user.id = fach.user where username = ?", [hash(user)], (err) => {
             if(err){
-                console.log(err);
+                errorHandler(err);
                 reject(err);
                 return;
             }
@@ -802,6 +798,7 @@ function addDiscordId(id, username){
             [id, hash(username)],
             (err, result) => {
                 if(err){
+                    errorHandler(err);
                     reject(err);
                     return;
                 }
@@ -824,6 +821,7 @@ function rmDiscordId(id){
             [id],
             (err, result) => {
                 if(err){
+                    errorHandler(err);
                     reject(err);
                     return;
                 }
@@ -851,7 +849,7 @@ async function cancelHandler(elem, lessonNr){
     db.query('INSERT IGNORE INTO canceled_lessons (fach, lessonid) VALUES (?, ?)',
         [elem["su"][0]["name"], elem["id"]], (err, result) => {
             if(err){
-                console.log(err);
+                errorHandler(err);
                 return;
             }
             if(result.affectedRows > 0){
@@ -908,19 +906,15 @@ async function sendNotification(lesson, date, lessonNr){
                     if (response.statusCode !== 201) {
                         console.log(response.statusCode, response);
                     }
-                }).catch(console.error);
+                }).catch(errorHandler);
         });
-    }).catch((err) => {
-        console.error(err);
-    })
+    }).catch(errorHandler)
     getDiscordIds(lessonNr).then(ids => {
         ids.forEach((id) => {
             console.log(id);
-            dm.sendMessage(notificationBody, id).catch(console.error);
+            dm.sendMessage(notificationBody, id).catch(errorHandler);
         })
-    }).catch((err) => {
-        console.error(err);
-    });
+    }).catch(errorHandler);
 
 }
 
@@ -937,7 +931,7 @@ function getDiscordIds(lesson){
             [lesson, lesson],
             function (err, result) {
                 if (err) {
-                    console.log(err);
+                    errorHandler(err);
                     reject(err);
                     return;
                 }
@@ -953,36 +947,10 @@ function getDiscordIds(lesson){
     })
 }
 
-function sendCustomNotification(text){
-    return new Promise((resolve, reject) => {
-        const options = {
-            TTL: TTL
-        };
-        getAllSubscriptions().then(subscriptions => {
-            subscriptions.forEach((user) => {
-                webPush
-                    .sendNotification(user, JSON.stringify({type: "notification", body: text}), options)
-                    .then((response) => {
-                        if (response.statusCode !== 201) {
-                        }else{
-                            console.log("Sent Notificatin");
-                        }
-                    })
-                    .catch(error => {
-                        console.log(error);
-                        console.log("Invalid  subscription Object");
-                    });
-            }).then(() => {
-                resolve({message: "created"});
-            });
-        }).catch(reject);
-    })
-}
-
 /**
  *
  * @param {String} username Username in Plaintext
- * @param {webPush.PushSubscription} subscription Matching Subscription
+ * @param {PushSubscription} subscription Matching Subscription
  * @returns {Promise<boolean>} if Operation was successful
  */
 function addSubscription(username, subscription){
@@ -991,7 +959,7 @@ function addSubscription(username, subscription){
             [hash(username)],
             (err, result) => {
                 if(err) {
-                    console.log(err);
+                    errorHandler(err);
                     reject(err);
                     return;
                 }
@@ -1007,7 +975,7 @@ function addSubscription(username, subscription){
                     [JSON.stringify(subscriptionArr), hash(username)],
                     function (err) {
                         if (err) {
-                            console.log(err);
+                            errorHandler(err);
                             reject(err);
                             return;
                         }
@@ -1021,7 +989,7 @@ function addSubscription(username, subscription){
 /**
  *
  * @param {String} lesson String describing the lesson to search for
- * @returns {Promise<webPush.PushSubscription[]>} List of all matching subscriptions
+ * @returns {Promise<PushSubscription[]>} List of all matching subscriptions
  */
 function getSubscriptions(lesson){
     return new Promise((resolve, reject) => {
@@ -1030,7 +998,7 @@ function getSubscriptions(lesson){
             [lesson, lesson],
             function (err, result) {
                 if (err) {
-                    console.log(err);
+                    errorHandler(err);
                     reject(err);
                     return;
                 }
@@ -1045,37 +1013,16 @@ function getSubscriptions(lesson){
         );
     })
 }
-function getAllSubscriptions(){
-    return new Promise((resolve, reject) => {
-        db.query('SELECT subscription FROM user', (err, result) => {
-            if(err){
-                console.log(err);
-                reject(err);
-                return;
-            }
-
-            let res = [];
-            result.forEach(element => {
-                JSON.parse(element['subscription']).forEach(subscription => {
-                    res.push(subscription);
-                })
-            })
-            resolve(res);
-        })
-    })
-}
-
-
 let chats = {};
 
 //region Discord stuff
 dm.onMessage = (msg, id, send) => {
-    console.log(chats);
     // Stop receiving notifs
     if(msg.toLowerCase() === "stop"){
         rmDiscordId(id).then((res) => {
             send(res);
-        }).catch(() => {
+        }).catch((err) => {
+            errorHandler(err);
             send("Das hat leider nicht geklappt.");
         })
         return
@@ -1098,7 +1045,7 @@ dm.onMessage = (msg, id, send) => {
         if(/^\d+$/.test(msg)){
             if(msg === discordAuthObj[chats.id]?.toString()){
                 addDiscordId(id, chats.id).then(send).catch((err) => {
-                    console.error(err);
+                    errorHandler(err);
                     send("Das hat leider nicht geklappt. Versuche es erneut oder Kontaktiere uns");
                 })
             }else{
@@ -1134,7 +1081,10 @@ dm.onMessage = (msg, id, send) => {
 }
 
 dm.onUserAdd = (name, id) => {
-    dm.sendMessage(`Hallo ${name}\n um über deinen Discord Account benachrichtigungen zu erhalten, antworte bitte mit deinem Untis Namen. \nWenn du keine Benachrichtigungen mehr erhalten möchtest, gib \`stop\` ein`, id).catch(console.log);
+    dm.sendMessage(
+        `Hallo ${name}\n um über deinen Discord Account benachrichtigungen zu erhalten, antworte bitte mit deinem Untis Namen.\nWenn du keine Benachrichtigungen mehr erhalten möchtest, gib \`stop\` ein`,
+        id)
+        .catch(errorHandler);
 }
 
 //endregion
@@ -1147,7 +1097,27 @@ dm.onUserAdd = (name, id) => {
  */
 function signJwt(userObj){
     return new Promise((resolve) => {
-    userObj.version = config.constants.jwtVersion;
-    resolve(jwt.sign(userObj, config.secrets.JWT_SECRET));
+        userObj.version = config.constants.jwtVersion;
+        resolve(jwt.sign(userObj, config.secrets.JWT_SECRET));
     })
+}
+
+/**
+ * Sends a notification to all Admins via Discord and Handles the occurred Error.
+ * @param {Error|mysql.QueryError} error Error
+ * @return {String|void} Message to send depending on error
+ */
+function errorHandler(error){
+
+    if(error.name === "JsonWebTokenError"){
+        return "Ungültiger JWT. Versuche dich neu Anzumelden";
+    }
+
+    config.secrets.DISCORD_ADMIN_IDS.forEach(id => {
+        dm.sendMessage(`Error Name: ${error.name}\n\n${error.message}`, id).catch((err) => {
+            console.error("Encountered Error while trying to handle error: ");
+            console.error(err);
+        })
+    })
+    return "Das hätte nicht passieren sollen"
 }
