@@ -5,9 +5,6 @@ if ('serviceWorker' in navigator) {
 	navigator.serviceWorker.register('/sw.js');
 }
 
-
-
-
 let colorEnum = JSON.parse(localStorage.getItem('colorEnum')) || {};
 
 const colorPalette = [
@@ -34,13 +31,19 @@ const startTimeEnum = {
 	1330: 3,
 	1515: 4
 };
-
-const reverseStartTimeEnum = {
-	0: 800,
-	1: 945,
-	2: 1130,
-	3: 1330,
-	4: 1515
+const reverseStartTimeEnumFormatted = {
+	0: "08:00",
+	1: "09:45",
+	2: "11:30",
+	3: "13:30",
+	4: "15:15"
+}
+const reverseEndTimeEnumFormatted = {
+	0: "09:30",
+	1: "11:15",
+	2: "13:00",
+	3: "15:00",
+	4: "16:45"
 }
 const weekDayEnum = {
 	0: 'Montag',
@@ -50,10 +53,8 @@ const weekDayEnum = {
 	4: 'Freitag'
 };
 
-let _startY;
-let _startX;
-const body = document.body;
-let currentDay = new Date(getWeekFromDay(new Date())[0]);
+///Date Obj set to the monday of the week that the user wants to see.
+let mondayOfSelectedWeek = new Date(getWeekFromDay(new Date())[0]);
 
 let timeTable = JSON.parse(localStorage.getItem('timeTable')) || {};
 /**
@@ -111,6 +112,10 @@ function addWeek(week){
 	let firstDay = week[0].split('-');
 	let lastDay = week[4].split('-');
 	weekDisplay.innerHTML = `${firstDay[2]}.${firstDay[1]} - ${lastDay[2]}.${lastDay[1]}`;
+
+	///If we are currently in the past
+	let past = true;
+
 	for(let index = 0; index < 5; index++) {
 		let date = week[index];
 		let day = document.createElement('div');
@@ -118,26 +123,14 @@ function addWeek(week){
 		let firstRow = document.createElement('div');
 		firstRow.classList.add("row");
 		firstRow.innerHTML = weekDayEnum[index];
-		let thisDate = new Date(date);
-		let currDate = new Date();
+		let today = new Date();
 
-		let past = false;
-		if(thisDate.setDate(thisDate - 1) < currDate){
-			past = true;
-		}
 
 		day.appendChild(firstRow);
 
 		for (let i = 0; i < 5; i++) {
 			let containingRow = document.createElement('div');
 			containingRow.classList.add("row");
-
-			// Check if this lesson has passed
-			const thisStartTime = reverseStartTimeEnum[i]
-			//TODO: do this
-			if(currDate.format > thisStartTime){
-				past = true;
-			}
 
 			if(timeTable[date][i]){
 				const element = timeTable[date][i];
@@ -178,10 +171,44 @@ function addWeek(week){
 					row.classList.add('irregular');
 				}
 				let color = "#FFFFFF", backgroundColor = "#000000";
+
+				// Check if this lesson has passed
 				if(past){
+					let thisTime = new Date(date + "T" + reverseEndTimeEnumFormatted[i]);
+					if(typeof override !== "undefined"){
+						today = override;
+					}
+
+					if(today < thisTime){
+						// This section is only called once, on the transition between past and future.
+						past = false;
+
+						// We want a scale from 0 - 100 on how far we progressed. 0 = 9:45; 100 = 11:15
+						const start = new Date(date + "T" + reverseStartTimeEnumFormatted[i]);
+
+						let q = Math.abs(today - start);
+						let d = Math.abs(thisTime - start);
+
+						const fraction = Math.round((q / d) * 100)
+						let progress = document.createElement("div");
+						progress.classList.add("progressBar");
+						progress.style.top = String(fraction + "%");
+
+						row.appendChild(progress);
+
+						if (!colorEnum[element['subject']]) {
+							colorEnum[element['subject']] =
+								colorPalette[Math.floor(Math.random() * colorPalette.length)];
+						}
+						color = getContrastColor(colorEnum[element['subject']]);
+						backgroundColor = colorEnum[element['subject']];
+					}else{
 						backgroundColor = "#525252";
 						color = "#d3d3d3";
-				}else{
+					}
+
+				}
+				if(!past){
 					if (!colorEnum[element['subject']]) {
 						colorEnum[element['subject']] =
 							colorPalette[Math.floor(Math.random() * colorPalette.length)];
@@ -189,7 +216,6 @@ function addWeek(week){
 					color = getContrastColor(colorEnum[element['subject']]);
 					backgroundColor = colorEnum[element['subject']];
 				}
-
 
 				row.style.color = color;
 				infos.style.color = color;
@@ -276,7 +302,11 @@ function getWeek(week){
 	}
 }
 
-body.addEventListener(
+
+let _startY;
+let _startX;
+
+document.body.addEventListener(
 	'touchstart',
 	(e) => {
 		_startY = e.touches[0].pageY;
@@ -285,7 +315,7 @@ body.addEventListener(
 	{ passive: true }
 );
 
-body.addEventListener(
+document.body.addEventListener(
 	'touchmove',
 	(e) => {
 		const y = e.touches[0].pageY;
@@ -302,7 +332,7 @@ body.addEventListener(
 	},
 	{ passive: true }
 );
-body.addEventListener('touchend', (e) => {
+document.body.addEventListener('touchend', (e) => {
 	console.log(e);
 });
 window.onkeydown = function (event) {
@@ -328,7 +358,7 @@ window.onkeydown = function (event) {
  */
 async function refreshHandler(purge) {
 	return new Promise((resolve) => {
-		if (body.classList.contains('refreshing')) {
+		if (document.body.classList.contains('refreshing')) {
 			resolve(false);
 			return;
 		}
@@ -337,18 +367,18 @@ async function refreshHandler(purge) {
 				displayError("Offline");
 				resolve(false);
 				return;
-			} else if (!timeTable[currentDay.toISOString().slice(0, 10)]) {
+			} else if (!timeTable[mondayOfSelectedWeek.toISOString().slice(0, 10)]) {
 				displayError("Offline");
 				resolve(false);
 				return;
 			}
 		}
-		body.classList.add('refreshing');
-		displayWeek(purge, currentDay).then(() => {
-			body.classList.remove('refreshing');
+		document.body.classList.add('refreshing');
+		displayWeek(purge, mondayOfSelectedWeek).then(() => {
+			document.body.classList.remove('refreshing');
 			resolve(true);
 		}).catch((err) => {
-			body.classList.remove('refreshing');
+			document.body.classList.remove('refreshing');
 			displayError(err);
 			resolve(false);
 		})
@@ -358,33 +388,33 @@ async function refreshHandler(purge) {
  * @param {boolean} forward true = +1 Week; false = -1 Week
  */
 function scrollWeeks(forward) {
-	if (body.classList.contains('switching')) {
+	if (document.body.classList.contains('switching')) {
 		return;
 	}
-	body.classList.add('switching');
+	document.body.classList.add('switching');
 
-	const initial = new Date(currentDay);
+	const initial = new Date(mondayOfSelectedWeek);
 
 	if (forward) {
-		currentDay.setDate(currentDay.getDate() + 7);
+		mondayOfSelectedWeek.setDate(mondayOfSelectedWeek.getDate() + 7);
 		refreshHandler(false).then(function () {
-			body.classList.remove('switching');
+			document.body.classList.remove('switching');
 		});
 	} else {
 
-		if(currentDay.setDate(currentDay.getDate() - 7) < new Date(getWeekFromDay(new Date())[0])){
-			currentDay = initial;
+		if(mondayOfSelectedWeek.setDate(mondayOfSelectedWeek.getDate() - 7) < new Date(getWeekFromDay(new Date())[0])){
+			mondayOfSelectedWeek = initial;
 			setTimeout(() => {
-				body.classList.remove('switching');
+				document.body.classList.remove('switching');
 			}, 50);
 			return;
 		}
 
 		refreshHandler(false).then((bool) => {
 			if(!bool){
-				currentDay = initial;
+				mondayOfSelectedWeek = initial;
 			}
-			body.classList.remove('switching');
+			document.body.classList.remove('switching');
 		});
 	}
 }
@@ -395,13 +425,13 @@ function scrollWeeks(forward) {
  * @param {String} error Error to display;
  */
 function displayError(error){
-	if(body.classList.contains("error")){
+	if(document.body.classList.contains("error")){
 		return;
 	}
-	body.classList.add('error');
+	document.body.classList.add('error');
 	document.getElementById("errorMessage").innerText = error;
 	setTimeout(() => {
-		body.classList.remove('error');
+		document.body.classList.remove('error');
 	}, 5000);
 }
 refreshHandler(false);

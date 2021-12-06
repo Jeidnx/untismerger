@@ -109,7 +109,7 @@ const app = express();
 
 
 function getAdminDiscordIDs(){
-    return new Promise(((resolve, reject) => {
+    return new Promise(((resolve) => {
         db.query("SELECT discordid FROM user WHERE isadmin = 1", (err, result) => {
             if(err){
                 console.error(err);
@@ -1228,7 +1228,7 @@ function errorHandler(error){
     if(error.name === "JsonWebTokenError"){
         return "Ungültiger JWT. Versuche dich neu Anzumelden";
     }
-    if(error == "Error: Failed to login. {\"jsonrpc\":\"2.0\",\"id\":\"Awesome\",\"error\":{\"message\":\"bad credentials\",\"code\":-8504}}"){
+    if(error.message === "Failed to login. {\"jsonrpc\":\"2.0\",\"id\":\"Awesome\",\"error\":{\"message\":\"bad credentials\",\"code\":-8504}}"){
         return "Ungültige Anmeldedaten";
     }
 
@@ -1278,6 +1278,6 @@ function untisLogin(jwt){
         }).catch(reject);
         return;
     }
-    reject({name: "Uncaught Login Exception", message:"Couldn't Login with provided JWT\n\n" + JSON.stringify(jwt)});
+    reject({name: "Login Exception", message:"Couldn't Login with provided JWT\n\n" + JSON.stringify(jwt)});
     })
 }
