@@ -6,3 +6,4 @@ config.env
 .vscode
 data
 .idea/
+src/icons/

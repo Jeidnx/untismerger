@@ -34,6 +34,14 @@ const startTimeEnum = {
 	1330: 3,
 	1515: 4
 };
+
+const reverseStartTimeEnum = {
+	0: 800,
+	1: 945,
+	2: 1130,
+	3: 1330,
+	4: 1515
+}
 const weekDayEnum = {
 	0: 'Montag',
 	1: 'Dienstag',
@@ -112,14 +120,10 @@ function addWeek(week){
 		firstRow.innerHTML = weekDayEnum[index];
 		let thisDate = new Date(date);
 		let currDate = new Date();
-		let isToday = (
-			thisDate.getDate() === currDate.getDate() &&
-			thisDate.getMonth() === currDate.getMonth() &&
-			thisDate.getFullYear() === currDate.getFullYear()
-		);
 
-		if(isToday){
-			firstRow.classList.add("isCurrentDay");
+		let past = false;
+		if(thisDate.setDate(thisDate - 1) < currDate){
+			past = true;
 		}
 
 		day.appendChild(firstRow);
@@ -127,6 +131,14 @@ function addWeek(week){
 		for (let i = 0; i < 5; i++) {
 			let containingRow = document.createElement('div');
 			containingRow.classList.add("row");
+
+			// Check if this lesson has passed
+			const thisStartTime = reverseStartTimeEnum[i]
+			//TODO: do this
+			if(currDate.format > thisStartTime){
+				past = true;
+			}
+
 			if(timeTable[date][i]){
 				const element = timeTable[date][i];
 				let row = document.createElement("div");
@@ -158,19 +170,31 @@ function addWeek(week){
 				infos.appendChild(button);
 				row.setAttribute("onclick", `displayInfo(${index}, ${i + 1})`);
 				if (element['code'] === 'cancelled') {
+					//TODO: Stripe things with color / red
 					row.classList.add('cancelled');
 				}
 				if (element['code'] === 'irregular') {
+					//TODO: Do something
 					row.classList.add('irregular');
 				}
-				if (!colorEnum[element['subject']]) {
-					colorEnum[element['subject']] =
-						colorPalette[Math.floor(Math.random() * colorPalette.length)];
+				let color = "#FFFFFF", backgroundColor = "#000000";
+				if(past){
+						backgroundColor = "#525252";
+						color = "#d3d3d3";
+				}else{
+					if (!colorEnum[element['subject']]) {
+						colorEnum[element['subject']] =
+							colorPalette[Math.floor(Math.random() * colorPalette.length)];
+					}
+					color = getContrastColor(colorEnum[element['subject']]);
+					backgroundColor = colorEnum[element['subject']];
 				}
-				row.style.backgroundColor = colorEnum[element['subject']];
-				row.style.color = getContrastColor(colorEnum[element['subject']]);
-				infos.style.backgroundColor = colorEnum[element['subject']];
-				infos.style.color = getContrastColor(colorEnum[element['subject']]);
+
+
+				row.style.color = color;
+				infos.style.color = color;
+				row.style.backgroundColor = backgroundColor;
+				infos.style.backgroundColor = backgroundColor;
 
 				containingRow.appendChild(row);
 				containingRow.appendChild(infos);

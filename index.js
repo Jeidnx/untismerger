@@ -123,7 +123,10 @@ function getAdminDiscordIDs(){
         })
     }))
 }
-const adminDiscordIDs = await getAdminDiscordIDs();
+let adminDiscordIDs = [];
+getAdminDiscordIDs().then((arr) => {
+    adminDiscordIDs = arr;
+});
 
 
 
@@ -1216,7 +1219,7 @@ function signJwt(userObj){
 }
 
 /**
- * Sends a notification to all Admins via Discord and Handles the occurred Error.
+ * Handles the Occured Error and if necessary sends a DM to all Admins that have registered with Discord
  * @param {Error|mysql.QueryError} error Error
  * @return {String|void} Message to send depending on error
  */
@@ -1233,14 +1236,16 @@ function errorHandler(error){
         dm.sendMessage(`Error Name: ${error.name}\n\n${error}`, id).catch((err) => {
             console.error("Encountered Error while trying to handle error: ");
             console.error(err);
+            console.error("Original Error: ");
+            console.error(error);
         })
     })
 }
 
 /**
- * Logs in depending on settings specified in JWT and returnes untis object
+ * Logs in depending on settings specified in JWT and returns untis object
  * @param jwt Decoded JSON Web Token
- * @return {Promise<module:webuntis.WebUntisSecretAuth|*>}
+ * @return {Promise<module:webuntis.WebUntisSecretAuth>}
  */
 function untisLogin(jwt){
     return new Promise((resolve, reject) => {
@@ -1273,6 +1278,6 @@ function untisLogin(jwt){
         }).catch(reject);
         return;
     }
-    reject({name: "Uncaught Login Exception", message:"Couldn't Login with provided JWT\n" + JSON.stringify(jwt)});
+    reject({name: "Uncaught Login Exception", message:"Couldn't Login with provided JWT\n\n" + JSON.stringify(jwt)});
     })
 }
