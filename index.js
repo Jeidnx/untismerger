@@ -107,6 +107,26 @@ initCancelScheduler();
 //region Express Server
 const app = express();
 
+
+function getAdminDiscordIDs(){
+    return new Promise(((resolve, reject) => {
+        db.query("SELECT discordid FROM user WHERE isadmin = 1", (err, result) => {
+            if(err){
+                console.error(err);
+                return;
+            }
+            let out = [];
+            result.forEach(res => {
+                out.push(res["discordid"]);
+            })
+            resolve(out);
+        })
+    }))
+}
+const adminDiscordIDs = await getAdminDiscordIDs();
+
+
+
 http.createServer(app).listen(port);
 
 if(process.env.DEBUG){
@@ -488,7 +508,37 @@ app.post(path + "/getDiscordToken", (req, res) => {
     })
 
 })
+app.post(path + "/rawRequest", (req, res) => {
+    if(!req.body['jwt'] ||
+        !req.body["requestType"] ||
+        !req.body['requestData']
+    ){
+        res.status(400).send( {error: true, message: "Missing args"});
+        return;
+    }
+    jwt.verify(req.body.jwt, config.secrets.JWT_SECRET, (err, decoded) => {
+        if(err){
+            res.status(400).send({error: true, message: errorHandler(err)});
+            return;
+        }
+        const requestData = req.body['requestData'];
 
+            switch (req.body['requestType']){
+                case "getTimeTableFor": {
+                    // Check if requestBody contains data for this request, if yes login and make it
+                    untisLogin(decoded).then(untis => {
+                        untis.getTimetableFor(requestData);
+                    }).catch(errorHandler);
+                    return;
+                }
+                // Write cases for applicable requests.
+                default: {
+                    res.status(400).send({error: true, message: "Invalid requestType"});
+                }
+            }
+    })
+
+    })
 //endregion
 
 //region Statistic functions
@@ -1092,7 +1142,7 @@ dm.onMessage = (msg, id, send) => {
 
 dm.onUserAdd = (name, id) => {
     dm.sendMessage(
-        `Hallo ${name}\n um über deinen Discord Account benachrichtigungen zu erhalten, antworte bitte mit deinem Untis Namen.\nWenn du keine Benachrichtigungen mehr erhalten möchtest, gib \`stop\` ein`,
+        `Hallo ${name}\num über deinen Discord Account benachrichtigungen zu erhalten, antworte bitte mit deinem Untis Namen.\nWenn du keine Benachrichtigungen mehr erhalten möchtest, gib \`stop\` ein`,
         id)
         .catch(errorHandler);
 }
@@ -1121,12 +1171,54 @@ function errorHandler(error){
     if(error.name === "JsonWebTokenError"){
         return "Ungültiger JWT. Versuche dich neu Anzumelden";
     }
+    if(error == "Error: Failed to login. {\"jsonrpc\":\"2.0\",\"id\":\"Awesome\",\"error\":{\"message\":\"bad credentials\",\"code\":-8504}}"){
+        return "Ungültige Anmeldedaten";
+    }
 
-    config.secrets.DISCORD_ADMIN_IDS.forEach(id => {
+    adminDiscordIDs.forEach(id => {
         dm.sendMessage(`Error Name: ${error.name}\n\n${error}`, id).catch((err) => {
             console.error("Encountered Error while trying to handle error: ");
             console.error(err);
         })
     })
-    return "Das hätte nicht passieren sollen"
+}
+
+/**
+ * Logs in depending on settings specified in JWT and returnes untis object
+ * @param jwt Decoded JSON Web Token
+ * @return {Promise<module:webuntis.WebUntisSecretAuth|*>}
+ */
+function untisLogin(jwt){
+    return new Promise((resolve, reject) => {
+
+    if(!jwt.type || !jwt.version || jwt.version < config.constants.jwtVersion){
+        reject({name: "Login exception", message: "Login function got passed an invalid JWT"});
+
+    }
+    if(jwt.type === 'secret'){
+         const untis = new WebUntisLib.WebUntisSecretAuth(
+            config.secrets.SCHOOL_NAME,
+            jwt.username,
+            decrypt(jwt.secret),
+            config.secrets.SCHOOL_DOMAIN
+        );
+         untis.login().then(() => {
+             resolve(untis);
+         }).catch(reject);
+         return;
+    }
+    if(jwt.type === 'password'){
+        const untis = new WebUntisLib(
+            config.secrets.SCHOOL_NAME,
+            jwt.username,
+            decrypt(jwt.password),
+            config.secrets.SCHOOL_DOMAIN
+        )
+        untis.login().then(() => {
+            resolve(untis);
+        }).catch(reject);
+        return;
+    }
+    reject({name: "Uncaught Login Exception", message:"Couldn't Login with provided JWT\n" + JSON.stringify(jwt)});
+    })
 }
