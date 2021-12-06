@@ -526,8 +526,62 @@ app.post(path + "/rawRequest", (req, res) => {
             switch (req.body['requestType']){
                 case "getTimeTableFor": {
                     // Check if requestBody contains data for this request, if yes login and make it
+                    if(!requestData["date"] || !requestData["id"]) {
+                        res.status(400).send({error: true, message: "Invalid parameters"})
+                    }
                     untisLogin(decoded).then(untis => {
-                        untis.getTimetableFor(requestData);
+                        untis.getTimetableFor(new Date(requestData["date"]), requestData["id"], 1).then(value => {
+                            res.status(200).send(value);
+                        });
+                    }).catch(errorHandler);
+                    return;
+                }
+                case "getTimeTableForRange": {
+                    // Check if requestBody contains data for this request, if yes login and make it
+                    if(!requestData["id"] || !requestData["rangeStart"] || !requestData["rangeEnd"]) {
+                        res.status(400).send({error: true, message: "Invalid parameters"})
+                    }
+                    untisLogin(decoded).then(untis => {
+                        untis.getTimetableForRange(new Date(requestData["rangeStart"]), new Date(requestData["rangeEnd"]), requestData["id"], 1).then(value => {
+                            res.status(200).send(value);
+                            untis.logout().then();
+                        });
+                    }).catch(errorHandler);
+                    return;
+                }
+                case "getRooms": {
+                    untisLogin(decoded).then(untis => {
+                        untis.getRooms().then(value => {
+                            res.status(200).send(value);
+                            untis.logout().then();
+                        });
+                    }).catch(errorHandler);
+                    return;
+                }
+                case "getSubjects": {
+                    untisLogin(decoded).then(untis => {
+                        untis.getSubjects().then(value => {
+                            res.status(200).send(value);
+                            untis.logout().then();
+                        });
+                    }).catch(errorHandler);
+                    return;
+                }
+                case "getClasses": {
+                    untisLogin(decoded).then(untis => {
+                        untis.getClasses().then(value => {
+                            res.status(200).send(value);
+                            untis.logout().then();
+                        });
+                    }).catch(errorHandler);
+                    return;
+                }
+                case "getHolidays": {
+                    untisLogin(decoded).then(untis => {
+                        untis.getHolidays().then(value => {
+                            res.status(200).send(value);
+                            untis.logout().then();
+                        });
                     }).catch(errorHandler);
                     return;
                 }
