@@ -124,6 +124,13 @@ function addWeek(week){
 		firstRow.classList.add("row");
 		firstRow.innerHTML = weekDayEnum[index];
 		let today = new Date();
+		let isToday = false;
+
+		if(date === new Date().toISOString().slice(0, 10)){
+			firstRow.classList.add("isCurrentDay");
+			isToday = true;
+		}
+
 
 
 		day.appendChild(firstRow);
@@ -153,15 +160,15 @@ function addWeek(week){
 					bkText: ${element["bkText"]}</p>`
 
 				infos.innerHTML += text;
-
+				infos.setAttribute("id", `${index},${i}`)
 
 				let button = document.createElement("button");
 				button.setAttribute("type", "button");
-				button.setAttribute("onclick", `hideInfo(${index}, ${i + 1});`);
+				button.setAttribute("onclick", `hideInfo(${index}, ${i});`);
 				button.classList.add("infoButton");
 				button.innerText = "Zurück"
 				infos.appendChild(button);
-				row.setAttribute("onclick", `displayInfo(${index}, ${i + 1})`);
+				row.setAttribute("onclick", `displayInfo(${index}, ${i})`);
 				if (element['code'] === 'cancelled') {
 					//TODO: Stripe things with color / red
 					row.classList.add('cancelled');
@@ -174,34 +181,46 @@ function addWeek(week){
 
 				// Check if this lesson has passed
 				if(past){
-					let thisTime = new Date(date + "T" + reverseEndTimeEnumFormatted[i]);
+					const thisStartTime = new Date(date + "T" + reverseStartTimeEnumFormatted[i]);
+					let thisEndTime = new Date(date + "T" + reverseEndTimeEnumFormatted[i]);
+					//TODO: Remove this before production
 					if(typeof override !== "undefined"){
 						today = override;
 					}
 
-					if(today < thisTime){
+					if(today < thisEndTime){
 						// This section is only called once, on the transition between past and future.
 						past = false;
 
-						// We want a scale from 0 - 100 on how far we progressed. 0 = 9:45; 100 = 11:15
-						const start = new Date(date + "T" + reverseStartTimeEnumFormatted[i]);
+						// The next part should only be executed if we are actually in this lesson right now;
+						if(today > thisStartTime && today < thisEndTime){
 
-						let q = Math.abs(today - start);
-						let d = Math.abs(thisTime - start);
+							let q = Math.abs(today - thisStartTime);
+							let d = Math.abs(thisEndTime - thisStartTime);
+							const fraction = Math.round((q / d) * 100)
+							console.log("i: ",i);
+							console.log("startTime: ", thisStartTime);
+							console.log("endTime: ", thisEndTime);
+							console.log(q, "/", d, "=",fraction);
 
-						const fraction = Math.round((q / d) * 100)
-						let progress = document.createElement("div");
-						progress.classList.add("progressBar");
-						progress.style.top = String(fraction + "%");
+							let progressContainer = document.createElement("div");
+							progressContainer.classList.add("progressContainer");
+							progressContainer.style.height = String(fraction + "%");
 
-						row.appendChild(progress);
+							let progress = row.cloneNode(true);
 
-						if (!colorEnum[element['subject']]) {
-							colorEnum[element['subject']] =
-								colorPalette[Math.floor(Math.random() * colorPalette.length)];
+							progress.classList.add("progressBar");
+
+							progressContainer.appendChild(progress);
+							containingRow.appendChild(progressContainer);
+
+							if (!colorEnum[element['subject']]) {
+								colorEnum[element['subject']] =
+									colorPalette[Math.floor(Math.random() * colorPalette.length)];
+							}
+							color = getContrastColor(colorEnum[element['subject']]);
+							backgroundColor = colorEnum[element['subject']];
 						}
-						color = getContrastColor(colorEnum[element['subject']]);
-						backgroundColor = colorEnum[element['subject']];
 					}else{
 						backgroundColor = "#525252";
 						color = "#d3d3d3";
@@ -437,11 +456,11 @@ function displayError(error){
 refreshHandler(false);
 
 function displayInfo(x, y){
-	document.getElementById('variableContent').children[x].children[y].children[1].classList.add("infosDisplay");
+	document.getElementById(x+","+y).classList.add("infosDisplay");
 }
 
-function hideInfo(x, y){
-	document.getElementById('variableContent').children[x].children[y].children[1].classList.remove("infosDisplay");
+function hideInfo(x, y) {
+	document.getElementById(x + "," + y).classList.remove("infosDisplay");
 }
 
 

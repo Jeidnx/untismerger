@@ -124,7 +124,7 @@ body.error .errorMessage {
 
 .stunde {
 	color: #000;
-	height: 100%;
+	height: 16.6666666vh;
 	width: 100%;
 	font-weight: bolder;
 	display: flex;
@@ -139,7 +139,7 @@ body.error .errorMessage {
 	cursor: pointer;
 }
 .stunde p {
-	z-index: 2;
+	z-index: 1;
 }
 .cancelled {
 	text-decoration: line-through;
@@ -158,6 +158,7 @@ body.error .errorMessage {
 }
 .infos {
 	display: none;
+	z-index: 3;
  }
 @keyframes popout {
 	from{
@@ -205,9 +206,15 @@ body.error .errorMessage {
 }
 
 .progressBar {
-	background-color: red;
-	width: 100%;
-	height: 3%;
 	position: absolute;
-	z-index: 1;
+	background-color: #525252;
+	color: #d3d3d3;
+	z-index: 2;
+}
+.progressContainer {
+	height: 100%;
+	position: absolute;
+	overflow: hidden;
+	width: 100%;
+	top: 0;
 }
