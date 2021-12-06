@@ -212,9 +212,9 @@ body.error .errorMessage {
 	z-index: 2;
 }
 .progressContainer {
-	height: 100%;
 	position: absolute;
 	overflow: hidden;
 	width: 100%;
 	top: 0;
+	border-bottom: 3px solid #bb86fc;
 }

@@ -124,11 +124,9 @@ function addWeek(week){
 		firstRow.classList.add("row");
 		firstRow.innerHTML = weekDayEnum[index];
 		let today = new Date();
-		let isToday = false;
 
 		if(date === new Date().toISOString().slice(0, 10)){
 			firstRow.classList.add("isCurrentDay");
-			isToday = true;
 		}
 
 
