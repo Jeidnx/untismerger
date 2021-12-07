@@ -531,25 +531,51 @@ app.post(path + "/rawRequest", (req, res) => {
                     // Check if requestBody contains data for this request, if yes login and make it
                     if(!requestData["date"] || !requestData["id"]) {
                         res.status(400).send({error: true, message: "Invalid parameters"})
+                        return;
                     }
                     untisLogin(decoded).then(untis => {
-                        untis.getTimetableFor(new Date(requestData["date"]), requestData["id"], 1).then(value => {
-                            res.status(200).send(value);
-                        });
-                    }).catch(errorHandler);
+                        untis.getTimetableFor(new Date(requestData["date"]), requestData["id"], 1).then((value) => {
+                            res.send(value);
+                            untis.logout().then()
+                        }).catch((err) => {
+                            res.status(400).send({error: true, message: errorHandler(err)});
+                        })
+                    }).catch((err) => {
+                        res.status(400).send({error: true, message: errorHandler(err)});
+                    });
+                    return;
+                }
+                case "getOwnTimeTableFor": {
+                    if(!requestData["date"]) {
+                        res.status(400).send({error: true, message: "Invalid parameters"})
+                        return;
+                    }
+                    untisLogin(decoded).then(untis => {
+                        untis.getOwnTimetableFor(new Date(requestData["date"])).then((value) => {
+                            res.send(value);
+                            untis.logout().then()
+                        }).catch((err) => {
+                            res.status(400).send({error: true, message: errorHandler(err)});
+                        })
+                    }).catch((err) => {
+                        res.status(400).send({error: true, message: errorHandler(err)});
+                    });
                     return;
                 }
                 case "getTimeTableForRange": {
                     // Check if requestBody contains data for this request, if yes login and make it
                     if(!requestData["id"] || !requestData["rangeStart"] || !requestData["rangeEnd"]) {
-                        res.status(400).send({error: true, message: "Invalid parameters"})
+                        res.status(400).send({error: true, message: "Invalid parameters"});
+                        return;
                     }
                     untisLogin(decoded).then(untis => {
                         untis.getTimetableForRange(new Date(requestData["rangeStart"]), new Date(requestData["rangeEnd"]), requestData["id"], 1).then(value => {
-                            res.status(200).send(value);
+                            res.send(value);
                             untis.logout().then();
                         });
-                    }).catch(errorHandler);
+                    }).catch(err => {
+                        res.status(400).send({error: true, message: errorHandler(err)});
+                    });
                     return;
                 }
                 case "getRooms": {
@@ -558,7 +584,9 @@ app.post(path + "/rawRequest", (req, res) => {
                             res.status(200).send(value);
                             untis.logout().then();
                         });
-                    }).catch(errorHandler);
+                    }).catch((err) => {
+                        res.status(400).send({error: true, message: errorHandler(err)});
+                    });
                     return;
                 }
                 case "getSubjects": {
@@ -567,7 +595,9 @@ app.post(path + "/rawRequest", (req, res) => {
                             res.status(200).send(value);
                             untis.logout().then();
                         });
-                    }).catch(errorHandler);
+                    }).catch((err) => {
+                        res.status(400).send({error: true, message: errorHandler(err)});
+                    });
                     return;
                 }
                 case "getClasses": {
@@ -576,7 +606,9 @@ app.post(path + "/rawRequest", (req, res) => {
                             res.status(200).send(value);
                             untis.logout().then();
                         });
-                    }).catch(errorHandler);
+                    }).catch((err) => {
+                        res.status(400).send({error: true, message: errorHandler(err)});
+                    });
                     return;
                 }
                 case "getHolidays": {
@@ -585,7 +617,9 @@ app.post(path + "/rawRequest", (req, res) => {
                             res.status(200).send(value);
                             untis.logout().then();
                         });
-                    }).catch(errorHandler);
+                    }).catch((err) => {
+                        res.status(400).send({error: true, message: errorHandler(err)});
+                    });
                     return;
                 }
                 // Write cases for applicable requests.
@@ -1221,7 +1255,7 @@ function signJwt(userObj){
 /**
  * Handles the Occured Error and if necessary sends a DM to all Admins that have registered with Discord
  * @param {Error|mysql.QueryError} error Error
- * @return {String|void} Message to send depending on error
+ * @return {String} Message to send depending on error
  */
 function errorHandler(error){
 
@@ -1230,6 +1264,9 @@ function errorHandler(error){
     }
     if(error.message === "Failed to login. {\"jsonrpc\":\"2.0\",\"id\":\"Awesome\",\"error\":{\"message\":\"bad credentials\",\"code\":-8504}}"){
         return "Ungültige Anmeldedaten";
+    }
+    if(error.message === "Server didn't returned any result."){
+        return error.message;
     }
 
     adminDiscordIDs.forEach(id => {
@@ -1240,6 +1277,7 @@ function errorHandler(error){
             console.error(error);
         })
     })
+    return "Default error Message";
 }
 
 /**
