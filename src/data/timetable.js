@@ -68,6 +68,7 @@ function getWeekFromDay(dateIn) {
 	let week = [];
 	for (let i = 1; i <= 5; i++) {
 		let first = date.getDate() - date.getDay() + i;
+		//TODO: toISOString will produce garbage between 00:00 and 01:00 because of timezone stuff
 		let day = new Date(date.setDate(first)).toISOString().slice(0, 10);
 		week.push(day);
 	}
@@ -79,21 +80,44 @@ function getWeekFromDay(dateIn) {
 /**
  * @param {boolean} purge Should the cache be purged
  * @param {Date} date Date of the week to display
+ * @param {number} target -1: past, 0: now, 1: future
  * @returns {Promise<void>}
  */
-function displayWeek(purge, date){
+function displayWeek(purge, date, target){
 	return new Promise((resolve, reject) => {
-		let week = getWeekFromDay(date);
+		let help = new Date(date);
+		help.setDate(help.getDate() + (7 * target));
+
+		let week = getWeekFromDay(help);
+
+		let domTarget;
+		switch(target){
+			case -1: {
+				domTarget = document.getElementById("timeTablePast");
+				break;
+			}
+			case 0: {
+				domTarget = document.getElementById("timeTableNow");
+				break;
+			}
+			case 1: {
+				domTarget = document.getElementById("timeTableFuture");
+				break;
+			}
+			default: {
+				throw new Error("Invalid target passed to displayWeek");
+			}
+		}
 
 		if(purge){
 			getWeek(week).then(() => {
-				addWeek(week).then(resolve);
+				addWeek(week, domTarget).then(resolve);
 			}).catch(reject);
 		}else{
 			if(timeTable[week[1]]){
-				addWeek(week).then(resolve);
+				addWeek(week, domTarget).then(resolve);
 			}else{
-				displayWeek(true, new Date(week[1])).then(resolve).catch(reject);
+				displayWeek(true, new Date(week[1]), target).then(resolve).catch(reject);
 			}
 		}
 	})
@@ -102,19 +126,25 @@ function displayWeek(purge, date){
 /**
  *
  * @param {String[]} week Array of Dates to fetch
+ * @param {HTMLElement} target the target to attach result to
  * @return {Promise<void>} Resolves when days have been added to the DOM
  */
-function addWeek(week){
+function addWeek(week, target){
 	return new Promise((resolve) => {
-	const variableContent = document.getElementById('variableContent');
-	variableContent.innerHTML = "";
-	let weekDisplay = document.getElementById('weekDisplay');
-	let firstDay = week[0].split('-');
-	let lastDay = week[4].split('-');
-	weekDisplay.innerHTML = `${firstDay[2]}.${firstDay[1]} - ${lastDay[2]}.${lastDay[1]}`;
+	target.innerHTML = "";
+	///If this week should be rendered as lightweight
+	let lw = !(target.getAttribute("id") === "timeTableNow");
+
+	if(!lw){
+		let weekDisplay = document.getElementById('weekDisplay');
+		let firstDay = week[0].split('-');
+		let lastDay = week[4].split('-');
+		weekDisplay.innerHTML = `${firstDay[2]}.${firstDay[1]} - ${lastDay[2]}.${lastDay[1]}`;
+	}
 
 	///If we are currently in the past
 	let past = true;
+
 
 	for(let index = 0; index < 5; index++) {
 		let date = week[index];
@@ -144,12 +174,13 @@ function addWeek(week){
 				row.innerHTML = `<p>${element['subject']}<p>
                 	<p>${element['room']} - ${element['teacher']}</p>`;
 				let infos = document.createElement("div");
-				infos.classList.add("infos");
-				infos.innerHTML = `
+				if(!lw) {
+					infos.classList.add("infos");
+					infos.innerHTML = `
 					<p>Fach: ${element["subject"]}<br>Raum: ${element['room']}<br>Lehrer: ${element['teacher']}</p>`
 
-				// Text stuff
-				const text = `
+					// Text stuff
+					const text = `
 					<p>LSText: ${element["lstext"]}<br>
 					Info: ${element["info"]}<br>
 					SubsText: ${element["substText"]}<br>
@@ -157,16 +188,17 @@ function addWeek(week){
 					bkRemark: ${element["bkRemark"]}<br>
 					bkText: ${element["bkText"]}</p>`
 
-				infos.innerHTML += text;
-				infos.setAttribute("id", `${index},${i}`)
+					infos.innerHTML += text;
+					infos.setAttribute("id", `${index},${i}`)
 
-				let button = document.createElement("button");
-				button.setAttribute("type", "button");
-				button.setAttribute("onclick", `hideInfo(${index}, ${i});`);
-				button.classList.add("infoButton");
-				button.innerText = "Zurück"
-				infos.appendChild(button);
-				row.setAttribute("onclick", `displayInfo(${index}, ${i})`);
+					let button = document.createElement("button");
+					button.setAttribute("type", "button");
+					button.setAttribute("onclick", `hideInfo(${index}, ${i});`);
+					button.classList.add("infoButton");
+					button.innerText = "Zurück"
+					infos.appendChild(button);
+					row.setAttribute("onclick", `displayInfo(${index}, ${i})`);
+				}
 				if (element['code'] === 'cancelled') {
 					//TODO: Stripe things with color / red
 					row.classList.add('cancelled');
@@ -178,7 +210,7 @@ function addWeek(week){
 				let color = "#FFFFFF", backgroundColor = "#000000";
 
 				// Check if this lesson has passed
-				if(past){
+				if(past ){
 					const thisStartTime = new Date(date + "T" + reverseStartTimeEnumFormatted[i]);
 					let thisEndTime = new Date(date + "T" + reverseEndTimeEnumFormatted[i]);
 					//TODO: Remove this before production
@@ -191,7 +223,7 @@ function addWeek(week){
 						past = false;
 
 						// The next part should only be executed if we are actually in this lesson right now;
-						if(today > thisStartTime && today < thisEndTime){
+						if((today > thisStartTime && today < thisEndTime) && !lw){
 
 							let q = Math.abs(today - thisStartTime);
 							let d = Math.abs(thisEndTime - thisStartTime);
@@ -235,16 +267,18 @@ function addWeek(week){
 				}
 
 				row.style.color = color;
-				infos.style.color = color;
 				row.style.backgroundColor = backgroundColor;
-				infos.style.backgroundColor = backgroundColor;
-
+				if(!lw){
+					infos.style.color = color;
+					infos.style.backgroundColor = backgroundColor;
+					containingRow.appendChild(infos);
+				}
 				containingRow.appendChild(row);
-				containingRow.appendChild(infos);
+
 			}
 			day.appendChild(containingRow);
 		}
-		variableContent.appendChild(day)
+		target.appendChild(day)
 	}
 	localStorage.setItem('colorEnum', JSON.stringify(colorEnum));
 	resolve();
@@ -319,60 +353,52 @@ function getWeek(week){
 	}
 }
 
-
-let _startY;
-let _startX;
-
-document.body.addEventListener(
-	'touchstart',
-	(e) => {
-		_startY = e.touches[0].pageY;
-		_startX = e.touches[0].pageX;
-	},
-	{ passive: true }
-);
-
-document.body.addEventListener(
-	'touchmove',
-	(e) => {
-		const y = e.touches[0].pageY;
-		if (document.scrollingElement.scrollTop === 0 && y > _startY + 19) {
-			refreshHandler(true);
-		}
-		const x = e.touches[0].pageX;
-		if (document.scrollingElement.scrollLeft === 0 && x < _startX - 100) {
-			scrollWeeks(true);
-		}
-		if (document.scrollingElement.scrollLeft === 0 && x > _startX + 100) {
-			scrollWeeks(false);
-		}
-	},
-	{ passive: true }
-);
-document.body.addEventListener('touchend', (e) => {
-	console.log(e);
-});
 document.addEventListener("visibilitychange", () => {
 	if(!document.hidden){
 		refreshHandler(false);
 	}
 });
-window.onkeydown = function (event) {
-	switch (event.key) {
-		case 'r': {
-			refreshHandler(true);
-			break;
-		}
-		case 'a': {
-			scrollWeeks(false);
-			break;
-		}
-		case 'd': {
-			scrollWeeks(true);
-			break;
-		}
+let ttContainer = document.getElementById("timeTableContainer")
+let scrolling = false;
+ttContainer.addEventListener('scroll', () => {
+	if(scrolling) return;
+	const percent = getScrollPercent();
+	if(percent > 51){
+		scrolling = true;
+		mondayOfSelectedWeek.setDate(mondayOfSelectedWeek.getDate() + 7);
+
+		document.getElementById("timeTableFuture").scrollIntoView({behavior: "smooth"});
+		setTimeout(() => {
+			displayWeek(false, mondayOfSelectedWeek, 0).then(() => {
+				ttContainer.scroll(0, (ttContainer.clientHeight * 1.5));
+				refreshHandler(false);
+				scrolling = false;
+			}).catch(displayError);
+		}, 500)
 	}
-};
+	if(percent < 49){
+		scrolling = true;
+		mondayOfSelectedWeek.setDate(mondayOfSelectedWeek.getDate() - 7);
+
+		document.getElementById("timeTablePast").scrollIntoView({behavior: "smooth"});
+		setTimeout(() => {
+			displayWeek(false, mondayOfSelectedWeek, 0).then(() => {
+				ttContainer.scroll(0, (ttContainer.clientHeight * 1.5));
+				refreshHandler(false);
+				scrolling = false;
+			}).catch(displayError);
+		}, 1000)
+	}
+})
+
+function getScrollPercent() {
+	let height = ttContainer.clientHeight;
+	let scrollHeight = ttContainer.scrollHeight - height;
+	let scrollTop = ttContainer.scrollTop;
+
+	return Math.floor(scrollTop / scrollHeight * 100);
+}
+
 
 /**
  * @param {boolean} purge Should the cache be purged?
@@ -386,19 +412,23 @@ async function refreshHandler(purge) {
 		}
 		if (!window.navigator.onLine) {
 			if (purge) {
-				displayError("Offline");
+				displayError("Das geht leider nicht ohne eine Internet Verbindung");
 				resolve(false);
 				return;
 			} else if (!timeTable[mondayOfSelectedWeek.toISOString().slice(0, 10)]) {
-				displayError("Offline");
+				displayError("Das geht leider nicht ohne eine Internet Verbindung");
 				resolve(false);
 				return;
 			}
 		}
+
 		document.body.classList.add('refreshing');
-		displayWeek(purge, mondayOfSelectedWeek).then(() => {
+		displayWeek(purge, mondayOfSelectedWeek, 0).then(async () => {
 			document.body.classList.remove('refreshing');
+			await displayWeek(purge, mondayOfSelectedWeek, 1)
+			await displayWeek(purge, mondayOfSelectedWeek, -1)
 			resolve(true);
+
 		}).catch((err) => {
 			document.body.classList.remove('refreshing');
 			displayError(err);
@@ -406,42 +436,8 @@ async function refreshHandler(purge) {
 		})
 	});
 }
-/**
- * @param {boolean} forward true = +1 Week; false = -1 Week
- */
-function scrollWeeks(forward) {
-	if (document.body.classList.contains('switching')) {
-		return;
-	}
-	document.body.classList.add('switching');
 
-	const initial = new Date(mondayOfSelectedWeek);
-
-	if (forward) {
-		mondayOfSelectedWeek.setDate(mondayOfSelectedWeek.getDate() + 7);
-		refreshHandler(false).then(function () {
-			document.body.classList.remove('switching');
-		});
-	} else {
-
-		if(mondayOfSelectedWeek.setDate(mondayOfSelectedWeek.getDate() - 7) < new Date(getWeekFromDay(new Date())[0])){
-			mondayOfSelectedWeek = initial;
-			setTimeout(() => {
-				document.body.classList.remove('switching');
-			}, 50);
-			return;
-		}
-
-		refreshHandler(false).then((bool) => {
-			if(!bool){
-				mondayOfSelectedWeek = initial;
-			}
-			document.body.classList.remove('switching');
-		});
-	}
-}
-
-
+let errorTimeout;
 /**
  *
  * @param {String} error Error to display;
@@ -451,12 +447,23 @@ function displayError(error){
 		return;
 	}
 	document.body.classList.add('error');
-	document.getElementById("errorMessage").innerText = error;
-	setTimeout(() => {
+	document.getElementById("snackbarText").innerText = error;
+	document.getElementById("snackbar").classList.add("mdc-snackbar--open");
+
+	errorTimeout = setTimeout(() => {
+		document.getElementById("snackbar").classList.remove("mdc-snackbar--open");
 		document.body.classList.remove('error');
-	}, 5000);
+	}, 3000);
 }
-refreshHandler(false);
+document.getElementById("dismissSnackbar").addEventListener("click", () => {
+	document.getElementById("snackbar").classList.remove("mdc-snackbar--open");
+	document.body.classList.remove('error');
+	clearTimeout(errorTimeout);
+})
+
+document.getElementById("refreshButton").addEventListener("click", () => {
+	refreshHandler(true);
+})
 
 function displayInfo(x, y){
 	document.getElementById(x+","+y).classList.add("infosDisplay");
@@ -466,6 +473,14 @@ function hideInfo(x, y) {
 	document.getElementById(x + "," + y).classList.remove("infosDisplay");
 }
 
+
+function initPage(){
+	refreshHandler(false).then((bool) => {
+		console.log(ttContainer.clientHeight);
+		console.log("Ready", bool);
+		ttContainer.scroll(0, (ttContainer.clientHeight * 1.5));
+	})
+}
 
 /**
  *
@@ -490,3 +505,4 @@ function getContrastColor(hex){
 		? '#000000'
 		: '#FFFFFF';
 }
+initPage();

@@ -114,12 +114,23 @@ body {
 body.error .errorMessage {
 	visibility: visible;
 }
-#variableContent {
+.timeTable {
 	height: 100vh;
 	width: 90vw;
 	display: flex;
 	justify-content: flex-start;
 	flex-direction: row;
+	scroll-snap-align: start;
+}
+#timeTableContainer{
+	overflow-y: scroll;
+	scroll-snap-type: y mandatory;
+	overflow-x: hidden;
+	scrollbar-width: none;
+}
+
+#timeTableContainer::-webkit-scrollbar {
+	display: none;
 }
 
 .stunde {
@@ -148,11 +159,15 @@ body.error .errorMessage {
 .irregular {
 	color: #cf6679;
 }
-
-#floatingActionButton {
+#fabContainer {
 	position: fixed;
 	bottom: 2vh;
 	right: 1vw;
+}
+#fabContainer > button {
+	margin-top: 10px;
+	display: flex;
+	flex-direction: row;
 	z-index: 1;
 	background-color: #bb86fc;
 }
