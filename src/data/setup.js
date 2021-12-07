@@ -66,7 +66,7 @@ function submitHandler() {
 	for (let i = 0; i < submitForm.elements.length; i++) {
 		//@ts-ignore
 		const element = submitForm.elements[i];
-		if (element.type == 'submit') {
+		if (element.type === 'submit') {
 			continue;
 		}
 

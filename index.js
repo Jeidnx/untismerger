@@ -962,7 +962,7 @@ function rmDiscordId(id){
 
 /**
  * Handling cancelled classes for Notifications etc.
- * @param {Lesson}elem The WebuntisLib Element which is getting cancelled
+ * @param {module:webuntis.Lesson}elem The WebuntisLib Element which is getting cancelled
  * @param {String} lessonNr The courses to search
  * @returns void
  */
@@ -995,7 +995,11 @@ function convertUntisTimeDatetoDate(date, startTime){
     const day = (date - (year * 10000) - month * 100)
 
     let index;
-    startTime >= 100 ? index = 2 : index = 1;
+    if(startTime >= 100){
+        index = 2;
+    }else{
+        index = 1;
+    }
     const hour = Math.floor(startTime / Math.pow(10, index))
     const minutes = Math.floor(((startTime / 100) - hour) *100)
 

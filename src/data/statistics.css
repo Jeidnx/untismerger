@@ -7,7 +7,7 @@ html {
 body {
     color: #bebebe;
     text-align: center;
-    font-family: arial;
+    font-family: arial, serif;
     background-image: url('/icons/background.png');
     background-size: cover;
     background-position: center;

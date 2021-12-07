@@ -352,6 +352,11 @@ document.body.addEventListener(
 document.body.addEventListener('touchend', (e) => {
 	console.log(e);
 });
+document.addEventListener("visibilitychange", () => {
+	if(!document.hidden){
+		refreshHandler(false);
+	}
+});
 window.onkeydown = function (event) {
 	switch (event.key) {
 		case 'r': {
