@@ -4,7 +4,6 @@ const jwt = require('jsonwebtoken');
 const http = require('http');
 const crypto = require('crypto');
 const mysql = require('mysql2');
-const webPush = require('web-push');
 let dm = require('djs-messenger');
 
 // Statics
@@ -53,7 +52,6 @@ const jwtSecret = config.secrets.JWT_SECRET;
 const schoolName = config.secrets.SCHOOL_NAME;
 const schoolDomain = config.secrets.SCHOOL_DOMAIN;
 const port = process.env.PORT;
-const TTL = config.constants.ttl;
 const path = config.constants.apiPath;
 let db;
 
@@ -77,11 +75,6 @@ if(!(process.env.DEV === 'FALSE')){
         console.log("[djs-messenger] Logged in as", client.user.tag);
     })
 }
-webPush.setVapidDetails(
-    'https://github.com/Jeidnx',
-    config.secrets.VAPID_PUBLIC,
-    config.secrets.VAPID_PRIVATE
-);
 if (!jwtSecret || !schoolName || !schoolDomain || !port) {
     console.log('Missing environment or config.json Variables');
     process.exit(1);
@@ -450,28 +443,7 @@ app.post(path + '/getStats', (req, res) => {
         })
     });
 });
-app.get(path + '/vapidPublicKey', (req, res) => {
-    res.status(200).send(config.secrets.VAPID_PUBLIC);
-})
-app.post(path + '/register', (req, res) => {
-    if(!req.body["subscription"] || !req.body['jwt']) {
-        res.status(400).send({error: true, message: "Missing Arguments"});
-        return;
-    }
-    jwt.verify(req.body['jwt'], jwtSecret, (err, decoded) => {
-        if(err){
-            res.status(400).send({error: true, message: errorHandler(err)});
-            return;
-        }
 
-        addSubscription(decoded['username'],JSON.parse(req.body["subscription"])).then(() => {
-            res.status(201).send({message: "created"});
-        })
-    })
-
-
-
-});
 app.post(path + '/deleteUser', (req, res) => {
     if(!req.body['jwt']){
         res.status(400).send({error: true, message: "Missing args"});
@@ -1043,24 +1015,6 @@ async function sendNotification(lesson, date, lessonNr){
     console.log("Sendet Benachrichtigung für: ", lesson, date.toISOString().slice(0, 10));
     const notificationBody = `${lesson} am ${String(date.getDate() + "."+ (date.getMonth() + 1))} entfällt.`;
 
-    const payload = {
-        type: "notification",
-        body: notificationBody
-    };
-    const options = {
-        TTL: TTL
-    };
-    getSubscriptions(lessonNr).then(subscriptions => {
-        subscriptions.forEach((user) => {
-            webPush
-                .sendNotification(user, JSON.stringify(payload), options)
-                .then((response) => {
-                    if (response.statusCode !== 201) {
-                        console.log(response.statusCode, response);
-                    }
-                }).catch(errorHandler);
-        });
-    }).catch(errorHandler)
     getDiscordIds(lessonNr).then(ids => {
         ids.forEach((id) => {
             console.log(id);
@@ -1091,73 +1045,6 @@ function getDiscordIds(lesson){
                     if(element["discordid"]){
                         res.push(element["discordid"]);
                     }
-                })
-                resolve(res);
-            }
-        );
-    })
-}
-
-/**
- *
- * @param {String} username Username in Plaintext
- * @param {PushSubscription} subscription Matching Subscription
- * @returns {Promise<boolean>} if Operation was successful
- */
-function addSubscription(username, subscription){
-    return new Promise((resolve, reject) => {
-        db.query('SELECT subscription FROM user WHERE username=?',
-            [hash(username)],
-            (err, result) => {
-                if(err) {
-                    errorHandler(err);
-                    reject(err);
-                    return;
-                }
-                if(result < 1){
-                    reject("User not in DB");
-                    return;
-                }
-                let subscriptionArr = JSON.parse(result[0]['subscription']);
-                subscriptionArr.push(subscription);
-
-                db.query(
-                    'UPDATE user SET subscription=?  WHERE username=?',
-                    [JSON.stringify(subscriptionArr), hash(username)],
-                    function (err) {
-                        if (err) {
-                            errorHandler(err);
-                            reject(err);
-                            return;
-                        }
-                        resolve(true);
-                    }
-                );
-            })
-    })
-}
-
-/**
- *
- * @param {String} lesson String describing the lesson to search for
- * @returns {Promise<PushSubscription[]>} List of all matching subscriptions
- */
-function getSubscriptions(lesson){
-    return new Promise((resolve, reject) => {
-        db.query(
-            'SELECT subscription FROM user WHERE ? in (lk, fachrichtung) UNION SELECT subscription FROM user LEFT JOIN fach on user.id = fach.user WHERE ? = fach.fach',
-            [lesson, lesson],
-            function (err, result) {
-                if (err) {
-                    errorHandler(err);
-                    reject(err);
-                    return;
-                }
-                let res = [];
-                result.forEach(element => {
-                    JSON.parse(element['subscription']).forEach(subscription => {
-                        res.push(subscription);
-                    })
                 })
                 resolve(res);
             }
