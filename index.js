@@ -524,7 +524,7 @@ app.post(path + "/rawRequest", (req, res) => {
             res.status(400).send({error: true, message: errorHandler(err)});
             return;
         }
-        const requestData = req.body['requestData'];
+        const requestData = JSON.parse(req.body['requestData']);
 
             switch (req.body['requestType']){
                 case "getTimeTableFor": {
