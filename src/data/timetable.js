@@ -136,10 +136,7 @@ function addWeek(week, target){
 	let lw = !(target.getAttribute("id") === "timeTableNow");
 
 	if(!lw){
-		let weekDisplay = document.getElementById('weekDisplay');
-		let firstDay = week[0].split('-');
-		let lastDay = week[4].split('-');
-		weekDisplay.innerHTML = `${firstDay[2]}.${firstDay[1]} - ${lastDay[2]}.${lastDay[1]}`;
+		setWeekDisplay(week);
 	}
 
 	///If we are currently in the past
@@ -210,7 +207,7 @@ function addWeek(week, target){
 				let color = "#FFFFFF", backgroundColor = "#000000";
 
 				// Check if this lesson has passed
-				if(past ){
+				if(past){
 					const thisStartTime = new Date(date + "T" + reverseStartTimeEnumFormatted[i]);
 					let thisEndTime = new Date(date + "T" + reverseEndTimeEnumFormatted[i]);
 					//TODO: Remove this before production
@@ -223,7 +220,7 @@ function addWeek(week, target){
 						past = false;
 
 						// The next part should only be executed if we are actually in this lesson right now;
-						if((today > thisStartTime && today < thisEndTime) && !lw){
+						if((today > thisStartTime && today < thisEndTime)){
 
 							let q = Math.abs(today - thisStartTime);
 							let d = Math.abs(thisEndTime - thisStartTime);
@@ -363,29 +360,38 @@ let scrolling = false;
 ttContainer.addEventListener('scroll', () => {
 	if(scrolling) return;
 	const percent = getScrollPercent();
-	if(percent > 51){
+	console.log(percent);
+	if(percent > 80){
 		scrolling = true;
+		ttContainer.style.overflow = "hidden";
 		mondayOfSelectedWeek.setDate(mondayOfSelectedWeek.getDate() + 7);
-
+		let week = getWeekFromDay(mondayOfSelectedWeek);
+		setWeekDisplay(week);
 		document.getElementById("timeTableFuture").scrollIntoView({behavior: "smooth"});
 		setTimeout(() => {
 			displayWeek(false, mondayOfSelectedWeek, 0).then(() => {
 				ttContainer.scroll(0, (ttContainer.clientHeight * 1.5));
-				refreshHandler(false);
-				scrolling = false;
+				refreshHandler(false).then(() => {
+					scrolling = false;
+					ttContainer.style.overflow = "";
+				})
 			}).catch(displayError);
 		}, 500)
 	}
-	if(percent < 49){
+	if(percent < 20){
 		scrolling = true;
+		ttContainer.style.overflow = "hidden";
 		mondayOfSelectedWeek.setDate(mondayOfSelectedWeek.getDate() - 7);
-
 		document.getElementById("timeTablePast").scrollIntoView({behavior: "smooth"});
+		let week = getWeekFromDay(mondayOfSelectedWeek);
+		setWeekDisplay(week);
 		setTimeout(() => {
 			displayWeek(false, mondayOfSelectedWeek, 0).then(() => {
 				ttContainer.scroll(0, (ttContainer.clientHeight * 1.5));
-				refreshHandler(false);
-				scrolling = false;
+				refreshHandler(false).then(() => {
+					scrolling = false;
+					ttContainer.style.overflow = "";
+				})
 			}).catch(displayError);
 		}, 1000)
 	}
@@ -399,6 +405,16 @@ function getScrollPercent() {
 	return Math.floor(scrollTop / scrollHeight * 100);
 }
 
+/**
+ * Displays the given week in the top left corner
+ * @param {String[]} week Week to display dates from
+ */
+function setWeekDisplay(week){
+	let weekDisplay = document.getElementById('weekDisplay');
+	let firstDay = week[0].split('-');
+	let lastDay = week[4].split('-');
+	weekDisplay.innerHTML = `${firstDay[2]}.${firstDay[1]} - ${lastDay[2]}.${lastDay[1]}`;
+}
 
 /**
  * @param {boolean} purge Should the cache be purged?
