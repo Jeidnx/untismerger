@@ -91,6 +91,7 @@ body {
 	background-color: #121212;
 	color: #bebebe;
 	font-family: sans-serif;
+	overscroll-behavior: contain;
 }
 .timeTable {
 	height: 100%;
