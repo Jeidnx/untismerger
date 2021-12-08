@@ -356,41 +356,21 @@ let scrolling = false;
 ttContainer.addEventListener('scroll', () => {
 	if(scrolling) return;
 	const percent = getScrollPercent();
-	if(percent > 55){
-		scrolling = true;
-		ttContainer.style.overflow = "hidden";
-		mondayOfSelectedWeek.setDate(mondayOfSelectedWeek.getDate() + 7);
-		let week = getWeekFromDay(mondayOfSelectedWeek);
-		setWeekDisplay(week);
-		document.getElementById("timeTableFuture").scrollIntoView({behavior: "smooth"});
-		setTimeout(() => {
-			displayWeek(false, mondayOfSelectedWeek, 0).then(() => {
-				ttContainer.scroll((ttContainer.clientWidth), 0)
-				refreshHandler(false).then(() => {
-					scrolling = false;
-					ttContainer.style.overflow = "";
-				})
-			}).catch(displayError);
-		}, 1000)
+	if(percent > 55) {
+		doScroll(true);
 	}
 	if(percent < 45){
-		scrolling = true;
-		ttContainer.style.overflow = "hidden";
-		mondayOfSelectedWeek.setDate(mondayOfSelectedWeek.getDate() - 7);
-		document.getElementById("timeTablePast").scrollIntoView({behavior: "smooth"});
-		let week = getWeekFromDay(mondayOfSelectedWeek);
-		setWeekDisplay(week);
-		setTimeout(() => {
-			displayWeek(false, mondayOfSelectedWeek, 0).then(() => {
-				ttContainer.scroll((ttContainer.clientWidth), 0)
-				refreshHandler(false).then(() => {
-					scrolling = false;
-					ttContainer.style.overflow = "";
-				})
-			}).catch(displayError);
-		}, 1000)
+		doScroll(false);
 	}
 })
+
+ttContainer.addEventListener("wheel", (evt) => {
+	evt.preventDefault();
+	if(scrolling) return;
+	doScroll(evt.deltaY > 0);
+});
+
+
 
 function getScrollPercent() {
 	let width = ttContainer.clientWidth;
@@ -398,6 +378,33 @@ function getScrollPercent() {
 	let scrollLeft = ttContainer.scrollLeft;
 
 	return Math.floor(scrollLeft / scrollWidth * 100);
+}
+
+function doScroll(forward){
+	scrolling = true;
+	ttContainer.style.overflowX = "hidden";
+	let targetElement;
+	let setDate;
+	if(forward){
+		targetElement = "timeTableFuture";
+		setDate = 7;
+	}else{
+		targetElement = "timeTablePast";
+		setDate = -7;
+	}
+	document.getElementById(targetElement).scrollIntoView({behavior: "smooth"});
+	mondayOfSelectedWeek.setDate(mondayOfSelectedWeek.getDate() + setDate);
+	let week = getWeekFromDay(mondayOfSelectedWeek);
+	setWeekDisplay(week);
+	setTimeout(() => {
+		displayWeek(false, mondayOfSelectedWeek, 0).then(() => {
+			ttContainer.scroll((ttContainer.clientWidth), 0)
+			refreshHandler(false).then(() => {
+				scrolling = false;
+				ttContainer.style.overflowX = "scroll";
+			})
+		}).catch(displayError);
+	}, 1000)
 }
 
 /**
@@ -486,7 +493,7 @@ function hideInfo(x, y) {
 
 
 function initPage(){
-	refreshHandler(false).then((bool) => {
+	refreshHandler(false).then(() => {
 		ttContainer.scroll((ttContainer.clientWidth), 0)
 	})
 }
