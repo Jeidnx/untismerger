@@ -225,10 +225,6 @@ function addWeek(week, target){
 							let q = Math.abs(today - thisStartTime);
 							let d = Math.abs(thisEndTime - thisStartTime);
 							const fraction = Math.round((q / d) * 100)
-							console.log("i: ",i);
-							console.log("startTime: ", thisStartTime);
-							console.log("endTime: ", thisEndTime);
-							console.log(q, "/", d, "=",fraction);
 
 							let progressContainer = document.createElement("div");
 							progressContainer.classList.add("progressContainer");
@@ -360,8 +356,7 @@ let scrolling = false;
 ttContainer.addEventListener('scroll', () => {
 	if(scrolling) return;
 	const percent = getScrollPercent();
-	console.log(percent);
-	if(percent > 80){
+	if(percent > 55){
 		scrolling = true;
 		ttContainer.style.overflow = "hidden";
 		mondayOfSelectedWeek.setDate(mondayOfSelectedWeek.getDate() + 7);
@@ -370,15 +365,15 @@ ttContainer.addEventListener('scroll', () => {
 		document.getElementById("timeTableFuture").scrollIntoView({behavior: "smooth"});
 		setTimeout(() => {
 			displayWeek(false, mondayOfSelectedWeek, 0).then(() => {
-				ttContainer.scroll(0, (ttContainer.clientHeight * 1.5));
+				ttContainer.scroll((ttContainer.clientWidth), 0)
 				refreshHandler(false).then(() => {
 					scrolling = false;
 					ttContainer.style.overflow = "";
 				})
 			}).catch(displayError);
-		}, 500)
+		}, 1000)
 	}
-	if(percent < 20){
+	if(percent < 45){
 		scrolling = true;
 		ttContainer.style.overflow = "hidden";
 		mondayOfSelectedWeek.setDate(mondayOfSelectedWeek.getDate() - 7);
@@ -387,7 +382,7 @@ ttContainer.addEventListener('scroll', () => {
 		setWeekDisplay(week);
 		setTimeout(() => {
 			displayWeek(false, mondayOfSelectedWeek, 0).then(() => {
-				ttContainer.scroll(0, (ttContainer.clientHeight * 1.5));
+				ttContainer.scroll((ttContainer.clientWidth), 0)
 				refreshHandler(false).then(() => {
 					scrolling = false;
 					ttContainer.style.overflow = "";
@@ -398,11 +393,11 @@ ttContainer.addEventListener('scroll', () => {
 })
 
 function getScrollPercent() {
-	let height = ttContainer.clientHeight;
-	let scrollHeight = ttContainer.scrollHeight - height;
-	let scrollTop = ttContainer.scrollTop;
+	let width = ttContainer.clientWidth;
+	let scrollWidth = ttContainer.scrollWidth - width;
+	let scrollLeft = ttContainer.scrollLeft;
 
-	return Math.floor(scrollTop / scrollHeight * 100);
+	return Math.floor(scrollLeft / scrollWidth * 100);
 }
 
 /**
@@ -492,9 +487,7 @@ function hideInfo(x, y) {
 
 function initPage(){
 	refreshHandler(false).then((bool) => {
-		console.log(ttContainer.clientHeight);
-		console.log("Ready", bool);
-		ttContainer.scroll(0, (ttContainer.clientHeight * 1.5));
+		ttContainer.scroll((ttContainer.clientWidth), 0)
 	})
 }
 

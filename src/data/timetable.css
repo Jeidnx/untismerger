@@ -88,29 +88,27 @@ body {
 	height: 100vh;
 	width: 100vw;
 	display: flex;
-	justify-content: flex-start;
-	flex-direction: row;
-	overscroll-behavior: none;
-	overflow: hidden;
-	touch-action: manipulation;
-	position: fixed;
 	background-color: #121212;
 	color: #bebebe;
 	font-family: sans-serif;
 }
 .timeTable {
-	height: 100vh;
-	width: 90vw;
+	height: 100%;
+	width: 100%;
 	display: flex;
 	justify-content: flex-start;
 	flex-direction: row;
 	scroll-snap-align: start;
 }
 #timeTableContainer{
-	overflow-y: scroll;
-	scroll-snap-type: y mandatory;
-	overflow-x: hidden;
+	overflow-x: scroll;
+	scroll-snap-type: x mandatory;
+	overflow-y: hidden;
 	scrollbar-width: none;
+	display: flex;
+	flex-direction: row;
+	height: 100vh;
+	width: 90vw;
 }
 
 #timeTableContainer::-webkit-scrollbar {
@@ -181,7 +179,7 @@ body {
 	animation: popout 250ms;
 	transform: scale(1);
 	position: fixed;
-	z-index: 2;
+	z-index: 3;
 	height: 80vh;
 	width: 80vw;
 	top: 10%;
