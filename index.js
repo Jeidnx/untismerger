@@ -433,8 +433,8 @@ app.post(path + '/getStats', (req, res) => {
             if (bool) {
                 let st = {};
 
-                st.requests = await getStatistics().catch(console.log) || {};
-                st.users = await getUserCount().catch(console.log) || 0;
+                st.requests = await getStatistics().catch(errorHandler) || {};
+                st.users = await getUserCount().catch(errorHandler) || 0;
                 res.send(st);
 
             } else {
@@ -1017,15 +1017,24 @@ async function sendNotification(lesson, date, lessonNr){
         return;
     }
     console.log("Sendet Benachrichtigung für: ", lesson, date.toISOString().slice(0, 10));
-    const notificationBody = `${lesson} am ${String(date.getDate() + "."+ (date.getMonth() + 1))} entfällt.`;
+    const notificationBody = getNotificationBody(lesson, date);
 
     getDiscordIds(lessonNr).then(ids => {
         ids.forEach((id) => {
-            console.log(id);
             dm.sendMessage(notificationBody, id).catch(errorHandler);
         })
     }).catch(errorHandler);
 
+}
+
+/**
+ *
+ * @param {String} lesson
+ * @param {Date} date
+ * @return {string}
+ */
+function getNotificationBody(lesson ,date){
+    return `${lesson} am ${String(date.getDate() + "."+ (date.getMonth() + 1))} entfällt.`;
 }
 
 /**
