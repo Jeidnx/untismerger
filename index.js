@@ -1031,10 +1031,31 @@ async function sendNotification(lesson, date, lessonNr){
  *
  * @param {String} lesson
  * @param {Date} date
- * @return {string}
+ * @return {String}
  */
 function getNotificationBody(lesson ,date){
+    const now = new Date();
+    let help = new Date(date);
+    if(now.getFullYear() !== date.getFullYear()){
+        return `${lesson} am ${String(date.getDate() + "."+ (date.getMonth() + 1))} entfällt.`;
+    }
+
+    for(let i = 0; i < 2; i++){
+        if(now.getDate() === help.getDate() && now.getMonth() === help.getDate()){
+            if(i === 0){
+                return `${lesson} entfällt heute.`;
+            }
+            if(i === 1){
+                return `${lesson} entfällt morgen.`;
+            }
+            if(i === 2){
+                return `${lesson} entfällt übermorgen.`;
+            }
+        }
+        help.setDate(help.getDate() + 1);
+    }
     return `${lesson} am ${String(date.getDate() + "."+ (date.getMonth() + 1))} entfällt.`;
+
 }
 
 /**
