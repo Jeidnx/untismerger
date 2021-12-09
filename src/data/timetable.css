@@ -138,6 +138,13 @@ body {
 .cancelled {
 	text-decoration: line-through;
 	color: #cf6679;
+	background: repeating-linear-gradient(
+			45deg,
+			#525252,
+			#525252 10px,
+			#e18c9c  10px,
+			#e18c9c  20px
+	);
 }
 .irregular {
 	color: #cf6679;
