@@ -1138,7 +1138,7 @@ dm.onMessage = (msg, id, send) => {
                 send("`" + msg + "`" + " ist leider nicht vorhanden.\nGib bitte deinen Untis Namen ein. Wenn du hilfe benötigst gib `help`");
                 return;
             }
-            chats.id = msg;
+            chats.id = msg.toLowerCase();
             setTimeout(() => {
                 delete chats.id;
             }, 300000);
