@@ -1040,8 +1040,9 @@ function getNotificationBody(lesson ,date){
         return `${lesson} am ${String(date.getDate() + "."+ (date.getMonth() + 1))} entfällt.`;
     }
 
-    for(let i = 0; i < 2; i++){
-        if(now.getDate() === help.getDate() && now.getMonth() === help.getDate()){
+    for(let i = 0; i < 3; i++){
+        if(now.getDate() === help.getDate() && now.getMonth() === help.getMonth()){
+            console.log(i)
             if(i === 0){
                 return `${lesson} entfällt heute.`;
             }
@@ -1052,7 +1053,7 @@ function getNotificationBody(lesson ,date){
                 return `${lesson} entfällt übermorgen.`;
             }
         }
-        help.setDate(help.getDate() + 1);
+        now.setDate(now.getDate() + 1);
     }
     return `${lesson} am ${String(date.getDate() + "."+ (date.getMonth() + 1))} entfällt.`;
 
