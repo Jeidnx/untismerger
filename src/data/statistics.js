@@ -1,5 +1,5 @@
 let items = [];
-fetch('/api/getStats', {
+fetch('https://api.untismerger.tk/getStats', {
     method: 'POST',
     body: new URLSearchParams({
         'jwt': localStorage.getItem("jwt")

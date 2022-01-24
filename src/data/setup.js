@@ -112,7 +112,7 @@ function submitHandler() {
 			}
 		}
 	});
-	xhr.open('POST', '/api/setup');
+	xhr.open('POST', 'https://api.untismerger.tk/setup');
 	xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 	xhr.send(formBody);
 }

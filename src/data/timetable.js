@@ -325,7 +325,7 @@ function getWeek(week){
 		resolve()
 
 		})
-		xhr.open('POST', '/api/getTimeTableWeek');
+		xhr.open('POST', 'https://api.untismerger.tk/getTimeTableWeek');
 		xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 		xhr.send(`jwt=${localStorage.getItem('jwt')}&startDate=${week[0]}&endDate=${week[4]}`);
 

@@ -66,7 +66,7 @@ document.getElementById('localStorageDelJWT').addEventListener('click', () => {
 // Profil Löschen
 document.getElementById('resetProfile').addEventListener('click', () => {
 	if(window.confirm("Bist du dir sicher? Alle Daten werden gelöscht.")){
-		fetch('/api/deleteUser', {
+		fetch('https://api.untismerger.tk/deleteUser', {
 			method: 'POST',
 			body: new URLSearchParams({
 				'jwt': localStorage.getItem("jwt")
@@ -115,7 +115,7 @@ document.getElementById("notificationsDiscord").addEventListener("click", () => 
 	window.open("https://discord.gg/P8adQc8N63", '_blank').focus();
 })
 document.getElementById("discordGetToken").addEventListener("click", () => {
-	fetch("/api/getDiscordToken",{
+	fetch("https://api.untismerger.tk/getDiscordToken",{
 		method: 'POST',
 		body: new URLSearchParams({
 			'jwt': localStorage.getItem("jwt"),
