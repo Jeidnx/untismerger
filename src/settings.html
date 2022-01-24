@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no maximum-scale=1.0">
+    <title>Einstellungen</title>
+    <link rel="stylesheet" href="/data/settings.css">
+    <link rel="manifest" href="/data/manifest.webmanifest" type="application/json">
+    <link rel="icon" href="/images/icon.png">
+</head>
+
+<body>
+    <section id="account">
+        <button id="backButton">Zurück</button>
+        <h3>App</h3>
+        <h4 id="serviceWorkerVersion">Version: Wird Geladen...</h4>
+        <button type="button" id="serviceWorkerReregister">Update</button>
+        <button type="button" id="localStorageDelJWT">Abmelden</button>
+    </section>
+    <section id="notifications">
+        <h3>Benachrichtigungen (Discord)</h3>
+        <h4 id="discordReturn"></h4>
+        <button type="button" id="notificationsDiscord">Erhalten</button>
+        <button type="button" id="discordGetToken">Token Erhalten</button>
+    </section>
+
+    <section id="colorPicker">
+        <h3>Farben für deine Fächer Auswählen</h3>
+        Wird geladen...
+    </section>
+
+    <section id="advancedSettings">
+        <h3>Erweiterte Einstellungen</h3>
+        <button type="button" id="deleteLocalCache">Stundeplan Cache leeren</button>
+        <button type="button" id="serviceWorkerReloadCache">Cache erneuern</button>
+        <button type="button" id="resetProfile">Account Löschen</button>
+    </section>
+    <section id="other">
+        <a href="/impressum">Impressum</a>
+    </section>
+
+    <script type="text/javascript" src="data/settings.js"></script>
+</body>
+
+</html>
