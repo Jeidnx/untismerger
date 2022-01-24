@@ -1,4 +1,4 @@
-const cacheVersion = '2.06';
+const cacheVersion = '2.07';
 const cacheName = 'untmerger_v' + cacheVersion;
 const toCache = [
 	'/',
