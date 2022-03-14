@@ -115,8 +115,11 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: displayedLesson, parentIdx
                                     `repeating-linear-gradient( 45deg, ${lessonBgColor}, ${lessonBgColor} 10px, #e18c9c 10px, #e18c9c 20px )` :
                                     lesson.code === "irregular" ?
                                         `repeating-linear-gradient( 45deg, ${lessonBgColor}, ${lessonBgColor} 10px, #e6bc1a 10px, #e6bc1a 20px )` : lessonBgColor,
-                            width: "100%",
+                            flex: "1",
                             padding: "5px",
+                            borderLeftStyle: idx > 0 ? "solid" : "none",
+                            borderColor: color,
+                            borderWidth: "2px",
                         }}
                     >
                         <p
