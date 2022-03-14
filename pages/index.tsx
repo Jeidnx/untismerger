@@ -5,14 +5,6 @@ import {useEffect} from 'react';
 
 export default function Index(){
 
-    useEffect(()=>{
-        import("darkreader").then((darkReader)=>{
-            darkReader.enable({contrast:150})
-            console.log(darkReader.isEnabled())
-        })
-    
-    }
-    );
     return (<>
         <Head>
             <title>Untismerger</title>
