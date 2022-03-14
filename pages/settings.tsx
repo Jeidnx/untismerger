@@ -328,7 +328,6 @@ const Settings = () => {
                             <Button
                                 onClick={() => {
                                     fetcher("getPreferences", ).then((json) => {
-                                        console.log(json);
                                         setDesignData({
                                             ...theme.designData,
                                             ...JSON.parse(json.data)

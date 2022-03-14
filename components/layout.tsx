@@ -199,8 +199,7 @@ export default function Layout({children}: { children: any }) {
                     severity={snackbarOptions.type}
                     sx={{
                         width: {mobile: "100%", desktop: "max-content"},
-                        marginRight: {desktop: `${drawerWidth}px`},
-                        marginBottom: {mobile: `${bottomNavigationHeight}px`},
+                        marginRight: {desktop: `auto`},
                     }}>
                     {snackbarOptions.text}
                 </Alert>

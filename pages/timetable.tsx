@@ -3,13 +3,14 @@ import Head from 'next/head';
 import TimetableComponent from '../components/TimetableComponent'
 import dayjs from 'dayjs';
 import {useEffect} from 'react';
-import {alpha, Box, CircularProgress, Fab, useTheme} from '@mui/material'
+import {alpha, Box, CircularProgress, useTheme} from '@mui/material'
 
 import {displayedLesson, LessonData, lsTimetable, Timetable, TimetableData, UntisLessonData} from "../types";
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {useCustomTheme} from "../components/CustomTheme";
 import {useSnackbarContext} from "../components/layout";
 import {useInfiniteQuery} from "react-query";
+import FABGroup from "../components/FABGroup";
 
 let weekday = require('dayjs/plugin/weekday')
 dayjs.extend(weekday)
@@ -120,14 +121,12 @@ const Index: NextPage = () => {
                     })
                 })
                 //TODO: timestamps for invalidation, seperate refetch function for readability
-                console.log("Cache hit");
                 return {
                     timetable: timetable,
                     week: week,
                     pageParam: pageParam,
                 }
             }).catch(() => {
-                console.log("Cache miss");
                 return fetch(request).then((resp) => resp.json()).then((json) => {
                     const processedData = processData(json.data, week);
                     const fullTimeTable: Timetable = ({...processedData, type: "fetched"} as Timetable);
@@ -159,7 +158,6 @@ const Index: NextPage = () => {
 
     const handleFutureScroll = (element: HTMLDivElement) => {
         if ((element.scrollHeight - element.clientHeight - element.scrollTop) < 1) {
-            console.log("bottom");
             query.fetchNextPage();
         }
     }
@@ -217,7 +215,6 @@ const Index: NextPage = () => {
                         overflowX: "hidden",
                         overflowY: "scroll",
                         scrollSnapType: "y mandatory",
-                        //scrollbarWidth: "none",
                     }}>
                     {
                         query.isLoading ?
@@ -243,26 +240,11 @@ const Index: NextPage = () => {
                             })
                     }
                 </Box>
-                <Box
-                    id={"fabContainer"}
-                    sx={{
-                        position: "sticky",
-                        bottom: "1vh",
-                        marginLeft: "auto",
-                        marginRight: "2vw",
-                        height: "min-content",
-                        width: "min-content"
-                    }}
-                >
-                    <Fab
-                        onClick={() => {
-                            refreshTimeTables();
-                        }}
-                        size={"medium"}
-                        color={"primary"}
-
-                    ><RefreshIcon/></Fab>
-                </Box>
+                <FABGroup
+                    children={[
+                        {icon: <RefreshIcon />, color: "primary", callback: refreshTimeTables}
+                    ]}
+                />
             </div>
         </>
 
