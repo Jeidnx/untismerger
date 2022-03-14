@@ -124,7 +124,7 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: displayedLesson, parentIdx
                     >
                         <p
                             style={{
-                                fontSize: "1.2vmax",
+                                fontSize: "1em",
                                 fontWeight: "bold",
                                 borderBottomStyle: "dashed",
                                 borderWidth: "2px",
@@ -133,7 +133,7 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: displayedLesson, parentIdx
                             }}
                         >{nameIsOverflowing ? lesson?.shortSubject : lesson?.subject}</p>
                         <p style={{
-                            fontSize: "0.9vmax",
+                            fontSize: "0.9em",
                         }}>{lesson.room + " - " + lesson.teacher}</p>
                     </Box>)
                 })

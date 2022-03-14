@@ -494,6 +494,21 @@ const Settings = () => {
                                     }))
                                 }}
                             />
+                            <label htmlFor={"fontSizeInput"}>Schriftgröße</label>
+                            <input
+                                type="number"
+                                step={"0.1"}
+                                min={"0"}
+                                max={"150"}
+                                id={"fontSizeInput"}
+                                defaultValue={theme.designData.fontSize}
+                                onChange={(e) => {
+                                    setTheme(renderTheme({
+                                        ...theme.designData,
+                                        fontSize: Number(e.target.value),
+                                    }))
+                                }}
+                            />
                         </Box>
 
                         {

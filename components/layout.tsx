@@ -218,6 +218,7 @@ export default function Layout({children}: { children: any }) {
                         backgroundPosition: "center",
                         backgroundSize: "cover",
                         fontFamily: theme.designData.font || "",
+                        fontSize: theme.designData.fontSize + "px"
                     }}
                 >
                     {children}</Box>
