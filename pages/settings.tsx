@@ -499,7 +499,7 @@ const Settings = () => {
                                 type="number"
                                 step={"0.1"}
                                 min={"0"}
-                                max={"5"}
+                                max={"150"}
                                 id={"fontSizeInput"}
                                 defaultValue={theme.designData.fontSize}
                                 onChange={(e) => {
