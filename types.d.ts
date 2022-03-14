@@ -58,6 +58,7 @@ export interface stringToNumberEnum {
 }
 
 export interface designDataType {
+    fontSize: number;
     iat: number,
     version: number,
     mode: "dark" | "light",

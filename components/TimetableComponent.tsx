@@ -48,7 +48,7 @@ export default function TimetableComponent ({
                     display: "inline-flex",
                     alignItems:"center",
                     justifyContent: "center",
-                    fontSize: "2.5vw",
+                    fontSize: "1.7em",
                     fontWeight: currDay ? "bold": "",
                     textDecoration: currDay ? "underline" : "",
                     backgroundColor: alpha(theme.palette.background.default, theme.designData.alpha),
@@ -77,7 +77,7 @@ export default function TimetableComponent ({
                 }}>
                 <span style={{
                     height: "15%",
-                    fontSize: "3vw",
+                    fontSize: "1.1em",
                     display: "inline-flex",
                     alignItems: "center",
                     textAlign: "center",
@@ -92,7 +92,7 @@ export default function TimetableComponent ({
                     {Object.keys(startTimeLookup).map((key: string, idx: number) => {
                         return (<span key={idx} style={{
                             height: "100%",
-                            fontSize: "3vw",
+                            fontSize: "1.0em",
                             lineHeight: "2vw",
                             display: "inline-flex",
                             alignItems: "center",
