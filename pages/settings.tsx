@@ -329,6 +329,7 @@ const Settings = () => {
                                 onClick={() => {
                                     fetcher("getPreferences", ).then((json) => {
                                         console.log(json);
+                                        theme.designData.mode=window.matchMedia('(prefers-color-scheme: dark)').matches===true?"dark":theme.designData.mode;
                                         setDesignData({
                                             ...theme.designData,
                                             ...JSON.parse(json.data)
