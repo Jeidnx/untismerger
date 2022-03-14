@@ -88,16 +88,16 @@ export default function TimetableComponent ({
                 }}>
                     {`${firstDay} - ${lastDay}`}
                 </span>
-                <div style={{height: "85%", display: "flex", flexDirection: "column", width: "min-content",}}>
+                <div style={{height: "85%", display: "flex", flexDirection: "column", width: "100%",}}>
                     {Object.keys(startTimeLookup).map((key: string, idx: number) => {
                         return (<span key={idx} style={{
                             height: "100%",
+                            width: "100%",
                             fontSize: "1.0em",
-                            lineHeight: "2vw",
                             display: "inline-flex",
                             alignItems: "center",
+                            justifyContent: "center",
                             textAlign: "center",
-                            padding: "1vw",
                             backgroundColor: alpha(theme.palette.background.default, theme.designData.alpha),
                         }}>{startTimeLookup[key]} - {endTimeLookup[key]}</span>)
                     })}
