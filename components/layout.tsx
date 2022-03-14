@@ -89,7 +89,7 @@ export default function Layout({children}: { children: any }) {
                     }} label="Stundenplan" icon={<AccessTimeIcon/>}/>
                     <BottomNavigationAction onClick={() => {
                         Router.push("/homework")
-                    }} label="Klausuren" icon={<AssignmentIcon/>}/>
+                    }} label="Hausaufgaben" icon={<AssignmentIcon/>}/>
                     <BottomNavigationAction onClick={() => {
                         Router.push("/tests")
                     }} label="Klausuren" icon={<CreateIcon/>}/>

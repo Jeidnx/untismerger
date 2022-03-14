@@ -17,5 +17,5 @@ a {
   transition: ease 500ms;
 }
 input:hover{
-  /*TODO: Figure out how to remove firefox hover bs */
+  margin: 0;
 }

@@ -28,7 +28,7 @@ export function CustomThemeProvider({children}: any) {
             },
             font: "",
             alpha: 1,
-            fontSize: 18
+            fontSize: 16
         };
     }
 

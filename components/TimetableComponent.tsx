@@ -48,7 +48,7 @@ export default function TimetableComponent ({
                     display: "inline-flex",
                     alignItems:"center",
                     justifyContent: "center",
-                    fontSize: "1.7em",
+                    fontSize: "1.0em",
                     fontWeight: currDay ? "bold": "",
                     textDecoration: currDay ? "underline" : "",
                     backgroundColor: alpha(theme.palette.background.default, theme.designData.alpha),
@@ -77,12 +77,12 @@ export default function TimetableComponent ({
                 }}>
                 <span style={{
                     height: "15%",
-                    fontSize: "1.1em",
+                    fontSize: "1.0em",
                     display: "inline-flex",
                     alignItems: "center",
                     textAlign: "center",
                     padding: "1vw",
-                    lineHeight: "2vw",
+                    lineHeight: "1.0em",
                     backgroundColor: alpha(theme.palette.background.default, theme.designData.alpha),
 
                 }}>
@@ -93,7 +93,7 @@ export default function TimetableComponent ({
                         return (<span key={idx} style={{
                             height: "100%",
                             width: "100%",
-                            fontSize: "1.0em",
+                            fontSize: "0.7em",
                             display: "inline-flex",
                             alignItems: "center",
                             justifyContent: "center",
