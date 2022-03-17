@@ -25,7 +25,7 @@ import {stringToNumberEnum} from "../types";
 const urlToValue: stringToNumberEnum = {
     "/timetable": 0,
     "/homework": 1,
-    "/tests": 2,
+    "/exams": 2,
     "/settings": 3,
 }
 
@@ -91,7 +91,7 @@ export default function Layout({children}: { children: any }) {
                         Router.push("/homework")
                     }} label="Hausaufgaben" icon={<AssignmentIcon/>}/>
                     <BottomNavigationAction onClick={() => {
-                        Router.push("/tests")
+                        Router.push("/exams")
                     }} label="Klausuren" icon={<CreateIcon/>}/>
                     <BottomNavigationAction onClick={() => {
                         Router.push("/settings");
@@ -157,7 +157,7 @@ export default function Layout({children}: { children: any }) {
 
                         <DrawerButton
                             text={"Klausuren"}
-                            path={"/tests"}
+                            path={"/exams"}
                             Icon={<CreateIcon/>}
                         />
 
