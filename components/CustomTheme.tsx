@@ -1,10 +1,18 @@
-import {createContext, useContext, useEffect, useState} from 'react';
-import {customThemeType, designDataType} from "../types";
+import {createContext, useCallback, useContext, useEffect, useState} from 'react';
+import {customThemeType, designDataType, fetcherParams} from "../types";
 import {createTheme, ThemeProvider} from "@mui/material";
+
+import dayjs from "dayjs";
+
+dayjs.extend(require('dayjs/plugin/utc'))
+dayjs.extend(require('dayjs/plugin/timezone'))
+dayjs.locale(require('dayjs/locale/de'))
+// @ts-ignore
+dayjs.tz.setDefault("Europe/Berlin")
 
 const CustomThemeContext = createContext(({} as customThemeType));
 
-const useDevApi = false;
+const useDevApi = true;
 let debounceSave: NodeJS.Timeout;
 
 // Provider
@@ -33,7 +41,6 @@ export function CustomThemeProvider({children}: any) {
     }
 
     const [designData, setDesignData] = useState<designDataType>(getDesignData());
-
 
     const apiEndpoint = useDevApi ? "http://localhost:8080/" : "https://api.untismerger.tk/";
 
@@ -78,9 +85,75 @@ export function CustomThemeProvider({children}: any) {
         )
     }
 
+    const ls = localStorage.getItem("jwt");
+    if (!ls) {
+        return <h1>Anmelden</h1>
+    }
+    const parsedJwt = JSON.parse(
+        Buffer.from(ls.split('.')[1], "base64").toString("utf-8")
+    )
+
+    const fetcher = useCallback(({endpoint,query,useCache, method}: fetcherParams): Promise<any> => {
+        return new Promise((resolve, reject) => {
+
+            const mQuery = {
+                jwt: ls,
+                ...query,
+            }
+
+            fetch( apiEndpoint + endpoint + ((method === "GET") ? `?${new URLSearchParams(mQuery)}` : ""), {
+                method: method,
+                cache: useCache ? "default" : "no-cache",
+                body: method === "POST" ? JSON.stringify(mQuery) : undefined,
+                headers: method === "POST" ? {
+                    "content-type": "application/json",
+                } : undefined
+            }).then(async (res) => {
+                if(!res.ok){
+                    let json;
+                    try{
+                        json = await res.json()
+                    }catch(e){
+                        throw new Error(res.statusText);
+                    }
+                    throw new Error(json.message || res.statusText);
+                }
+                return res.json()
+            }).then((json) => {
+                if(json.error) throw new Error(json.message);
+                resolve(json);
+            }).catch((err) => {
+                reject("Fehler: " + (err.message || err));
+            })
+        })
+    }, [apiEndpoint])
+
+    const jwt = {
+        set: (newJwt: string) => {
+            localStorage.setItem("jwt", newJwt);
+        },
+        validate: (): Promise<any> => (fetcher({
+            endpoint: "validateJwt",
+            query: new URLSearchParams(),
+            method: "GET",
+            useCache: false,
+        })),
+        raw: ls,
+        get: {
+            version: parsedJwt.version,
+            iat: parsedJwt.iat,
+            username: parsedJwt.username,
+            type: parsedJwt.type,
+            [parsedJwt.type]: parsedJwt[parsedJwt.type],
+            lk: parsedJwt.lk,
+            fachrichtung: parsedJwt.fachrichtung,
+            sonstiges: parsedJwt.sonstiges,
+        }
+    }
+
     return (
         <ThemeProvider theme={getTheme()}>
-            <CustomThemeContext.Provider value={{apiEndpoint, setDesignData, setLessonColorEnum}}>
+            <CustomThemeContext.Provider value={{apiEndpoint, dayjs,fetcher, jwt, setDesignData, setLessonColorEnum}}>
                 {children}
             </CustomThemeContext.Provider>
         </ThemeProvider>

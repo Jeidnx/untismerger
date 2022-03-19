@@ -18,10 +18,15 @@ import Head from "next/head";
 import {useEffect, useState} from "react";
 import {useCustomTheme} from "../components/CustomTheme";
 import {useSnackbarContext} from "../components/layout";
-import dayjs from "dayjs";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import FABGroup from "../components/FABGroup";
 import {Add} from "@mui/icons-material";
+import {
+    allSonstigeKurse,
+    fachrichtungen,
+    leistungskurse,
+} from "../enums";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 interface klausurData {
     room: string,
@@ -31,31 +36,12 @@ interface klausurData {
     endTime: string,
 }
 
-const lkEnum: any = {
-    2267: "Deutsch (smt)",
-    2272: "Englisch (jae)",
-    2277: "Englisch (sob)",
-    2282: "Mathe (spi)",
-    2287: "Physik (jus)",
-    2292: "Deutsch (end)",
-}
-
-const frEnum: any = {
-2232:"BG12-1",
-2237:"BG12-2",
-2242:"BG12-3",
-2247:"Elektrotechnik",
-2252:"Praktische Informatik",
-2257:"BG12-6",
-2262:"BG12-7",
-}
-
 export default function Exams() {
     const theme = useTheme();
+    const { dayjs, jwt, fetcher} = useCustomTheme()
 
     const [klausuren, setKlausuren] = useState([]);
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [jwt, setJwt] = useState<any>({});
     const [errorMessage, setErrorMessage] = useState("");
     const [isPosting, setIsPosting] = useState(false)
     const [isLoading, setIsLoading] = useState(true);
@@ -67,24 +53,21 @@ export default function Exams() {
     const [endTime, setEndTime] = useState(dayjs().format("HH:mm"));
     const [kurs, setKurs] = useState("");
 
-    const {apiEndpoint} = useCustomTheme()
     const setSnackbar = useSnackbarContext();
 
     const fetchExams = () => {
         setIsLoading(true);
-        const query = new URLSearchParams({
-            jwt: localStorage.getItem("jwt") ?? ""
-        })
-        fetch(apiEndpoint + "getExams?" + query, {
-            cache: "no-cache",
-        }).then((res) => res.json()).then((json) => {
-            if (json.error) throw new Error(json.message);
+        fetcher({
+            endpoint: "getExams",
+            method: "GET",
+            query: {},
+            useCache: false,
+        }).then((json) => {
             setKlausuren(json.message);
             setIsLoading(false);
         }).catch((err) => {
-            console.error(err);
             setSnackbar({
-                text: err.message,
+                text: err,
                 type: "error",
                 open: true,
             })
@@ -93,13 +76,6 @@ export default function Exams() {
 
     useEffect(() => {
         fetchExams();
-        const jwt = localStorage.getItem("jwt");
-        if (!jwt) {
-            return undefined;
-        }
-        setJwt(JSON.parse(
-            Buffer.from(jwt.split('.')[1], "base64").toString("utf-8")
-        ))
     }, [])
 
     return (
@@ -146,40 +122,35 @@ export default function Exams() {
                             onSubmit={(e) => {
                                 e.preventDefault();
                                 setIsPosting(true);
+                                setErrorMessage("");
                                 const data = {
                                     subject: subject,
                                     room: room,
-                                    startTime: startTime,
-                                    endTime: dayjs(endTime, "HH:mm").format("YYYY-MM-DDTHH:mm"),
+                                    startTime: dayjs(startTime).format("YYYY-MM-DD HH:mm:ss"),
+                                    endTime: dayjs(startTime)
+                                        .set("hour", endTime.substring(0, 2))
+                                        .set("minute", endTime.substring(3,5)).format("YYYY-MM-DD HH:mm:ss"),
                                     kurs: kurs,
                                 }
 
-                                fetch(apiEndpoint + "addExam", {
+                                fetcher({
                                     method: "POST",
-                                    headers: {
-                                        "Content-Type": "application/json",
-                                    },
-                                    body: JSON.stringify({
-                                        exam: data,
-                                        jwt: localStorage.getItem("jwt") ?? "",
-                                    }),
-                                }).then((res) => res.json())
-                                    .then((json) => {
-                                        if (json.error) throw new Error(json.message);
-                                        fetchExams();
-                                        setIsPosting(false);
-                                        setDialogOpen(false);
-                                        setErrorMessage("");
-                                        setSnackbar({
-                                            text: "Erfolgreich angelegt",
-                                            type: "success",
-                                            open: true,
-                                        })
-                                    }).catch((err) => {
+                                    useCache: false,
+                                    query: {exam: data},
+                                    endpoint: "addExam",
+                                }).then(() => {
+                                    fetchExams();
+                                    setIsPosting(false);
+                                    setDialogOpen(false);
+                                    setSnackbar({
+                                        text: "Erfolgreich angelegt",
+                                        type: "success",
+                                        open: true,
+                                    })
+                                }).catch((err) => {
                                     setIsPosting(false)
-                                    setErrorMessage(err.message)
+                                    setErrorMessage(err)
                                 })
-
                             }}
                         >
                             <TextField
@@ -226,11 +197,11 @@ export default function Exams() {
                                 fullWidth
                                 variant={"standard"}
                             >
-                                <MenuItem value={jwt.lk}>{lkEnum[jwt.lk]}</MenuItem>
-                                <MenuItem value={jwt.fachrichtung}>{frEnum[jwt.fachrichtung]}</MenuItem>
+                                <MenuItem value={jwt.get.lk}>{leistungskurse[jwt.get.lk]}</MenuItem>
+                                <MenuItem value={jwt.get.fachrichtung}>{fachrichtungen[jwt.get.fachrichtung]}</MenuItem>
                                 {
-                                    jwt?.sonstiges?.map((elem: string) => (
-                                        <MenuItem value={elem}>{elem}</MenuItem>
+                                    jwt.get.sonstiges.map((elem: string) => (
+                                        <MenuItem value={elem}>{allSonstigeKurse[elem]}</MenuItem>
                                     ))
                                 }
 
@@ -294,7 +265,7 @@ export default function Exams() {
                                 backgroundColor: alpha(theme.palette.background.default, theme.designData.alpha),
                                 borderBottomStyle: "solid",
                                 padding: (theme.designData.lesson.edges + 5) + "px",
-                                marginTop: "10px",
+                                margin: "10px 0",
                                 display: "flex",
                                 flexDirection: "column",
                                 alignItems: "center",
@@ -302,9 +273,9 @@ export default function Exams() {
                         >
                             <h3>Fach: {klausur.subject}</h3>
                             <span>Raum: {klausur.room}</span>
-                            <span>Datum: {dayjs(klausur.startTime).format("DD.MM.YYYY HH:mm")} - {dayjs(klausur.endTime).format("HH:mm")}</span>
+                            <span>Datum: {dayjs.tz(klausur.startTime).format("DD.MM.YYYY HH:mm")} - {dayjs.tz(klausur.endTime).format("HH:mm")}</span>
                         </Box>
-                    )) : <h1>Keine Klausuren</h1> : <h1>Laden...</h1>
+                    )) : <h1>Keine Klausuren</h1> : <LoadingSpinner hidden={false} />
                 }
                 <FABGroup
                     children={[

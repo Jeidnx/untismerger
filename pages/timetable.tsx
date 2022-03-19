@@ -3,7 +3,7 @@ import Head from 'next/head';
 import TimetableComponent from '../components/TimetableComponent'
 import dayjs from 'dayjs';
 import {useEffect} from 'react';
-import {alpha, Box, CircularProgress, useTheme} from '@mui/material'
+import { Box } from '@mui/material'
 
 import {displayedLesson, LessonData, lsTimetable, Timetable, TimetableData, UntisLessonData} from "../types";
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -11,6 +11,7 @@ import {useCustomTheme} from "../components/CustomTheme";
 import {useSnackbarContext} from "../components/layout";
 import {useInfiniteQuery} from "react-query";
 import FABGroup from "../components/FABGroup";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 let weekday = require('dayjs/plugin/weekday')
 dayjs.extend(weekday)
@@ -81,7 +82,6 @@ function getWeekFromDay(date: Date) {
 const Index: NextPage = () => {
 
 
-    const theme = useTheme();
     const {apiEndpoint} = useCustomTheme()
     const setSnackbar = useSnackbarContext();
 
@@ -218,20 +218,8 @@ const Index: NextPage = () => {
                     }}>
                     {
                         query.isLoading ?
-                            <Box
-                                sx={{
-                                    backgroundColor: alpha(theme.palette.background.default, theme.designData.alpha),
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    padding: "2%",
-                                    margin: "auto",
-                                }}
-                            >
-                                <CircularProgress/>
-                                <h1>Lade Daten...</h1>
-                            </Box> :
+
+                            <LoadingSpinner hidden={false}/> :
                             query?.data?.pages?.map((page, idx) => {
                                 return <TimetableComponent
                                     key={idx}

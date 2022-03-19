@@ -20,7 +20,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CreateIcon from '@mui/icons-material/Create';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 
-import {stringToNumberEnum} from "../types";
+import { stringToNumberEnum} from "../types";
 
 const urlToValue: stringToNumberEnum = {
     "/timetable": 0,
@@ -29,7 +29,13 @@ const urlToValue: stringToNumberEnum = {
     "/settings": 3,
 }
 
-const SnackbarContext = createContext((null as any));
+interface SnackbarContextType {
+    open: boolean,
+    type: AlertColor,
+    text: string
+}
+
+const SnackbarContext = createContext((null as unknown as ({open, type, text }: SnackbarContextType) => void));
 
 export default function Layout({children}: { children: any }) {
 
@@ -204,7 +210,7 @@ export default function Layout({children}: { children: any }) {
                     {snackbarOptions.text}
                 </Alert>
             </Snackbar>
-            <SnackbarContext.Provider value={setSnackbarOptions}>
+            <SnackbarContext.Provider value={(setSnackbarOptions)}>
                 <Box
                     component={"main"}
                     sx={{

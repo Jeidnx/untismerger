@@ -200,7 +200,7 @@ const SetupBody = ({
 
                 }}>
                     <Stack spacing={3} sx={{width: 500}}>
-
+                        //TODO: Replace with enums.ts Enums
                         <FormControl
                             required={true}
                         >
