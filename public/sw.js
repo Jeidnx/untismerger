@@ -1,4 +1,4 @@
-const cacheVersion = '3.1.0';
+const cacheVersion = '3.1.1';
 const cacheName = 'untismerger_v' + cacheVersion;
 
 
@@ -29,6 +29,7 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+    //TODO: Im pretty sure this isn't working properly
     event.respondWith(
         fetch(event.request).then(networkResponse => {
             if (!networkResponse) {
