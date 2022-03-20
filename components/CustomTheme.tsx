@@ -1,8 +1,10 @@
 import {createContext, useCallback, useContext, useEffect, useState} from 'react';
-import {customThemeType, designDataType, fetcherParams} from "../types";
-import {createTheme, ThemeProvider} from "@mui/material";
+import {customThemeType, designDataType, fetcherParams, JWT} from "../types";
+import {Box, createTheme, ThemeProvider} from "@mui/material";
 
 import dayjs from "dayjs";
+import Setup from "../pages/setup";
+import * as React from "react";
 
 dayjs.extend(require('dayjs/plugin/utc'))
 dayjs.extend(require('dayjs/plugin/timezone'))
@@ -86,12 +88,10 @@ export function CustomThemeProvider({children}: any) {
     }
 
     const ls = localStorage.getItem("jwt");
-    if (!ls) {
-        return <h1>Anmelden</h1>
-    }
-    const parsedJwt = JSON.parse(
+
+    const parsedJwt: any = ls ? JSON.parse(
         Buffer.from(ls.split('.')[1], "base64").toString("utf-8")
-    )
+    ) : {};
 
     const fetcher = useCallback(({endpoint,query,useCache, method}: fetcherParams): Promise<any> => {
         return new Promise((resolve, reject) => {
@@ -128,9 +128,10 @@ export function CustomThemeProvider({children}: any) {
         })
     }, [apiEndpoint])
 
-    const jwt = {
+    const jwt: JWT = {
         set: (newJwt: string) => {
             localStorage.setItem("jwt", newJwt);
+            //TODO: Force recalculation
         },
         validate: (): Promise<any> => (fetcher({
             endpoint: "validateJwt",
@@ -138,7 +139,7 @@ export function CustomThemeProvider({children}: any) {
             method: "GET",
             useCache: false,
         })),
-        raw: ls,
+        raw: ls || "",
         get: {
             version: parsedJwt.version,
             iat: parsedJwt.iat,
@@ -151,8 +152,56 @@ export function CustomThemeProvider({children}: any) {
         }
     }
 
+    const theme = getTheme();
+
+    if (!ls) {
+        return (
+            <ThemeProvider theme={theme}>
+                <CustomThemeContext.Provider value={{apiEndpoint, dayjs,fetcher, jwt, setDesignData, setLessonColorEnum}}>
+                    <Box
+                        component={"main"}
+                        sx={{
+                            width: "100vw",
+                            height: "100vh",
+                            backgroundColor: theme.palette.background.default,
+                            color: theme.palette.text.primary,
+                            backgroundImage: "url('" + theme.designData.backgroundUrl + "')",
+                            backgroundRepeat: "no-repeat",
+                            backgroundPosition: "center",
+                            backgroundSize: "cover",
+                            overflowY: "auto",
+                            fontFamily: theme.designData.font || "",
+                            fontSize: theme.designData.fontSize + "px"
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                width: "100%",
+                                height: "20vh",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                flexDirection: "row",
+                            }}
+                        >
+                            { /* Next/Image is not supported for static export */}
+                            {/* eslint-disable  @next/next/no-img-element */}
+                            <img alt={"Untismerger Logo"} src={"/icon.png"} height={"100%"}/>
+                            <h2
+                                style={{
+                                    fontFamily: "mono",
+                                }}
+                            >Untismerger</h2>
+                        </Box>
+                    <Setup />
+                    </Box>
+                </CustomThemeContext.Provider>
+            </ThemeProvider>
+        )
+    }
+
     return (
-        <ThemeProvider theme={getTheme()}>
+        <ThemeProvider theme={theme}>
             <CustomThemeContext.Provider value={{apiEndpoint, dayjs,fetcher, jwt, setDesignData, setLessonColorEnum}}>
                 {children}
             </CustomThemeContext.Provider>

@@ -91,7 +91,7 @@ export interface customThemeType {
     fetcher({endpoint, query, useCache, method}: fetcherParams): Promise<any>,
 }
 
-interface JWT {
+export interface JWT {
     set: Function,
     validate: Function,
     raw: string,

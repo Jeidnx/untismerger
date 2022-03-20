@@ -1,4 +1,4 @@
-const cacheVersion = '3.1.1';
+const cacheVersion = '3.1.2';
 const cacheName = 'untismerger_v' + cacheVersion;
 
 

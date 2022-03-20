@@ -120,7 +120,7 @@ const Index: NextPage = () => {
                         })
                     })
                 })
-                //TODO: timestamps for invalidation, seperate refetch function for readability
+                //TODO: timestamps for invalidation, separate re-fetch function for readability
                 return {
                     timetable: timetable,
                     week: week,

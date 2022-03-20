@@ -237,12 +237,11 @@ export default function Exams() {
                                     type={"submit"}
                                     fullWidth
                                 >
-                                    Senden <CircularProgress
-                                    sx={{
-                                        m: "auto"
-                                    }}
-                                    size={24}
-                                />
+                                    Senden <CircularProgress sx={{
+                                    display: isPosting ? "" : "none",
+                                    position: 'absolute',
+                                    zIndex: 1,
+                                }} variant={"indeterminate"}/>
                                 </Button>
                         </form>
                     </DialogContent>
@@ -258,7 +257,7 @@ export default function Exams() {
                      !isLoading ? klausuren.length > 1 ? klausuren.map((klausur: klausurData) => (
                         <Box
                             sx={{
-                                flex: "1",
+                                minWidth: "50vw",
                                 height: "max-content",
                                 borderRadius: theme.designData.lesson.edges,
                                 borderColor: theme.designData.secondary,
