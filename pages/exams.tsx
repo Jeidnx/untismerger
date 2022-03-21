@@ -254,7 +254,7 @@ export default function Exams() {
                     </DialogActions>
                 </Dialog>
                 {
-                     !isLoading ? klausuren.length > 1 ? klausuren.map((klausur: klausurData, idx) => (
+                     !isLoading ? klausuren.length > 0 ? klausuren.map((klausur: klausurData, idx) => (
                         <Box
                             key={idx}
                             sx={{
