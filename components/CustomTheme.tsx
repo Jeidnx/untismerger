@@ -18,7 +18,7 @@ export function CustomThemeProvider({children}: any) {
         return {
             iat: new Date().getTime(),
             version: 0,
-            mode: "light",
+            mode: window.matchMedia('(prefers-color-scheme: dark)').matches===true?"dark":"light",
             primary: "#3266cc",
             secondary: "#e91e63",
             backgroundUrl: "",
@@ -33,7 +33,6 @@ export function CustomThemeProvider({children}: any) {
     }
 
     const [designData, setDesignData] = useState<designDataType>(getDesignData());
-
 
     const apiEndpoint = useDevApi ? "http://localhost:8080/" : "https://api.untismerger.tk/";
 
