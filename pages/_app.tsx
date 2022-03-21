@@ -22,6 +22,19 @@ function MyApp({Component, pageProps}: AppProps) {
                 navigator.serviceWorker.register('/sw.js');
             });
         }
+        
+        //Code from https://github.com/hadialqattan/no-darkreader        
+        const config = { attributes: false, childList: true, subtree: false };
+        
+        const callback = function(){
+            for (const style of document.head.getElementsByClassName("darkreader")) {
+                style.remove();
+              }
+              console.log("callback")
+        }
+        const observer = new MutationObserver(callback);
+          observer.observe(document.head, config);
+        callback();
     }, [])
 
     const queryClient = new QueryClient()

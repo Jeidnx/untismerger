@@ -4,6 +4,7 @@ import Router from "next/router";
 
 //TODO: write a better index page
 export default function Index(){
+
     return (<>
         <Head>
             <title>Untismerger</title>
