@@ -11,7 +11,6 @@ import {
 } from "@mui/material";
 import Head from "next/head";
 import {useEffect, useState} from 'react';
-import Router from "next/router";
 import DeleteIcon from '@mui/icons-material/Delete';
 import {useCustomTheme} from "../components/CustomTheme";
 import {designDataType} from "../types";
@@ -59,21 +58,6 @@ const Settings = () => {
         }, 200)
     }, [theme])
 
-    useEffect(() => {
-        // Compatability
-        if (localStorage.getItem("colorEnum")) {
-            console.log("converting colorEnum to designData")
-            setTheme(renderTheme({
-                ...theme.designData,
-                lesson: {
-                    ...theme.designData.lesson,
-                    colorEnum: JSON.parse(localStorage.getItem("colorEnum") || "{}"),
-                }
-            }))
-            localStorage.removeItem("colorEnum")
-        }
-    }, [])
-
     const handleColorInputDelete = (name: string) => {
         const {[name]: deletedKey, ...newCe} = theme.designData.lesson.colorEnum;
         setTheme(renderTheme({
@@ -86,6 +70,7 @@ const Settings = () => {
     }
 
     const getDiscordAuthCode = () => {
+        //TODO: use new fetcher
         fetch(apiEndpoint + "getDiscordToken", {
             method: 'POST',
             body: new URLSearchParams({
@@ -215,8 +200,7 @@ const Settings = () => {
                                     variant={"contained"}
                                     color={"secondary"}
                                     onClick={() => {
-                                        localStorage.removeItem("jwt");
-                                        Router.push("/setup");
+                                        jwt.set("");
                                     }}
                                 >
                                     Abmelden

@@ -98,6 +98,8 @@ const SetupBody = ({
         })
     }
 
+    //TODO: pretty sure there is a memory leak somewhere here, but i can't find it.
+
     switch (step) {
         case 0:
             body = (<>
@@ -155,6 +157,7 @@ const SetupBody = ({
                 <h1>Fächer wählen</h1>
                 <form onSubmit={(e) => {
                     e.preventDefault()
+                    //TODO: use new fetcher
                     fetch(apiEndpoint + "register", {
                         method: "post",
                         headers: {
@@ -176,10 +179,7 @@ const SetupBody = ({
                             }
                             throw new Error("Server konnte nicht erreicht werden.");
                         }
-                        localStorage.setItem("jwt", json.jwt);
-                        nextStep(3);
-                        saveData({disableButton: false})
-
+                        jwt.set(json.jwt);
                     }).catch((e) => {
                         setSnackbar({
                             text: e.message,
@@ -343,8 +343,7 @@ const SetupBody = ({
             );
             break;
     }
-    return (<>
-        <Box sx={{
+    return <Box sx={{
             height: "max-content",
             display: "flex",
             flexDirection: "column",
@@ -357,7 +356,5 @@ const SetupBody = ({
         }}>
             {body}
         </Box>
-    </>)
-
 }
 export default SetupBody

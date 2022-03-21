@@ -1,10 +1,9 @@
-import {createContext, useCallback, useContext, useEffect, useState} from 'react';
+import {createContext, useCallback, useContext, useEffect, useMemo, useState} from 'react';
 import {customThemeType, designDataType, fetcherParams, JWT} from "../types";
 import {Box, createTheme, ThemeProvider} from "@mui/material";
 
 import dayjs from "dayjs";
 import Setup from "../pages/setup";
-import * as React from "react";
 
 dayjs.extend(require('dayjs/plugin/utc'))
 dayjs.extend(require('dayjs/plugin/timezone'))
@@ -43,6 +42,7 @@ export function CustomThemeProvider({children}: any) {
     }
 
     const [designData, setDesignData] = useState<designDataType>(getDesignData());
+    const [rawJwt, setRawJwt]  = useState(localStorage.getItem("jwt"));
 
     const apiEndpoint = useDevApi ? "http://localhost:8080/" : "https://api.untismerger.tk/";
 
@@ -87,17 +87,15 @@ export function CustomThemeProvider({children}: any) {
         )
     }
 
-    const ls = localStorage.getItem("jwt");
-
-    const parsedJwt: any = ls ? JSON.parse(
-        Buffer.from(ls.split('.')[1], "base64").toString("utf-8")
+    const parsedJwt: any = rawJwt ? JSON.parse(
+        Buffer.from(rawJwt.split('.')[1], "base64").toString("utf-8")
     ) : {};
 
     const fetcher = useCallback(({endpoint,query,useCache, method}: fetcherParams): Promise<any> => {
         return new Promise((resolve, reject) => {
 
             const mQuery = {
-                jwt: ls,
+                jwt: rawJwt,
                 ...query,
             }
 
@@ -128,18 +126,18 @@ export function CustomThemeProvider({children}: any) {
         })
     }, [apiEndpoint])
 
-    const jwt: JWT = {
+    const jwt: JWT = useMemo(() => ({
         set: (newJwt: string) => {
             localStorage.setItem("jwt", newJwt);
-            //TODO: Force recalculation
+            setRawJwt(newJwt);
         },
         validate: (): Promise<any> => (fetcher({
             endpoint: "validateJwt",
-            query: new URLSearchParams(),
+            query: {},
             method: "GET",
             useCache: false,
         })),
-        raw: ls || "",
+        raw: rawJwt || "",
         get: {
             version: parsedJwt.version,
             iat: parsedJwt.iat,
@@ -150,11 +148,11 @@ export function CustomThemeProvider({children}: any) {
             fachrichtung: parsedJwt.fachrichtung,
             sonstiges: parsedJwt.sonstiges,
         }
-    }
+    }), [rawJwt])
 
     const theme = getTheme();
 
-    if (!ls) {
+    if (!rawJwt) {
         return (
             <ThemeProvider theme={theme}>
                 <CustomThemeContext.Provider value={{apiEndpoint, dayjs,fetcher, jwt, setDesignData, setLessonColorEnum}}>

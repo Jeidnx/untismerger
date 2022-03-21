@@ -200,8 +200,8 @@ export default function Exams() {
                                 <MenuItem value={jwt.get.lk}>{leistungskurse[jwt.get.lk]}</MenuItem>
                                 <MenuItem value={jwt.get.fachrichtung}>{fachrichtungen[jwt.get.fachrichtung]}</MenuItem>
                                 {
-                                    jwt.get.sonstiges.map((elem: string) => (
-                                        <MenuItem value={elem}>{allSonstigeKurse[elem]}</MenuItem>
+                                    jwt.get.sonstiges.map((elem: string, idx) => (
+                                        <MenuItem key={idx} value={elem}>{allSonstigeKurse[elem]}</MenuItem>
                                     ))
                                 }
 
@@ -254,8 +254,9 @@ export default function Exams() {
                     </DialogActions>
                 </Dialog>
                 {
-                     !isLoading ? klausuren.length > 1 ? klausuren.map((klausur: klausurData) => (
+                     !isLoading ? klausuren.length > 1 ? klausuren.map((klausur: klausurData, idx) => (
                         <Box
+                            key={idx}
                             sx={{
                                 minWidth: "50vw",
                                 height: "max-content",

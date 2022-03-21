@@ -18,8 +18,9 @@ export default function FABGroup({children}: {children: childrenProp}){
                 width: "min-content"
             }}
         >
-            {children.map((child) => (
+            {children.map((child, idx) => (
                 <Fab
+                    key={idx}
                     onClick={() => {
                         child.callback();
                     }}
