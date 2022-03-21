@@ -1,8 +1,8 @@
 import Head from "next/head";
 import {Box, Button} from "@mui/material";
 import Router from "next/router";
-import {useEffect} from 'react';
 
+//TODO: write a better index page
 export default function Index(){
 
     return (<>

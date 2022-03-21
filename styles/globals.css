@@ -14,8 +14,7 @@ a {
 
 * {
   box-sizing: border-box;
-  transition: ease 500ms;
 }
-input:hover{
+input{
   margin: 0;
 }

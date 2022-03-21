@@ -4,6 +4,7 @@ import Head from "next/head";
 import {alpha, Box, Checkbox, FormControlLabel, FormGroup, useTheme} from '@mui/material';
 import React from 'react';
 import {useCustomTheme} from "../components/CustomTheme";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 const endPoints = [
     "getTimeTableWeek",
@@ -28,7 +29,7 @@ interface statisticsDataType {
 
 export default function Statistics() {
 
-    const {apiEndpoint} = useCustomTheme()
+    const {fetcher} = useCustomTheme()
     const theme = useTheme()
 
     const axes = React.useMemo(
@@ -46,18 +47,16 @@ export default function Statistics() {
 
     React.useEffect(() => {
         console.log("Fetching data");
-        fetch(apiEndpoint + 'getStats', {
-            method: 'POST',
-            body: new URLSearchParams({
-                jwt: localStorage.getItem("jwt") || ""
-            })
-        }).then(res => res.json())
-            .then((json) => {
-                setData(processData(json));
-                // Set Indices here to force Chart to re-render
-                //setIndices(endPoints)
-            }).catch((e) => {
-            setError(e)
+
+        fetcher({
+            method: "GET",
+            endpoint: "getStats",
+            query: {},
+            useCache: false,
+        }).then((json) => {
+            setData(processData(json));
+        }).catch((err) => {
+            setError(err);
         })
     }, [])
 
@@ -166,7 +165,7 @@ export default function Statistics() {
                 }}
             >
                 {
-                    error ? <h1>Error: {error["message"]}</h1>
+                    error ? <h1>{error}</h1>
                         :
                         data ?
                             <Chart
@@ -178,7 +177,7 @@ export default function Statistics() {
                                 getLabel={getLabel}
                                 tooltip={tooltip}
                                 dark={theme.designData.mode === "dark"}
-                            /> : <h1>Laden...</h1>
+                            /> : <LoadingSpinner hidden={false} />
                 }
             </div>
         </Box>

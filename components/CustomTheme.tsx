@@ -1,6 +1,15 @@
-import {createContext, useContext, useEffect, useState} from 'react';
-import {customThemeType, designDataType} from "../types";
-import {createTheme, ThemeProvider} from "@mui/material";
+import {createContext, useCallback, useContext, useEffect, useMemo, useState} from 'react';
+import {customThemeType, designDataType, fetcherParams, JWT} from "../types";
+import {Box, createTheme, ThemeProvider} from "@mui/material";
+
+import dayjs from "dayjs";
+import Setup from "../pages/setup";
+
+dayjs.extend(require('dayjs/plugin/utc'))
+dayjs.extend(require('dayjs/plugin/timezone'))
+dayjs.locale(require('dayjs/locale/de'))
+// @ts-ignore
+dayjs.tz.setDefault("Europe/Berlin")
 
 const CustomThemeContext = createContext(({} as customThemeType));
 
@@ -33,6 +42,7 @@ export function CustomThemeProvider({children}: any) {
     }
 
     const [designData, setDesignData] = useState<designDataType>(getDesignData());
+    const [rawJwt, setRawJwt]  = useState(localStorage.getItem("jwt"));
 
     const apiEndpoint = useDevApi ? "http://localhost:8080/" : "https://api.untismerger.tk/";
 
@@ -77,9 +87,120 @@ export function CustomThemeProvider({children}: any) {
         )
     }
 
+    const parsedJwt: any = rawJwt ? JSON.parse(
+        Buffer.from(rawJwt.split('.')[1], "base64").toString("utf-8")
+    ) : {};
+
+    const fetcher = useCallback(({endpoint,query,useCache, method}: fetcherParams): Promise<any> => {
+        return new Promise((resolve, reject) => {
+
+            const mQuery = {
+                jwt: rawJwt,
+                ...query,
+            }
+
+            fetch( apiEndpoint + endpoint + ((method === "GET") ? `?${new URLSearchParams(mQuery)}` : ""), {
+                method: method,
+                cache: useCache ? "default" : "no-cache",
+                body: method === "POST" ? JSON.stringify(mQuery) : undefined,
+                headers: method === "POST" ? {
+                    "content-type": "application/json",
+                } : undefined
+            }).then(async (res) => {
+                if(!res.ok){
+                    let json;
+                    try{
+                        json = await res.json()
+                    }catch(e){
+                        throw new Error(res.statusText);
+                    }
+                    throw new Error(json.message || res.statusText);
+                }
+                return res.json()
+            }).then((json) => {
+                if(json.error) throw new Error(json.message);
+                resolve(json);
+            }).catch((err) => {
+                reject("Fehler: " + (err.message || err));
+            })
+        })
+    }, [apiEndpoint])
+
+    const jwt: JWT = useMemo(() => ({
+        set: (newJwt: string) => {
+            localStorage.setItem("jwt", newJwt);
+            setRawJwt(newJwt);
+        },
+        validate: (): Promise<any> => (fetcher({
+            endpoint: "validateJwt",
+            query: {},
+            method: "GET",
+            useCache: false,
+        })),
+        raw: rawJwt || "",
+        get: {
+            version: parsedJwt.version,
+            iat: parsedJwt.iat,
+            username: parsedJwt.username,
+            type: parsedJwt.type,
+            [parsedJwt.type]: parsedJwt[parsedJwt.type],
+            lk: parsedJwt.lk,
+            fachrichtung: parsedJwt.fachrichtung,
+            sonstiges: parsedJwt.sonstiges,
+        }
+    }), [rawJwt])
+
+    const theme = getTheme();
+
+    if (!rawJwt) {
+        return (
+            <ThemeProvider theme={theme}>
+                <CustomThemeContext.Provider value={{apiEndpoint, dayjs,fetcher, jwt, setDesignData, setLessonColorEnum}}>
+                    <Box
+                        component={"main"}
+                        sx={{
+                            width: "100vw",
+                            height: "100vh",
+                            backgroundColor: theme.palette.background.default,
+                            color: theme.palette.text.primary,
+                            backgroundImage: "url('" + theme.designData.backgroundUrl + "')",
+                            backgroundRepeat: "no-repeat",
+                            backgroundPosition: "center",
+                            backgroundSize: "cover",
+                            overflowY: "auto",
+                            fontFamily: theme.designData.font || "",
+                            fontSize: theme.designData.fontSize + "px"
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                width: "100%",
+                                height: "20vh",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                flexDirection: "row",
+                            }}
+                        >
+                            { /* Next/Image is not supported for static export */}
+                            {/* eslint-disable  @next/next/no-img-element */}
+                            <img alt={"Untismerger Logo"} src={"/icon.png"} height={"100%"}/>
+                            <h2
+                                style={{
+                                    fontFamily: "mono",
+                                }}
+                            >Untismerger</h2>
+                        </Box>
+                    <Setup />
+                    </Box>
+                </CustomThemeContext.Provider>
+            </ThemeProvider>
+        )
+    }
+
     return (
-        <ThemeProvider theme={getTheme()}>
-            <CustomThemeContext.Provider value={{apiEndpoint, setDesignData, setLessonColorEnum}}>
+        <ThemeProvider theme={theme}>
+            <CustomThemeContext.Provider value={{apiEndpoint, dayjs,fetcher, jwt, setDesignData, setLessonColorEnum}}>
                 {children}
             </CustomThemeContext.Provider>
         </ThemeProvider>

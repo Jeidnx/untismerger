@@ -11,7 +11,6 @@ import {
 } from "@mui/material";
 import Head from "next/head";
 import {useEffect, useState} from 'react';
-import Router from "next/router";
 import DeleteIcon from '@mui/icons-material/Delete';
 import {useCustomTheme} from "../components/CustomTheme";
 import {designDataType} from "../types";
@@ -49,34 +48,8 @@ const Settings = () => {
     const [discordAuthCode, setDiscordAuthCode] = useState<string>("noch nicht angefordert.");
     const [theme, setTheme] = useState(renderTheme(initialTheme.designData));
 
-    const {setDesignData, apiEndpoint} = useCustomTheme();
+    const {setDesignData, apiEndpoint, jwt, fetcher} = useCustomTheme();
     const setSnackbar = useSnackbarContext();
-
-    const fetcher = (url: string, body : any = {}): Promise<any> => {
-        return fetch(apiEndpoint + url, {
-            method: "post",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                jwt: localStorage.getItem("jwt"),
-                ...body
-            })
-        }).then(async (response) => {
-                const json = await response.json()
-                if (!response.ok) {
-                    if (json.error) {
-                        if(json.message === "Missing Arguments"){
-                            throw new Error("Dafür musst du angemeldet sein.")
-                        }
-                        throw new Error(json.message);
-                    }
-                    throw new Error("Server konnte nicht erreicht werden.");
-                }
-                return json
-            }
-        )
-    }
 
     useEffect(() => {
         clearTimeout(debounceSet);
@@ -84,21 +57,6 @@ const Settings = () => {
             setDesignData(theme.designData);
         }, 200)
     }, [theme])
-
-    useEffect(() => {
-        // Compatability
-        if (localStorage.getItem("colorEnum")) {
-            console.log("converting colorEnum to designData")
-            setTheme(renderTheme({
-                ...theme.designData,
-                lesson: {
-                    ...theme.designData.lesson,
-                    colorEnum: JSON.parse(localStorage.getItem("colorEnum") || "{}"),
-                }
-            }))
-            localStorage.removeItem("colorEnum")
-        }
-    }, [])
 
     const handleColorInputDelete = (name: string) => {
         const {[name]: deletedKey, ...newCe} = theme.designData.lesson.colorEnum;
@@ -112,6 +70,7 @@ const Settings = () => {
     }
 
     const getDiscordAuthCode = () => {
+        //TODO: use new fetcher
         fetch(apiEndpoint + "getDiscordToken", {
             method: 'POST',
             body: new URLSearchParams({
@@ -136,19 +95,6 @@ const Settings = () => {
             });
         })
     }
-
-    const getAccountName = (): (string | undefined) => {
-        const jwt = localStorage.getItem("jwt");
-        if (!jwt) {
-            return undefined;
-        }
-        return JSON.parse(
-            Buffer.from(jwt.split('.')[1], "base64").toString("utf-8")
-        ).username
-
-    }
-
-    const accountName = getAccountName();
 
     let swChannel = new MessageChannel();
 
@@ -245,20 +191,16 @@ const Settings = () => {
                             Aktualisieren
                         </Button>
                     </ButtonGroup>
-
-                    {accountName ? (
-                            <>
                         <span
                             style={{
                                 marginBottom: "15px",
                             }}
-                        >Accountname: {accountName}</span>
+                        >Accountname: {jwt.get.username}</span>
                                 <Button
                                     variant={"contained"}
                                     color={"secondary"}
                                     onClick={() => {
-                                        localStorage.removeItem("jwt");
-                                        Router.push("/setup");
+                                        jwt.set("");
                                     }}
                                 >
                                     Abmelden
@@ -289,16 +231,6 @@ const Settings = () => {
                                         Code Erhalten
                                     </Button>
                                 </ButtonGroup>
-                            </>
-                        )
-
-                        : <Button
-                            color={"secondary"}
-                            variant={"contained"}
-                            onClick={() => {
-                                Router.push("/setup")
-                            }}
-                        >Anmelden</Button>}
 
 
                 </Box>
@@ -327,7 +259,12 @@ const Settings = () => {
                         >
                             <Button
                                 onClick={() => {
-                                    fetcher("getPreferences", ).then((json) => {
+                                    fetcher({
+                                        endpoint: "getPreferences",
+                                        useCache: false,
+                                        method: "POST",
+                                        query: {},
+                                    }).then((json) => {
                                         setDesignData({
                                             ...theme.designData,
                                             ...JSON.parse(json.data)
@@ -337,9 +274,9 @@ const Settings = () => {
                                             type: "success",
                                             open: true,
                                         })
-                                    }).catch((e) => {
+                                    }).catch((err) => {
                                         setSnackbar({
-                                            text: "Fehler: " + e.message,
+                                            text: err,
                                             type: "error",
                                             open: true,
                                         });
@@ -348,13 +285,12 @@ const Settings = () => {
                             >Vom server laden</Button>
                             <Button
                                 onClick={() => {
-                                    fetcher(
-                                        "setPreferences", {
-                                        prefs: JSON.stringify({
-                                            ...theme.designData,
-                                            iat: new Date().getTime()
+                                    fetcher({
+                                            endpoint: "setPreferences",
+                                            method: "POST",
+                                            query: {prefs: JSON.stringify({...theme.designData, iat: new Date().getTime()})},
+                                            useCache: false,
                                         })
-                                    })
                                         .then(() => {
                                             setSnackbar({
                                                 text: "Erfolgreich hochgeladen",
@@ -362,9 +298,9 @@ const Settings = () => {
                                                 open: true,
                                             })
                                         })
-                                        .catch((e) => {
+                                        .catch((err) => {
                                             setSnackbar({
-                                                text: "Fehler: " + e.message,
+                                                text: err,
                                                 type: "error",
                                                 open: true,
                                             });

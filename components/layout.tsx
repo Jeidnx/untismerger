@@ -20,16 +20,22 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CreateIcon from '@mui/icons-material/Create';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 
-import {stringToNumberEnum} from "../types";
+import { stringToNumberEnum} from "../types";
 
 const urlToValue: stringToNumberEnum = {
     "/timetable": 0,
     "/homework": 1,
-    "/tests": 2,
+    "/exams": 2,
     "/settings": 3,
 }
 
-const SnackbarContext = createContext((null as any));
+interface SnackbarContextType {
+    open: boolean,
+    type: AlertColor,
+    text: string
+}
+
+const SnackbarContext = createContext((null as unknown as ({open, type, text }: SnackbarContextType) => void));
 
 export default function Layout({children}: { children: any }) {
 
@@ -91,7 +97,7 @@ export default function Layout({children}: { children: any }) {
                         Router.push("/homework")
                     }} label="Hausaufgaben" icon={<AssignmentIcon/>}/>
                     <BottomNavigationAction onClick={() => {
-                        Router.push("/tests")
+                        Router.push("/exams")
                     }} label="Klausuren" icon={<CreateIcon/>}/>
                     <BottomNavigationAction onClick={() => {
                         Router.push("/settings");
@@ -157,7 +163,7 @@ export default function Layout({children}: { children: any }) {
 
                         <DrawerButton
                             text={"Klausuren"}
-                            path={"/tests"}
+                            path={"/exams"}
                             Icon={<CreateIcon/>}
                         />
 
@@ -199,13 +205,12 @@ export default function Layout({children}: { children: any }) {
                     severity={snackbarOptions.type}
                     sx={{
                         width: {mobile: "100%", desktop: "max-content"},
-                        marginRight: {desktop: `${drawerWidth}px`},
-                        marginBottom: {mobile: `${bottomNavigationHeight}px`},
+                        marginRight: {desktop: `auto`},
                     }}>
                     {snackbarOptions.text}
                 </Alert>
             </Snackbar>
-            <SnackbarContext.Provider value={setSnackbarOptions}>
+            <SnackbarContext.Provider value={(setSnackbarOptions)}>
                 <Box
                     component={"main"}
                     sx={{

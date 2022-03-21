@@ -5,7 +5,7 @@
   "orientation": "natural",
   "display": "standalone",
   "description": "Merged verschiedene Stundenpläne zusammen",
-  "start_url": "/",
+  "start_url": "/timetable",
   "scope": "/",
   "background_color": "#121212",
   "theme_color": "#1d1d1d",

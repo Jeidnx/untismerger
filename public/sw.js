@@ -1,4 +1,4 @@
-const cacheVersion = '3.00';
+const cacheVersion = '3.1.3';
 const cacheName = 'untismerger_v' + cacheVersion;
 
 
@@ -29,31 +29,23 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    if (event.request.method === 'POST' || event.request.url.includes("api")) {
-        return fetch(event.request);
-    }
+    //TODO: Im pretty sure this isn't working properly
     event.respondWith(
-        // Try the cache
-        caches
-            .match(event.request)
-            .then((response) => {
-                if (response) return response;
-                //Fallback to network and cache request
-                return fetch(event.request).then(networkResponse => {
-                    if(networkResponse){
-                        return caches.open(cacheName).then(cache => {
-                            cache.put(event.request, networkResponse.clone());
-                            return networkResponse;
+        fetch(event.request).then(networkResponse => {
+            if (!networkResponse) {
+                return caches.match('/_offline.html').then((offlinePage) => {
+                    if(!offlinePage){
+                        return new Response("Kann Offline Seite nicht finden.", {
+                            status: 418,
                         })
                     }
-
+                    return offlinePage
                 })
-            }).catch(() => {
-            return caches.match('/_offline.html');
-
+            }
+            return networkResponse
         })
-    );
-});
+    )
+})
 
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'INIT_PORT') {
