@@ -3,12 +3,12 @@ interface stringToStringEnum {
 }
 
 export const leistungskurse: stringToStringEnum = {
-    "2267": "Deutsch (smt)",
-    "2272": "Englisch (jae)",
-    "2277": "Englisch (sob)",
-    "2282": "Mathe (spi)",
-    "2287": "Physik (jus)",
-    "2292": "Deutsch (end)",
+    "2267": "BG12a",
+    "2272": "BG12b",
+    "2277": "BG12c",
+    "2282": "BG12d",
+    "2287": "BG12e",
+    "2292": "BG12d",
 }
 
 export const fachrichtungen: stringToStringEnum =  {
@@ -34,9 +34,8 @@ export const ethikKurse: stringToStringEnum = {
     ek2: "Ethik 2",
     ek3: "Ethik 3",
     ek4: "Ethik 4",
-    //TODO: find names
-    rv1: "rv 1",
-    rv2: "rv 2",
+    rv1: "Evangelisch 1",
+    rv2: "Evangelisch 2",
 }
 
 export const sportKurse: stringToStringEnum = {

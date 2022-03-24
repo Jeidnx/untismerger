@@ -29,33 +29,27 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    //TODO: Im pretty sure this isn't working properly
-    event.respondWith(
-        fetch(event.request).then(networkResponse => {
-            if (!networkResponse) {
-                return caches.match('/_offline.html').then((offlinePage) => {
-                    if(!offlinePage){
-                        return new Response("Kann Offline Seite nicht finden.", {
-                            status: 418,
-                        })
-                    }
-                    return offlinePage
-                })
-            }
-            return networkResponse
-        })
-    )
+    const request = event.request;
+
+    if(request.method === "GET"){
+        event.respondWith(fetch(request).catch((e) => {
+            console.error("Konnte Seite nicht Laden " + e);
+            return caches.open(cacheName).then((cache) => {
+                return cache.match("_offline.html");
+            })
+        }))
+    }
 })
 
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'INIT_PORT') {
-        let getVersionPort = event.ports[0];
-        getVersionPort.onmessage = (event) => {
+        let messagePort = event.ports[0];
+        messagePort.onmessage = (event) => {
             switch (event.data.type) {
                 case 'GET':
                     switch (event.data.body) {
                         case 'VERSION':
-                            getVersionPort.postMessage({
+                            messagePort.postMessage({
                                 type: 'VERSION',
                                 body: cacheVersion
                             });
@@ -69,7 +63,11 @@ self.addEventListener('message', (event) => {
                                 cachesToDelete.forEach((cache) => {
                                     caches.delete(cache)
                                 })
-                            });
+                            }).then(() => {
+                                caches.open(cacheName).then((cache) => {
+                                    return cache.add("/_offline.html");
+                                })
+                            })
                     }
             }
         };

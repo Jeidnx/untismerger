@@ -10,7 +10,7 @@ const document = () => {
                 <meta name="theme-color" content="#3266cc" />
             </Head>
             <body>
-            <noscript>Javascript ist deaktiviert</noscript>
+            <noscript>Diese Seite benötigt Javascript</noscript>
             <Main />
             <NextScript />
             </body>

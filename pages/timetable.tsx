@@ -8,7 +8,7 @@ import { Box } from '@mui/material'
 import {displayedLesson, LessonData, lsTimetable, Timetable, TimetableData, UntisLessonData} from "../types";
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {useCustomTheme} from "../components/CustomTheme";
-import {useSnackbarContext} from "../components/layout";
+import {useSnackbarContext} from "../components/Layout";
 import {useInfiniteQuery} from "react-query";
 import FABGroup from "../components/FABGroup";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -136,6 +136,12 @@ const Index: NextPage = () => {
                             request,
                             new Response(JSON.stringify(fullTimeTable)),
                         )
+                    }).catch((e) => {
+                        setSnackbar({
+                            text: e.message,
+                            type: "error",
+                            open: true,
+                        })
                     })
 
                     return {

@@ -1,9 +1,12 @@
 import Head from "next/head";
 import {Box, Button} from "@mui/material";
 import Router from "next/router";
+import {useCustomTheme} from "../components/CustomTheme";
 
 //TODO: write a better index page
 export default function Index(){
+
+    const {jwt} = useCustomTheme();
 
     return (<>
         <Head>
@@ -15,16 +18,17 @@ export default function Index(){
                 width: "100%",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "space-around",
+                justifyContent: "start",
+                flexDirection: "column",
 
             }}
         >
-            <h1>Untismerger</h1>
+            <h1>Willkomen {jwt.get.username}</h1>
             <Button
-                size={"large"}
-                variant={"outlined"} onClick={() => {
-                Router.push("/setup");
-            }} >Login</Button>
+                variant={"outlined"}
+                onClick={() => {
+                Router.push("/timetable");
+            }}>Zum Stundenplan</Button>
         </Box>
     </>)
 }

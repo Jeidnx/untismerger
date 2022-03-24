@@ -1,6 +1,6 @@
 import '../styles/globals.css'
 import type {AppProps} from 'next/app'
-import Layout from '../components/layout'
+import Layout from '../components/Layout'
 import {CustomThemeProvider} from '../components/CustomTheme';
 import {useEffect} from 'react';
 import {designDataType} from "../types";
@@ -14,7 +14,7 @@ function MyApp({Component, pageProps}: AppProps) {
     }
 
     useEffect(() => {
-        if (process.env.NODE_ENV === "development" || window.location.hostname.includes("dev.untismerger.tk")) {
+        if (process.env.NODE_ENV === "development") {
             return;
         }
         if ('serviceWorker' in navigator) {

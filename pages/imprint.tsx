@@ -1,4 +1,5 @@
 import {Box} from "@mui/material";
+import Head from "next/head";
 
 export default function Imprint() {
     return (
@@ -7,6 +8,9 @@ export default function Imprint() {
             width: "100%",
             padding: "20px",
         }}>
+            <Head>
+                <title>Impressum</title>
+            </Head>
             <h3>Impressum</h3>
             <p>
                 Angaben gem. § 5 TMG:<br/>
@@ -21,7 +25,7 @@ export default function Imprint() {
                 <br/>
                 Telefon: +49 151 52333399<br/>
                 <br/>
-                E-Mail: oliver@tegeler.de<br/>
+                E-Mail: info@hems2.de<br/>
             </p>
             <p>
                 Haftungsausschluss – Disclaimer:<br/>

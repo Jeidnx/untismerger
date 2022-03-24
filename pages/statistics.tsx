@@ -46,8 +46,6 @@ export default function Statistics() {
 
 
     React.useEffect(() => {
-        console.log("Fetching data");
-
         fetcher({
             method: "GET",
             endpoint: "getStats",
@@ -107,7 +105,6 @@ export default function Statistics() {
         }),
         []
     );
-    //TODO: Error Handling or something
 
     return (<>
         <Head>
