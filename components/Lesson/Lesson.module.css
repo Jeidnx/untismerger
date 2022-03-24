@@ -1,0 +1,28 @@
+.subject {
+    font-size: 0.7em;
+    font-weight: bold;
+    border-bottom-style: dashed;
+    border-width: 2px;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.infos {
+    font-size: 0.5em;
+}
+
+.lesson {
+    border-width: 0.2em;
+    flex: 1;
+    padding: 5px;
+}
+
+.lessonBox {
+    flex: 1;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    padding: 1px;
+    display: flex;
+    transition: ease-in 800ms;
+    justify-content: center;
+}

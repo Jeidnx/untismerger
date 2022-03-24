@@ -14,7 +14,7 @@ import {useEffect, useState} from 'react';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {useCustomTheme} from "../components/CustomTheme";
 import {designDataType} from "../types";
-import {useSnackbarContext} from "../components/layout";
+import {useSnackbarContext} from "../components/Layout";
 
 import packageJson from '../package.json';
 

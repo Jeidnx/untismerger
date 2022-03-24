@@ -87,6 +87,7 @@ const Index: NextPage = () => {
 
     const fetchTimeTable = ({pageParam = 0}): Promise<TimetableData & { pageParam: number }> => {
 
+        //TODO: rewrite everything :)
         const week = getWeekFromDay(dayjs().add(pageParam, "week").toDate())
 
         const fetchQuery = new URLSearchParams({
@@ -98,6 +99,8 @@ const Index: NextPage = () => {
         const request = new Request(apiEndpoint + "timetableWeek?" + fetchQuery);
 
         return caches.open(cacheName).then((cache) => {
+            //TODO: just disable caching for now..
+            throw new Error();
             return cache.match(request).then((response) => {
                 if (!response) throw new Error()
                 return response;

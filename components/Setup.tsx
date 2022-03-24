@@ -1,7 +1,7 @@
 import type {NextPage} from 'next';
 import {alpha, Box, Button, Step, StepContent, StepLabel, Stepper, useMediaQuery, useTheme} from '@mui/material';
 import {useState} from 'react';
-import SetupBody from '../components/SetupBody'
+import SetupBody from './SetupBody'
 import Head from "next/head";
 import Router from "next/router";
 import {setupData} from "../types";
@@ -26,7 +26,9 @@ const Setup: NextPage = () => {
             return;
         }
         setActiveStep((prevActiveStep) => prevActiveStep + 1);
-        setSetupData({...setupData, disableButton: true})
+        setSetupData(prevState => (
+            {...prevState, disableButton: true}
+        ))
     }
     const saveData = (dataIn: Object) => {
         setSetupData({...setupData, ...dataIn});

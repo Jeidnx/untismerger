@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
-import Lesson from './Lesson'
+import Lesson from '../Lesson'
 import {alpha, Box, useTheme} from "@mui/material";
-import {displayedLesson, TimetableData} from "../types";
+import {displayedLesson, TimetableData} from "../../types";
 
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import de from 'dayjs/locale/de'

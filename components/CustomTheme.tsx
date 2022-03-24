@@ -3,7 +3,7 @@ import {customThemeType, designDataType, fetcherParams, JWT} from "../types";
 import {Box, createTheme, ThemeProvider} from "@mui/material";
 
 import dayjs from "dayjs";
-import Setup from "../pages/setup";
+import Setup from "./Setup";
 
 dayjs.extend(require('dayjs/plugin/utc'))
 dayjs.extend(require('dayjs/plugin/timezone'))
@@ -27,7 +27,7 @@ export function CustomThemeProvider({children}: any) {
         return {
             iat: new Date().getTime(),
             version: 0,
-            mode: window.matchMedia('(prefers-color-scheme: dark)').matches===true?"dark":"light",
+            mode: window.matchMedia('(prefers-color-scheme: dark)').matches ? "dark" : "light",
             primary: "#3266cc",
             secondary: "#e91e63",
             backgroundUrl: "",
@@ -55,11 +55,11 @@ export function CustomThemeProvider({children}: any) {
         }, 2000)
     }, [designData])
 
-    const setLessonColorEnum = (newEnum: { [key: string]: string }) => {
+    const setLessonColorEnum = (key: string, value: string) => {
         setDesignData({
             ...designData,
             lesson: {
-                colorEnum: newEnum,
+                colorEnum: {...designData.lesson.colorEnum, [key]: value},
                 edges: designData.lesson.edges,
             }
         })
@@ -124,7 +124,7 @@ export function CustomThemeProvider({children}: any) {
                 reject("Fehler: " + (err.message || err));
             })
         })
-    }, [apiEndpoint])
+    }, [apiEndpoint, rawJwt])
 
     const jwt: JWT = useMemo(() => ({
         set: (newJwt: string) => {

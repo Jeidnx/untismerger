@@ -4,12 +4,9 @@ import {
     Button,
     CircularProgress,
     FormControl,
-    FormControlLabel,
     FormLabel,
     InputLabel,
     MenuItem,
-    Radio,
-    RadioGroup,
     Select,
     Stack,
     TextField
@@ -18,14 +15,18 @@ import {
 import {FormEvent, useState} from 'react';
 import {useCustomTheme} from "./CustomTheme";
 import {setupData} from "../types";
-import {useSnackbarContext} from "./layout";
 import {ethikKurse, fachrichtungen, leistungskurse, naturwissenschaften, sonstigesKurse, sportKurse} from "../enums";
 
 
 const formStyle = {
-    height: "30vh",
+    height: "max-content",
     display: "flex",
     justifyContent: "space-around",
+}
+
+const stackProps = {
+    spacing: 3,
+    sx: {width: "50vw"}
 }
 
 const SetupBody = ({
@@ -37,21 +38,15 @@ const SetupBody = ({
 
     let body = <h1>Das sollte nicht Passieren.</h1>
 
-    const handleLoginMethodChange = (event: { target: { value: string; }; }) => {
-        const loginMethod = event.target.value;
-        saveData({loginMethod: loginMethod, disableButton: false});
-    }
-
     const handleTextinputChange = (event: { target: { id: any; value: any; }; }) => {
         saveData({[event.target.id]: event.target.value})
     }
 
     const [isLoading, setIsLoading] = useState(false);
     const [buttonColor, setButtonColor] = useState<"primary" | "success" | "error">("primary");
-    const [autoValue, setAutoValue] = useState<{label: string, value: string}[]>([]);
+    const [autoValue, setAutoValue] = useState<{ label: string, value: string }[]>([]);
 
     const {apiEndpoint, fetcher, jwt} = useCustomTheme()
-    const setSnackbar = useSnackbarContext();
 
     const checkLoginCredentials = (e: FormEvent) => {
         e.preventDefault()
@@ -67,7 +62,7 @@ const SetupBody = ({
             },
             useCache: false,
         }).then((json) => {
-            if(json.jwt){
+            if (json.jwt) {
                 setTimeout(() => {
                     jwt.set(json.jwt);
                     nextStep(3);
@@ -103,23 +98,31 @@ const SetupBody = ({
     switch (step) {
         case 0:
             body = (<>
-                <FormControl sx={formStyle}>
-                    <RadioGroup
-                        aria-labelledby={"selectLoginMethod"}
-                        name={"loginMethodGroup"}
-                        onChange={handleLoginMethodChange}
-                        value={data?.loginMethod ?? ""}
-                    >
-                        <FormControlLabel value={"password"} control={<Radio/>} label={"Nutzername und Passwort"}/>
-                        <FormControlLabel value={"secret"} control={<Radio/>} label={"Nutzername und Geheimnis"}/>
-                    </RadioGroup>
-                </FormControl>
+                    <FormControl sx={formStyle}>
+                        <Stack {...stackProps}>
+                        <Button
+                            variant={"contained"}
+                            onClick={() => {
+                                saveData({loginMethod: "password", disableButton: false});
+                                nextStep();
+                            }}
+                        >Mit Nutzername und Passwort anmelden</Button>
+                        <Button
+                            variant={"contained"}
+                            onClick={() => {
+                                saveData({loginMethod: "secret", disableButton: false});
+                                nextStep();
+                            }}
+                        >Mit Nutzername und Geheimnis anmelden</Button>
+                        </Stack>
+                        </FormControl>
                 </>
             );
             break;
         case 1: {
             body = (<form onSubmit={checkLoginCredentials}>
                 <FormControl sx={formStyle}>
+                    <Stack {...stackProps}>
                     <FormLabel
                         id={"secretLogin"}>Mit {data.loginMethod === 'password' ? "Passwort" : "Geheimnis"} Anmelden:</FormLabel>
                     <TextField
@@ -146,7 +149,7 @@ const SetupBody = ({
                             zIndex: 1,
                         }} variant={"indeterminate"}/>
                     </Button>
-
+                    </Stack>
                 </FormControl>
             </form>)
             break;
@@ -181,15 +184,11 @@ const SetupBody = ({
                         }
                         jwt.set(json.jwt);
                     }).catch((e) => {
-                        setSnackbar({
-                            text: e.message,
-                            type: "error",
-                            open: true
-                        })
+                        console.error(e);
                     });
 
                 }}>
-                    <Stack spacing={3} sx={{width: "50vw"}}>
+                    <Stack {...stackProps}>
                         <FormControl
                             required={true}
                         >
@@ -308,26 +307,26 @@ const SetupBody = ({
                             </Select>
                         </FormControl>
                         <FormControl>
-                        <Autocomplete
-                            multiple
-                            disablePortal
-                            disableCloseOnSelect
-                            value={autoValue}
-                            onChange={(e, newV: {label:string, value: string}[]) => {
-                                setAutoValue(newV);
-                                saveData({sonstiges: newV.map((el) => el.value)})
-                            }}
-                            isOptionEqualToValue={(a: {label:string, value: string}, b:{label:string, value: string}) => {
-                                return a.value === b.value
-                            }}
-                            renderInput={(params) => <TextField {...params} label="Sonstiges" />}
-                            options={
+                            <Autocomplete
+                                multiple
+                                disablePortal
+                                disableCloseOnSelect
+                                value={autoValue}
+                                onChange={(e, newV: { label: string, value: string }[]) => {
+                                    setAutoValue(newV);
+                                    saveData({sonstiges: newV.map((el) => el.value)})
+                                }}
+                                isOptionEqualToValue={(a: { label: string, value: string }, b: { label: string, value: string }) => {
+                                    return a.value === b.value
+                                }}
+                                renderInput={(params) => <TextField {...params} label="Sonstiges"/>}
+                                options={
                                     Object.keys(sonstigesKurse).map((key) => ({
                                         label: sonstigesKurse[key], value: key,
                                     }))
-                        }
+                                }
 
-                        />
+                            />
                         </FormControl>
                         <Button
                             type={"submit"}
@@ -344,17 +343,17 @@ const SetupBody = ({
             break;
     }
     return <Box sx={{
-            height: "max-content",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            width: "100%",
-            alignItems: "center",
-            overflowY: "auto",
-            overflowX: "show",
-            padding: "20px",
-        }}>
-            {body}
-        </Box>
+        height: "max-content",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        width: "100%",
+        alignItems: "center",
+        overflowY: "auto",
+        overflowX: "show",
+        padding: "20px",
+    }}>
+        {body}
+    </Box>
 }
 export default SetupBody

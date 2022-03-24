@@ -17,7 +17,7 @@ import {
 import Head from "next/head";
 import {useEffect, useState} from "react";
 import {useCustomTheme} from "../components/CustomTheme";
-import {useSnackbarContext} from "../components/layout";
+import {useSnackbarContext} from "../components/Layout";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import FABGroup from "../components/FABGroup";
 import {Add} from "@mui/icons-material";

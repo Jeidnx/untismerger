@@ -1,4 +1,4 @@
 # TODO:
 
 - Homework
-- Optimize CSS
+- Add Page to change courses after login
