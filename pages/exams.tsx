@@ -1,17 +1,8 @@
 import {
-    Alert,
-    AlertTitle,
     alpha,
     Box,
-    Button, CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogContentText,
-    DialogTitle,
-    MenuItem,
+    MenuItem, Stack,
     TextField,
-    useMediaQuery,
     useTheme
 } from "@mui/material";
 import Head from "next/head";
@@ -27,6 +18,7 @@ import {
     leistungskurse,
 } from "../enums";
 import LoadingSpinner from "../components/LoadingSpinner";
+import AddDialog from "../components/AddDialog";
 
 interface klausurData {
     room: string,
@@ -95,164 +87,137 @@ export default function Exams() {
                     overflowX: "hidden",
                 }}
             >
-                <Dialog
+                <AddDialog
+                    title={"Neue Klausur hinzufügen"}
+                    isPosting={isPosting}
+                    errorMessage={errorMessage}
                     open={dialogOpen}
-                    onClose={() => {
-                        setDialogOpen(false)
+                    close={() => {
+                        setDialogOpen(false);
                     }}
-                    fullScreen={useMediaQuery(theme.breakpoints.down('desktop'))}
-                > <DialogTitle>Neue Klausur hinzufügen</DialogTitle>
-                    <DialogContent>
-                        <DialogContentText>
-                            Bitte gib hier die Daten zur Klausur ein. Zur nachverfolgung wird eine Referenz zu deinem
-                            Nutzernamen bei uns gespeichert.
-                        </DialogContentText>
-                    <Box
-                        sx={{
-                            display: errorMessage === "" ? "none" : "",
-                        }}
+                    submit={() => {
+                        setErrorMessage("");
+
+                        if(!subject || !room || !kurs){
+                            setErrorMessage("Bitte gib alle benötigten Daten an.")
+                            return;
+                        }
+
+                        setIsPosting(true);
+                        const data = {
+                            subject: subject,
+                            room: room,
+                            startTime: dayjs(startTime).format("YYYY-MM-DD HH:mm:ss"),
+                            endTime: dayjs(startTime)
+                                .set("hour", endTime.substring(0, 2))
+                                .set("minute", endTime.substring(3,5)).format("YYYY-MM-DD HH:mm:ss"),
+                            kurs: kurs,
+                        }
+
+                        fetcher({
+                            method: "POST",
+                            useCache: false,
+                            query: {exam: data},
+                            endpoint: "addExam",
+                        }).then(() => {
+                            fetchExams();
+                            setIsPosting(false);
+                            setDialogOpen(false);
+                            setSnackbar({
+                                text: "Erfolgreich angelegt",
+                                type: "success",
+                                open: true,
+                            })
+                        }).catch((err) => {
+                            setIsPosting(false)
+                            setErrorMessage(err)
+                        })
+
+                    }}
+                >
+                    <Stack
+                        spacing={3}
                     >
-                        <Alert
-                            severity="error">
-                            <AlertTitle>Fehler</AlertTitle>
-                            {errorMessage}
-                        </Alert>
-                    </Box>
-                        <form
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                setIsPosting(true);
-                                setErrorMessage("");
-                                const data = {
-                                    subject: subject,
-                                    room: room,
-                                    startTime: dayjs(startTime).format("YYYY-MM-DD HH:mm:ss"),
-                                    endTime: dayjs(startTime)
-                                        .set("hour", endTime.substring(0, 2))
-                                        .set("minute", endTime.substring(3,5)).format("YYYY-MM-DD HH:mm:ss"),
-                                    kurs: kurs,
-                                }
+                    <TextField
+                        required
+                        name={"subject"}
+                        autoFocus
+                        margin="dense"
+                        value={subject}
+                        onChange={(e) => {
+                            setSubject(e.target.value)
+                        }}
+                        id="subject"
+                        label="Fach"
+                        type="text"
+                        fullWidth
+                        variant="standard"
+                    />
+                    <TextField
+                        required
+                        name={"room"}
+                        margin="dense"
+                        value={room}
+                        onChange={(e) => {
+                            setRoom(e.target.value)
+                        }}
+                        id="room"
+                        label="Raum"
+                        type="text"
+                        fullWidth
+                        variant="standard"
+                    />
+                    <TextField
+                        required
+                        select
+                        name={"kurs"}
+                        id={"kurs"}
+                        margin={"dense"}
+                        value={kurs}
+                        onChange={(e) => {
+                            setKurs(e.target.value)
+                        }}
+                        label={"Kurs"}
+                        fullWidth
+                        variant={"standard"}
+                    >
+                        <MenuItem value={jwt.get.lk}>{leistungskurse[jwt.get.lk]}</MenuItem>
+                        <MenuItem value={jwt.get.fachrichtung}>{fachrichtungen[jwt.get.fachrichtung]}</MenuItem>
+                        {
+                            jwt.get.sonstiges.map((elem: string, idx) => (
+                                <MenuItem key={idx} value={elem}>{allSonstigeKurse[elem]}</MenuItem>
+                            ))
+                        }
 
-                                fetcher({
-                                    method: "POST",
-                                    useCache: false,
-                                    query: {exam: data},
-                                    endpoint: "addExam",
-                                }).then(() => {
-                                    fetchExams();
-                                    setIsPosting(false);
-                                    setDialogOpen(false);
-                                    setSnackbar({
-                                        text: "Erfolgreich angelegt",
-                                        type: "success",
-                                        open: true,
-                                    })
-                                }).catch((err) => {
-                                    setIsPosting(false)
-                                    setErrorMessage(err)
-                                })
-                            }}
-                        >
-                            <TextField
-                                required
-                                name={"subject"}
-                                autoFocus
-                                margin="dense"
-                                value={subject}
-                                onChange={(e) => {
-                                    setSubject(e.target.value)
-                                }}
-                                id="subject"
-                                label="Fach"
-                                type="text"
-                                fullWidth
-                                variant="standard"
-                            />
-                            <TextField
-                                required
-                                name={"room"}
-                                autoFocus
-                                margin="dense"
-                                value={room}
-                                onChange={(e) => {
-                                    setRoom(e.target.value)
-                                }}
-                                id="room"
-                                label="Raum"
-                                type="text"
-                                fullWidth
-                                variant="standard"
-                            />
-                            <TextField
-                                required
-                                select
-                                name={"kurs"}
-                                id={"kurs"}
-                                margin={"dense"}
-                                value={kurs}
-                                onChange={(e) => {
-                                    setKurs(e.target.value)
-                                }}
-                                label={"Kurs"}
-                                fullWidth
-                                variant={"standard"}
-                            >
-                                <MenuItem value={jwt.get.lk}>{leistungskurse[jwt.get.lk]}</MenuItem>
-                                <MenuItem value={jwt.get.fachrichtung}>{fachrichtungen[jwt.get.fachrichtung]}</MenuItem>
-                                {
-                                    jwt.get.sonstiges.map((elem: string, idx) => (
-                                        <MenuItem key={idx} value={elem}>{allSonstigeKurse[elem]}</MenuItem>
-                                    ))
-                                }
+                    </TextField>
+                    <TextField
+                        required
+                        margin="dense"
+                        value={startTime}
+                        onChange={(e) => {
+                            setStartTime(e.target.value)
+                        }}
+                        id="room"
+                        label="Start zeit"
+                        type="datetime-local"
+                        fullWidth
+                        variant="standard"
+                    />
+                    <TextField
+                        margin="dense"
+                        value={endTime}
+                        onChange={(e) => {
+                            setEndTime(e.target.value)
+                        }}
+                        id="room"
+                        label="End zeit"
+                        type="time"
+                        fullWidth
+                        variant="standard"
+                    />
+                    </Stack>
+                </AddDialog>
 
-                            </TextField>
-                            <TextField
-                                required
-                                margin="dense"
-                                value={startTime}
-                                onChange={(e) => {
-                                    setStartTime(e.target.value)
-                                }}
-                                id="room"
-                                label="Start zeit"
-                                type="datetime-local"
-                                fullWidth
-                                variant="standard"
-                            />
-                            <TextField
-                                margin="dense"
-                                value={endTime}
-                                onChange={(e) => {
-                                    setEndTime(e.target.value)
-                                }}
-                                id="room"
-                                label="End zeit"
-                                type="time"
-                                fullWidth
-                                variant="standard"
-                            />
-                                <Button
-                                    variant="contained"
-                                    disabled={isPosting}
-                                    type={"submit"}
-                                    fullWidth
-                                >
-                                    Senden <CircularProgress sx={{
-                                    display: isPosting ? "" : "none",
-                                    position: 'absolute',
-                                    zIndex: 1,
-                                }} variant={"indeterminate"}/>
-                                </Button>
-                        </form>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button
-                            disabled={isPosting}
-                            onClick={() => {
-                            setDialogOpen(false)
-                        }}>Abbrechen</Button>
-                    </DialogActions>
-                </Dialog>
                 {
                      !isLoading ? klausuren.length > 0 ? klausuren.map((klausur: klausurData, idx) => (
                         <Box
