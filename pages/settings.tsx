@@ -14,7 +14,7 @@ import {useEffect, useState} from 'react';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {useCustomTheme} from "../components/CustomTheme";
 import {designDataType} from "../types";
-import {useSnackbarContext} from "../components/Layout";
+import {useLayoutContext} from "../components/Layout";
 
 import packageJson from '../package.json';
 
@@ -49,7 +49,7 @@ const Settings = () => {
     const [theme, setTheme] = useState(renderTheme(initialTheme.designData));
 
     const {setDesignData, apiEndpoint, jwt, fetcher} = useCustomTheme();
-    const setSnackbar = useSnackbarContext();
+    const {setSnackbar} = useLayoutContext();
 
     useEffect(() => {
         clearTimeout(debounceSet);

@@ -1,16 +1,13 @@
-import type {NextPage} from 'next';
 import Head from 'next/head';
 import TimetableComponent from '../components/TimetableComponent'
 import dayjs from 'dayjs';
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
 import { Box } from '@mui/material'
 
-import {displayedLesson, LessonData, lsTimetable, Timetable, TimetableData, UntisLessonData} from "../types";
+import {displayedLesson, LessonData, lsTimetable, TimetableData, UntisLessonData, WeekData} from "../types";
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {useCustomTheme} from "../components/CustomTheme";
-import {useSnackbarContext} from "../components/Layout";
-import {useInfiniteQuery} from "react-query";
-import FABGroup from "../components/FABGroup";
+import {useLayoutContext} from "../components/Layout";
 import LoadingSpinner from "../components/LoadingSpinner";
 
 let weekday = require('dayjs/plugin/weekday')
@@ -79,38 +76,38 @@ function getWeekFromDay(date: Date) {
     return week;
 }
 
-const Index: NextPage = () => {
+export default function Timetable() {
 
+    const { apiEndpoint } = useCustomTheme()
+    const {setSnackbar, setFabs} = useLayoutContext();
 
-    const {apiEndpoint} = useCustomTheme()
-    const setSnackbar = useSnackbarContext();
+    const [timetables, setTimetables] = useState<TimetableData[]>([]);
 
-    const fetchTimeTable = ({pageParam = 0}): Promise<TimetableData & { pageParam: number }> => {
+    const fetchNextPage = () => {
+        fetchTimeTableNew({weekOffset: timetables.length})
+    }
 
-        //TODO: rewrite everything :)
-        const week = getWeekFromDay(dayjs().add(pageParam, "week").toDate())
-
-        const fetchQuery = new URLSearchParams({
+    const fetchTimeTableNew = ({useCache = true, weekOffset = 0}: {useCache?: boolean, weekOffset?: number}): Promise<void> => {
+        const week = getWeekFromDay(dayjs().add(weekOffset, "week").toDate())
+        console.log("Fetching: ", dayjs(week[0]).format("DD.MM"))
+        const query = new URLSearchParams({
             startDate: dayjs(week[0]).format("YYYY-MM-DD"),
             endDate: dayjs(week[4]).format("YYYY-MM-DD"),
             jwt: localStorage.getItem("jwt") ?? ""
         })
+        const request = new Request(apiEndpoint + "timetableWeek?" + query);
 
-        const request = new Request(apiEndpoint + "timetableWeek?" + fetchQuery);
-
-        return caches.open(cacheName).then((cache) => {
-            //TODO: just disable caching for now..
-            throw new Error();
-            return cache.match(request).then((response) => {
-                if (!response) throw new Error()
-                return response;
-            })
-        }).then((res) => res.json())
-            .then(async (json: Timetable) => {
-                //TODO: Instead of doing this, we should really be adjusting the calls for start / end Date
-                const timetable: Timetable = ({
+        if(useCache){
+            return caches.open(cacheName).then((cache) => {
+                return cache.match(request).then((response) => {
+                    if (!response) throw new Error();
+                    return response;
+                })
+            }).then((res) => res.json()).then((async (json: WeekData) => {
+                const timetable: WeekData = ({
                     type: "local"
-                } as Timetable);
+                } as WeekData);
+
                 week.forEach((date) => {
                     const day: displayedLesson[] = json[date];
                     timetable[date + ""] = day.map((slot) => {
@@ -123,16 +120,21 @@ const Index: NextPage = () => {
                         })
                     })
                 })
-                //TODO: timestamps for invalidation, separate re-fetch function for readability
-                return {
-                    timetable: timetable,
-                    week: week,
-                    pageParam: pageParam,
-                }
-            }).catch(() => {
+
+                setTimetables((prev) => {
+                    prev[weekOffset] = {
+                        timetable: timetable,
+                        week: week,
+                    }
+                    return [...prev];
+                })
+                return Promise.resolve();
+
+            })).catch(() => {
+                //Fallback to network
                 return fetch(request).then((resp) => resp.json()).then((json) => {
                     const processedData = processData(json.data, week);
-                    const fullTimeTable: Timetable = ({...processedData, type: "fetched"} as Timetable);
+                    const fullTimeTable: WeekData = ({...processedData, type: "fetched"} as WeekData);
 
                     caches.open(cacheName).then((cache) => {
                         cache.put(
@@ -147,38 +149,41 @@ const Index: NextPage = () => {
                         })
                     })
 
-                    return {
-                        timetable: fullTimeTable,
-                        week: week,
-                        pageParam: pageParam
-                    };
+                    setTimetables((prev) => {
+                        prev[weekOffset] = {
+                            timetable: fullTimeTable,
+                            week: week
+                        }
+                        return [...prev];
+                    })
+                    return Promise.resolve();
                 })
             })
+        }
+        return Promise.reject("not implemented");
     }
-    //pageParam is offset from current week. Next week is 1, prev week is -1
-    const query = useInfiniteQuery<TimetableData & { pageParam: number }>('timetableData', fetchTimeTable, {
-        getNextPageParam: (lastPage) => {
-            return lastPage.pageParam + 1
-        },
-        staleTime: 0,
-        cacheTime: 0,
-        notifyOnChangeProps: ["data", "error"],
-    })
 
     const handleFutureScroll = (element: HTMLDivElement) => {
         if ((element.scrollHeight - element.clientHeight - element.scrollTop) < 1) {
-            query.fetchNextPage();
+            fetchNextPage()
         }
     }
 
     useEffect(() => {
-        setTimeout(() => {
-            query.fetchNextPage()
-        }, 500)
+        setFabs([
+            {icon: <RefreshIcon />, color: "primary", callback: refreshTimeTables}
+        ])
+        fetchTimeTableNew({useCache: true, weekOffset: 0}).then(() => {
+            fetchTimeTableNew({weekOffset: 1});
+        })
+        return () => {
+            setFabs([]);
+        }
     }, [])
 
     const refreshTimeTables = () => {
 
+        setTimetables([]);
         caches.open(cacheName).then((cache) => {
             cache.keys().then((entries) => {
                 entries.forEach((entry) => {
@@ -187,16 +192,7 @@ const Index: NextPage = () => {
             })
         })
 
-        query.refetch()
-    }
-
-    if (query.isError) {
-        setSnackbar({
-            // @ts-ignore
-            text: query.error.message,
-            type: "error",
-            open: true,
-        })
+        fetchTimeTableNew({weekOffset: 0});
     }
 
     return (
@@ -226,26 +222,17 @@ const Index: NextPage = () => {
                         scrollSnapType: "y mandatory",
                     }}>
                     {
-                        query.isLoading ?
-
-                            <LoadingSpinner hidden={false}/> :
-                            query?.data?.pages?.map((page, idx) => {
+                        timetables.length > 0 ?
+                            timetables.map((page, idx) => {
                                 return <TimetableComponent
                                     key={idx}
                                     timetableData={page}
                                 />
-                            })
+                            }) : <LoadingSpinner />
                     }
                 </Box>
-                <FABGroup
-                    children={[
-                        {icon: <RefreshIcon />, color: "primary", callback: refreshTimeTables}
-                    ]}
-                />
             </div>
         </>
 
     )
 }
-
-export default Index

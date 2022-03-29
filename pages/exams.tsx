@@ -8,9 +8,8 @@ import {
 import Head from "next/head";
 import {useEffect, useState} from "react";
 import {useCustomTheme} from "../components/CustomTheme";
-import {useSnackbarContext} from "../components/Layout";
+import {useLayoutContext } from "../components/Layout";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import FABGroup from "../components/FABGroup";
 import {Add} from "@mui/icons-material";
 import {
     allSonstigeKurse,
@@ -45,7 +44,7 @@ export default function Exams() {
     const [endTime, setEndTime] = useState(dayjs().format("HH:mm"));
     const [kurs, setKurs] = useState("");
 
-    const setSnackbar = useSnackbarContext();
+    const { setSnackbar, setFabs } = useLayoutContext();
 
     const fetchExams = () => {
         setIsLoading(true);
@@ -67,7 +66,18 @@ export default function Exams() {
     }
 
     useEffect(() => {
+        setFabs([
+            {
+                icon: <Add/>, color: "primary", callback: () => {
+                    setDialogOpen(true)
+                }
+            },
+            {icon: <RefreshIcon/>, color: "primary", callback: fetchExams}
+        ])
         fetchExams();
+        return () => {
+            setFabs([]);
+        }
     }, [])
 
     return (
@@ -219,7 +229,7 @@ export default function Exams() {
                 </AddDialog>
 
                 {
-                     !isLoading ? klausuren.length > 0 ? klausuren.map((klausur: klausurData, idx) => (
+                    !isLoading ? klausuren.length > 0 ? klausuren.map((klausur: klausurData, idx) => (
                         <Box
                             key={idx}
                             sx={{
@@ -240,18 +250,8 @@ export default function Exams() {
                             <span>Raum: {klausur.room}</span>
                             <span>Datum: {dayjs.tz(klausur.startTime).format("DD.MM.YYYY HH:mm")} - {dayjs.tz(klausur.endTime).format("HH:mm")}</span>
                         </Box>
-                    )) : <h1>Keine Klausuren</h1> : <LoadingSpinner hidden={false} />
+                    )) : <h1>Keine Klausuren</h1> : <LoadingSpinner/>
                 }
-                <FABGroup
-                    children={[
-                        {
-                            icon: <Add/>, color: "primary", callback: () => {
-                                setDialogOpen(true)
-                            }
-                        },
-                        {icon: <RefreshIcon/>, color: "primary", callback: fetchExams}
-                    ]}
-                />
             </Box>
         </>
     )

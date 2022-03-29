@@ -174,7 +174,7 @@ export default function Statistics() {
                                 getLabel={getLabel}
                                 tooltip={tooltip}
                                 dark={theme.designData.mode === "dark"}
-                            /> : <LoadingSpinner hidden={false} />
+                            /> : <LoadingSpinner />
                 }
             </div>
         </Box>

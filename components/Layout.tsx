@@ -6,7 +6,7 @@ import {
     Box,
     Button,
     ButtonGroup,
-    Drawer,
+    Drawer, Fab,
     Paper,
     Snackbar,
     useTheme
@@ -29,13 +29,48 @@ const urlToValue: stringToNumberEnum = {
     "/settings": 3,
 }
 
-interface SnackbarContextType {
+interface SnackbarOptions {
     open: boolean,
     type: AlertColor,
     text: string
 }
 
-const SnackbarContext = createContext((null as unknown as ({open, type, text }: SnackbarContextType) => void));
+interface fabProps {
+    icon: any,
+    callback: Function,
+    color: "primary" | "secondary",
+}
+
+interface navigationProps {
+    text: string,
+    path: string,
+    icon: any
+}
+
+const LayoutContext = createContext(({} as {setFabs: (fabs: fabProps[]) => void, setSnackbar: (options: SnackbarOptions) => void}));
+
+const pages: navigationProps[] = [
+    {
+        text: "Stundenplan",
+        path: "/timetable",
+        icon: <AccessTimeIcon />,
+    },
+    {
+        text: "Hausaufgaben",
+        path: "/homework",
+        icon: <AssignmentIcon />,
+    },
+    {
+        text: "Klausuren",
+        path: "/exams",
+        icon: <CreateIcon />,
+    },
+    {
+        text: "Einstellungen",
+        path: "/settings",
+        icon: <SettingsIcon />,
+    }
+]
 
 export default function Layout({children}: { children: any }) {
 
@@ -65,18 +100,9 @@ export default function Layout({children}: { children: any }) {
         text: ""
     });
 
-    const DrawerButton = ({text, path, Icon,}: { text: string, path: string, Icon: any }) => {
-        return <Button
-            onClick={() => {
-                Router.push(path);
-            }}
-            variant={value === urlToValue[path] ? "contained" : "outlined"}
-            startIcon={Icon}
-        >
-            <Box sx={{mx: "auto"}}/>{text}
-        </Button>
-    }
-    return (
+    const [fabs, setFabs] = React.useState<fabProps[]>([]);
+
+        return (
         <>
             <Paper sx={{
                 position: 'fixed',
@@ -90,18 +116,15 @@ export default function Layout({children}: { children: any }) {
                     showLabels
                     value={value}
                 >
-                    <BottomNavigationAction onClick={() => {
-                        Router.push("/timetable")
-                    }} label="Stundenplan" icon={<AccessTimeIcon/>}/>
-                    <BottomNavigationAction onClick={() => {
-                        Router.push("/homework")
-                    }} label="Hausaufgaben" icon={<AssignmentIcon/>}/>
-                    <BottomNavigationAction onClick={() => {
-                        Router.push("/exams")
-                    }} label="Klausuren" icon={<CreateIcon/>}/>
-                    <BottomNavigationAction onClick={() => {
-                        Router.push("/settings");
-                    }} label="Einstellungen" icon={<SettingsIcon/>}/>
+                    {pages.map((page) => (
+                        <BottomNavigationAction
+                            onClick={() => {
+                                Router.push(page.path);
+                            }}
+                            label={page.text}
+                            icon={page.icon}
+                        />
+                    ))}
                 </BottomNavigation>
             </Paper>
             <Drawer
@@ -149,29 +172,17 @@ export default function Layout({children}: { children: any }) {
                         disableElevation
 
                     >
-                        <DrawerButton
-                            text={"Stundenplan"}
-                            path={"/timetable"}
-                            Icon={<AccessTimeIcon/>}
-                        />
-
-                        <DrawerButton
-                            text={"Hausaufgaben"}
-                            path={"/homework"}
-                            Icon={<AssignmentIcon/>}
-                        />
-
-                        <DrawerButton
-                            text={"Klausuren"}
-                            path={"/exams"}
-                            Icon={<CreateIcon/>}
-                        />
-
-                        <DrawerButton
-                            text={"Einstellungen"}
-                            path={"/settings"}
-                            Icon={<SettingsIcon/>}
-                        />
+                        {pages.map((page) => (
+                            <Button
+                                onClick={() => {
+                                    Router.push(page.path);
+                                }}
+                                variant={value === urlToValue[page.path] ? "contained" : "outlined"}
+                                startIcon={page.icon}
+                            >
+                                <Box sx={{mx: "auto"}}/>{page.text}
+                            </Button>
+                        ))}
                     </ButtonGroup>
                     <Box
                         sx={{
@@ -191,6 +202,7 @@ export default function Layout({children}: { children: any }) {
                     </Box>
                 </Box>
             </Drawer>
+
             <Snackbar
                 open={snackbarOptions.open}
                 autoHideDuration={6000}
@@ -210,7 +222,7 @@ export default function Layout({children}: { children: any }) {
                     {snackbarOptions.text}
                 </Alert>
             </Snackbar>
-            <SnackbarContext.Provider value={(setSnackbarOptions)}>
+            <LayoutContext.Provider value={{setFabs: setFabs, setSnackbar: setSnackbarOptions}}>
                 <Box
                     component={"main"}
                     sx={{
@@ -226,9 +238,31 @@ export default function Layout({children}: { children: any }) {
                         fontSize: theme.designData.fontSize + "px"
                     }}
                 >
-                    {children}</Box>
-            </SnackbarContext.Provider>
+                    {children}
+                    <Box
+                        sx={{
+                            position: "absolute",
+                            bottom: {mobile: "70px", desktop: "20px"},
+                            right: {mobile: "20px", desktop: "270px"},
+                            height: "min-content",
+                            width: "min-content"
+                        }}
+                    >
+                        {fabs.map((fab: fabProps, idx: number) => (
+                                <Fab
+                                    key={idx}
+                                    onClick={() => {
+                                        fab.callback();
+                                    }}
+                                    size={"medium"}
+                                    color={fab.color}
+                                >{fab.icon}</Fab>
+                        ))}
+
+                    </Box>
+                </Box>
+            </LayoutContext.Provider>
         </>);
 }
 // Hook
-export const useSnackbarContext = () => useContext(SnackbarContext)
+export const useLayoutContext = () => useContext(LayoutContext)

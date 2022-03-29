@@ -38,7 +38,7 @@ export interface UntisLessonData {
 //Data for one class of one day
 export type displayedLesson = (LessonData | undefined)[]
 
-export interface Timetable {
+export interface WeekData {
     type: "local" | "fetched"
 
     [key: string]: displayedLesson[],
@@ -50,7 +50,7 @@ export interface lsTimetable {
 
 export interface TimetableData {
     week: string[],
-    timetable: Timetable
+    timetable: WeekData
 }
 
 export interface stringToNumberEnum {

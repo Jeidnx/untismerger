@@ -1,4 +1,4 @@
-import {createContext, useCallback, useContext, useEffect, useMemo, useState} from 'react';
+import {createContext, useContext, useEffect, useMemo, useState} from 'react';
 import {customThemeType, designDataType, fetcherParams, JWT} from "../types";
 import {Box, createTheme, ThemeProvider} from "@mui/material";
 
@@ -44,7 +44,7 @@ export function CustomThemeProvider({children}: any) {
     const [designData, setDesignData] = useState<designDataType>(getDesignData());
     const [rawJwt, setRawJwt]  = useState(localStorage.getItem("jwt"));
 
-    const apiEndpoint = useDevApi ? "http://localhost:8080/" : "https://api.untismerger.tk/";
+    const apiEndpoint = useDevApi ? "http://localhost:8080/" : "https://api.untismerger.hems2.de/";
 
     useEffect(() => {
         clearTimeout(debounceSave);
@@ -91,7 +91,7 @@ export function CustomThemeProvider({children}: any) {
         Buffer.from(rawJwt.split('.')[1], "base64").toString("utf-8")
     ) : {};
 
-    const fetcher = useCallback(({endpoint,query,useCache, method}: fetcherParams): Promise<any> => {
+    const fetcher = ({endpoint,query,useCache, method}: fetcherParams): Promise<any> => {
         return new Promise((resolve, reject) => {
 
             const mQuery = {
@@ -124,7 +124,7 @@ export function CustomThemeProvider({children}: any) {
                 reject("Fehler: " + (err.message || err));
             })
         })
-    }, [apiEndpoint, rawJwt])
+    }
 
     const jwt: JWT = useMemo(() => ({
         set: (newJwt: string) => {

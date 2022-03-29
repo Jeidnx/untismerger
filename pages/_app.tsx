@@ -4,7 +4,6 @@ import Layout from '../components/Layout'
 import {CustomThemeProvider} from '../components/CustomTheme';
 import {useEffect} from 'react';
 import {designDataType} from "../types";
-import {QueryClient, QueryClientProvider} from "react-query";
 
 function MyApp({Component, pageProps}: AppProps) {
 
@@ -37,16 +36,13 @@ function MyApp({Component, pageProps}: AppProps) {
         callback();
     }, [])
 
-    const queryClient = new QueryClient()
 
 
     return (
         <CustomThemeProvider>
-            <QueryClientProvider client={queryClient}>
             <Layout>
                 <Component {...pageProps}/>
             </Layout>
-            </QueryClientProvider>
         </CustomThemeProvider>
     )
 }

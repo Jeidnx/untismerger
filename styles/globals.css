@@ -14,6 +14,7 @@ a {
 
 * {
   box-sizing: border-box;
+  overscroll-behavior: contain;
 }
 input{
   margin: 0;

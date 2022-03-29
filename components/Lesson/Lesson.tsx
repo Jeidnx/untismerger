@@ -4,7 +4,8 @@ import {MutableRefObject, useEffect, useMemo, useRef, useState} from 'react';
 import {displayedLesson, LessonData} from "../../types";
 import {useCustomTheme} from "../CustomTheme";
 import style from './Lesson.module.css';
-const randomColor = require('randomcolor');
+// @ts-ignore
+import randomColor from 'randomcolor'
 
 function checkOverflow(el: HTMLDivElement | undefined) {
     if (el === undefined) return false;

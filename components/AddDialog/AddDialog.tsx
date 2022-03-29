@@ -44,7 +44,7 @@ export default function AddDialog(props: propType) {
                     {errorMessage}
                 </Alert>
             </Box>
-            {isPosting ? <LoadingSpinner hidden={false}/> : children}
+            {isPosting ? <LoadingSpinner text={"Wird verarbeitet..."}/> : children}
         </DialogContent>
         <DialogActions>
             <Button
