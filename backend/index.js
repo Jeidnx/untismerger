@@ -75,9 +75,9 @@ let adminDiscordIDs = [];
 /// Contains the users who requested an auth token, and the token
 let discordAuthObj = {};
 
-if (process.env.MAIN === 'TRUE') {
-
-
+//if (process.env.MAIN === 'TRUE') {
+//TODO: disable discord for now, find a better solution
+if (false) {
     if (!(process.env.DEV === 'FALSE')) {
         dm.login(config.secrets.DISCORD_TOKEN_DEV).then(client => {
             console.log("[djs-messenger] Logged in as", client.user.tag);
@@ -202,9 +202,10 @@ initScheduler();
 //region Express Server
 const app = express();
 
-// Enable CORS Pre-Flight
+// Enable CORS
 // noinspection JSCheckFunctionSignatures
 app.options('*', cors());
+app.use(cors());
 
 http.createServer(app).listen(port);
 
@@ -234,7 +235,14 @@ app.use((req, res, next) => {
     }
 })
 
+app.get('/status', (req, res) => {
 
+    //TODO: Actually check db status
+    res.status(200).json({
+	api: "ok",
+	db: "ok",
+    })
+})
 app.get('/timetableWeek', (req, res) => {
     if (!req.query['jwt'] || !req.query['startDate'] || !req.query["endDate"]) {
         res.status(406).send({error: true, message: 'Missing args'});
