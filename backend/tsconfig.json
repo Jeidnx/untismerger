@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "forceConsistentCasingInFileNames": true,
+        "module": "CommonJS",
+        "esModuleInterop": true,
+        "rootDir": "./",
+        "target": "ES2022",
+        "skipLibCheck": true,
+        "strict": true,
+        "outDir": "./build",
+        "alwaysStrict": true,
+        "moduleResolution": "Node",
+        "removeComments": true,
+
+    },
+    "files": [
+        "api.ts",
+    ],   
+}

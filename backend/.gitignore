@@ -5,3 +5,6 @@ data
 
 # Intellij
 .idea/
+
+# Build files
+build/
