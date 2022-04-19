@@ -1,4 +1,4 @@
-const cacheVersion = '3.2.0';
+const cacheVersion = '3.3.0';
 const cacheName = 'untismerger_v' + cacheVersion;
 
 
@@ -31,7 +31,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const request = event.request;
 
-    if(request.method === "GET"){
+    if (request.method === "GET") {
         event.respondWith(fetch(request).catch((e) => {
             console.error("Konnte Seite nicht Laden " + e);
             return caches.open(cacheName).then((cache) => {

@@ -1,19 +1,19 @@
 {
-    "compilerOptions": {
-        "forceConsistentCasingInFileNames": true,
-        "module": "CommonJS",
-        "esModuleInterop": true,
-        "rootDir": "./",
-        "target": "ES2022",
-        "skipLibCheck": true,
-        "strict": true,
-        "outDir": "./build",
-        "alwaysStrict": true,
-        "moduleResolution": "Node",
-        "removeComments": true,
-
-    },
-    "files": [
-        "api.ts",
-    ],   
+  "compilerOptions": {
+    "forceConsistentCasingInFileNames": true,
+    "module": "CommonJS",
+    "esModuleInterop": true,
+    "rootDir": "./",
+    "target": "ESNext",
+    "skipLibCheck": true,
+    "strict": false,
+    "outDir": "./build",
+    "alwaysStrict": true,
+    "moduleResolution": "node",
+    "removeComments": true,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "src/"
+  ]
 }

@@ -26,3 +26,12 @@
     transition: ease-in 800ms;
     justify-content: center;
 }
+
+.cancelled {
+    text-decoration: line-through;
+}
+
+.irregular {
+    text-decoration: underline;
+    font-weight: bold;
+}

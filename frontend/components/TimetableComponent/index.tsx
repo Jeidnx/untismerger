@@ -1,1 +1,1 @@
-export { default } from './TimetableComponent'
+export {default} from './TimetableComponent';

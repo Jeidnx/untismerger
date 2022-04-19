@@ -1,24 +1,13 @@
-export type Jwt = PasswordJwt | SecretJwt
-
-interface SharedJwt {
+export interface Jwt {
     version: number,
-    iat: number,
     username: string,
     lk: number,
     fachrichtung: number,
     sonstiges: string[],
-}
-
-interface PasswordJwt extends SharedJwt {
     type: "password",
     password: string,
+    secureid: number,
 }
-
-interface SecretJwt extends SharedJwt{
-    type: "secret",
-    secret: string,
-}
-
 
 export interface DesignDataType {
     fontSize: number;

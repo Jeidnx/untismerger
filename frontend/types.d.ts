@@ -1,124 +1,83 @@
-import {Dayjs} from "dayjs";
+import {Dayjs} from 'dayjs';
+import {Jwt} from '../globalTypes';
 
 
 // Format for the individual lessons
 export interface LessonData {
-    startDate: Dayjs,
-    endDate: Dayjs,
-    code: "regular" | "cancelled" | "irregular",
-    shortSubject: string,
-    subject: string,
-    teacher: string,
-    room: string,
-    lstext: string,
-    info: string,
-    subsText: string,
-    sg: string,
-    bkRemark: string,
-    bkText: string
+	startDate: Dayjs,
+	endDate: Dayjs,
+	code: 'regular' | 'cancelled' | 'irregular',
+	shortSubject: string,
+	subject: string,
+	teacher: string,
+	room: string,
+	lstext: string,
+	info: string,
+	subsText: string,
+	sg: string,
+	bkRemark: string,
+	bkText: string
 }
 
-// Data the untis api sends back
-export interface UntisLessonData {
-    date: number,
-    startTime: number,
-    code: string,
-    shortSubject: string,
-    subject: string,
-    teacher: string,
-    room: string,
-    lstext: string,
-    info: string,
-    subsText: string,
-    sg: string,
-    bkRemark: string,
-    bkText: string
+export interface JwtObject {
+	set: (newJwt: string) => void,
+	validate: () => Promise<void>,
+	raw: string,
+	get: Jwt,
+}
+
+export interface HolidayData {
+	name: string,
+	shortName: string,
 }
 
 //Data for one class of one day
 export type displayedLesson = (LessonData | undefined)[]
 
-export interface WeekData {
-    type: "local" | "fetched"
-
-    [key: string]: displayedLesson[],
+export interface WeekData extends lsTimetable {
+	type: 'local' | 'fetched'
 }
 
 export interface lsTimetable {
-    [key: string]: displayedLesson[],
+	[key: string]: displayedLesson[] | HolidayData,
 }
 
 export interface TimetableData {
-    week: string[],
-    timetable: WeekData
+	week: string[],
+	timetable: WeekData
 }
 
 export interface stringToNumberEnum {
-    [key: string]: number,
+	[key: string]: number,
 }
 
-export interface designDataType {
-    fontSize: number;
-    iat: number,
-    version: number,
-    mode: "dark" | "light",
-    primary: string,
-    secondary: string,
-    backgroundUrl: string,
-    lesson: {
-        colorEnum: {
-            [key: string]: string,
-        },
-        edges: number,
-    },
-    font: string,
-    alpha: number,
-
-}
 export interface fetcherParams {
-    endpoint: string,
-    query: any,
-    useCache: boolean,
-    method: "POST" | "GET",
+	endpoint: string,
+	query: any,
+	useCache: boolean,
+	method: 'POST' | 'GET',
 }
 
 export interface customThemeType {
-    apiEndpoint: string,
-    dayjs: typeof dayjs,
-    setDesignData: Function,
-    setLessonColorEnum: Function,
-    jwt: JWT,
-    fetcher({endpoint, query, useCache, method}: fetcherParams): Promise<any>,
-}
+	apiEndpoint: string,
+	dayjs: typeof dayjs,
+	setDesignData: Function,
+	setLessonColorEnum: Function,
+	jwt: JWT,
 
-export interface JWT {
-    set: Function,
-    validate: Function,
-    raw: string,
-    get: {
-        version: number,
-        iat: number,
-        username: String,
-        type: "password" | "secret",
-        password?: string,
-        secret?: string,
-        lk: number,
-        fachrichtung: number,
-        sonstiges: string[],
-    }
-
+	fetcher({endpoint, query, useCache, method}: fetcherParams): Promise<unknown>,
 }
 
 export interface setupData {
-    loginMethod?: string,
-    username?: string,
-    password?: string,
-    secret?: string,
-    disableButton: boolean,
-    lk?: string,
-    fachrichtung?: string,
-    nawi?: string,
-    ek?: string,
-    sp?: string,
-    sonstiges: string[],
+	loginMethod?: string,
+	username?: string,
+	password?: string,
+	secret?: string,
+	disableButton: boolean,
+	lk?: string,
+	fachrichtung?: string,
+	nawi?: string,
+	ek?: string,
+	sp?: string,
+	sonstiges: string[],
 }
