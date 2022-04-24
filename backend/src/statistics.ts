@@ -1,47 +1,17 @@
-import {errorHandler} from './errorHandler';
-import {Pool} from 'mysql2';
-
-let db: Pool;
+let queryDB: (query: string, args: unknown[]) => Promise<unknown>;
 
 /// Contains the endpoints to track and their respective count. To track more or less endpoints just add / remove them here.
-const stats: {
-	[key: string]: number,
-} = {
-	timetableWeek: 0,
-	register: 0,
-	getStats: 0,
-	deleteUser: 0,
-	getDiscordToken: 0,
-	rawRequest: 0,
-	checkCredentials: 0,
-	getPreferences: 0,
-	setPreferences: 0,
-	getExams: 0,
-	getHomework: 0,
-	addExam: 0,
-	addHomework: 0,
-};
+let stats: { [key: string]: number, } = {};
 
 const addRequest = (endpoint: string) => {
-
-};
-
-const getStatistics = () => {
-
+	if(typeof stats[endpoint] !== 'undefined') stats[endpoint]++;
 };
 
 function saveData() {
 	const date = new Date().toISOString().slice(0, 10);
 
-	db.execute('SELECT json FROM statistics WHERE date = ?', [date], (err, res) => {
-		if (err) {
-			errorHandler(err);
-			return;
-		}
-
-		//@ts-ignore
+	queryDB('SELECT json FROM statistics WHERE date = ?', [date]).then((res: {json: any}[]) => {
 		if (res.length && res.length > 0) {
-			//@ts-ignore
 			const dbStats = JSON.parse(res[0].json);
 			for (const key in stats) {
 
@@ -51,29 +21,25 @@ function saveData() {
 			}
 		}
 
-		db.execute('INSERT INTO statistics(date,json) VALUES (?,?) ON DUPLICATE KEY UPDATE json = ?',
-			[date, JSON.stringify(stats), JSON.stringify(stats)],
-			(err) => {
-				if (err) {
-					errorHandler(err);
-					return;
-				}
-				for (const key in stats) {
-					stats[key] = 0;
-				}
-			});
-
+		queryDB('INSERT INTO statistics(date,json) VALUES (?,?) ON DUPLICATE KEY UPDATE json = ?', [date, JSON.stringify(stats), JSON.stringify(stats)]).then(() => {
+			for (const key in stats) {
+				stats[key] = 0;
+			}
+		});
 	});
 }
 
 /**
  * Creates scheduler to  write traffic statistics to DB
  */
-function initStatisticsScheduler(saveInterval: number, database: Pool) {
-	db = database;
+function initStatisticsScheduler(saveInterval: number, routes, queryFunc: (query: string, args: unknown[]) => Promise<unknown>) {
+	queryDB = queryFunc;
+	stats = routes.reduce((a, v) => ({ ...a, [v]: 0}), {}) ;
+	console.log('Using statistics');
+	console.log('Tracking statistics for: ', routes);
 	setInterval(function () {
 		saveData();
 	}, saveInterval * 60 * 1000);
 }
 
-export {addRequest, getStatistics, initStatisticsScheduler};
+export {addRequest, initStatisticsScheduler};

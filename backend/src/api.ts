@@ -80,51 +80,14 @@ const iv = Buffer.alloc(16, process.env.SCHOOL_NAME);
 const app = express();
 
 // Enable CORS
-app.options('*', cors());
 app.use(cors());
 
+app.use((req, res, next) => {
+	next();
+	statistics.addRequest(req.path);
+});
+
 http.createServer(app).listen(process.env.PORT);
-
-if (process.env.USE_STATISTICS) {
-	statistics.initStatisticsScheduler(10, db);
-
-	console.log('Using statistics');
-
-	app.use((req, res, next) => {
-		next();
-		const thisPath = req.path.replace('/', '');
-		statistics.addRequest(thisPath);
-	});
-
-	app.get('/getStats', (req, res) => {
-		if (!req.query['jwt'] || typeof req.query.jwt !== 'string') {
-			res.status(406).send({error: true, message: 'missing args'});
-			return;
-		}
-
-		decodeJwt(req.query.jwt).then((decoded) => {
-			isUserAdmin(decoded['username']).then(async bool => {
-				if (bool) {
-					res.json({
-						requests: await dbQuery('SELECT * FROM statistics;', []).catch((e) => {
-							errorHandler(e);
-							return {};
-						}),
-						users: await dbQuery('SELECT COUNT(id) as c FROM user;', []).then((result: { c: number }[]) => {
-							return result[0].c;
-						}).catch((err) => {
-							errorHandler(err);
-							return -1;
-						}),
-					});
-
-				} else {
-					res.status(403).send({error: true, message: 'Missing permissions'});
-				}
-			});
-		});
-	});
-}
 
 // Notification Provider specific settings
 process.env.NOTIFICATION_PROVIDERS.split(' ').forEach((provider) => {
@@ -318,7 +281,6 @@ app.get('/timetableWeek', (req, res) => {
 			});
 		});
 });
-
 app.post('/register', express.json(), (req, res) => {
 	if (
 		!req.body?.loginMethod ||
@@ -361,7 +323,6 @@ app.post('/register', express.json(), (req, res) => {
 		res.status(500).json({error: true, message: errorHandler(err)});
 	});
 });
-
 app.post('/deleteUser', express.urlencoded({extended: true}), (req, res) => {
 	if (!req.body['jwt']) {
 		res.status(400).json({error: true, message: 'Missing args'});
@@ -378,7 +339,6 @@ app.post('/deleteUser', express.urlencoded({extended: true}), (req, res) => {
 		res.status(INVALID_ARGS).json({error: true, message: errorHandler(err)});
 	});
 });
-
 app.post('/rawRequest', express.urlencoded({extended: true}), (req, res) => {
 	if (!req.body['jwt'] ||
 		!req.body['requestType'] ||
@@ -496,7 +456,6 @@ app.post('/rawRequest', express.urlencoded({extended: true}), (req, res) => {
 		res.status(400).send({error: true, message: errorHandler(err)});
 	});
 });
-
 app.post('/checkCredentials', express.json(), (req, res) => {
 	if (!req.body?.username || !req.body?.password) {
 		res.status(400).json({error: true, message: 'Missing arguments'});
@@ -574,7 +533,6 @@ app.post('/setPreferences', express.json(), (req, res) => {
 		});
 	});
 });
-
 app.get('/getExams', (req, res) => {
 	if (!req.query['jwt'] || typeof req.query.jwt !== 'string') {
 		res.status(400).json({error: true, message: 'Missing Arguments'});
@@ -652,7 +610,6 @@ app.get('/getHomework', (req, res) => {
 				});
 		});
 });
-
 app.post('/addExam', express.json(), (req, res) => {
 	if (!req.body.jwt || !req.body.exam) {
 		res.status(400).json({error: true, message: 'Missing Arguments'});
@@ -686,6 +643,46 @@ app.post('/addHomework', express.json(), (req, res) => {
 		res.status(INVALID_ARGS).json({error: true, message: errorHandler(err)});
 	});
 });
+
+if (process.env.USE_STATISTICS === 'TRUE') {
+
+	app.get('/getStats', (req, res) => {
+		if (!req.query['jwt'] || typeof req.query.jwt !== 'string') {
+			res.status(406).send({error: true, message: 'missing args'});
+			return;
+		}
+
+		decodeJwt(req.query.jwt).then((decoded) => {
+			isUserAdmin(decoded['username']).then(async bool => {
+				if (bool) {
+					res.json({
+						requests: await dbQuery('SELECT * FROM statistics;', []).catch((e) => {
+							errorHandler(e);
+							return {};
+						}),
+						users: await dbQuery('SELECT COUNT(id) as c FROM user;', []).then((result: { c: number }[]) => {
+							return result[0].c;
+						}).catch((err) => {
+							errorHandler(err);
+							return -1;
+						}),
+					});
+
+				} else {
+					res.status(403).send({error: true, message: 'Missing permissions'});
+				}
+			});
+		});
+	});
+	//TODO: why does stack.map return undefined four times??
+	const routes = [];
+	app._router.stack.forEach((middleware) => {
+		if(middleware.route){
+			routes.push(middleware.route.path);
+		}
+	});
+	statistics.initStatisticsScheduler(10,routes, dbQuery);
+}
 
 function hash(str: string): string {
 	return crypto.createHash('sha256').update(str).digest('hex');
