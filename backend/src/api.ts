@@ -90,60 +90,82 @@ app.use((req, res, next) => {
 http.createServer(app).listen(process.env.PORT);
 
 // Notification Provider specific settings
-process.env.NOTIFICATION_PROVIDERS.split(' ').forEach((provider) => {
-	if (provider === 'Discord') {
-		console.log('Using Discord as notification provider');
-		notificationProviders.push(sendNotificationDiscord);
-		//TODO: add Discord endpoints
-	}
-	if (provider === 'Mail') {
-		console.log('Using Mail as notification provider');
-		notificationProviders.push(sendNotificationMail);
-		//TODO: Add mail endpoints
-	}
-	if (provider === 'Webpush') {
-		if (
-			!process.env.VAPID_PUBLIC_KEY ||
-			!process.env.VAPID_PRIVATE_KEY
-		) {
-			console.log('Missing env vars for webpush');
-			process.exit(1);
+const providers = process.env.NOTIFICATION_PROVIDERS.split(' ').map((provider) => {
+	switch(provider) {
+		case 'Discord': {
+			if(
+				!process.env.DISCORD_TOKEN
+			){
+				console.log('Missing env vars for discord');
+				process.exit(1);
+			}
+
+			notificationProviders.push(sendNotificationDiscord);
+			//TODO: add Discord endpoints
+			return 'Discord';
 		}
-
-		console.log('Using Webpush as notification provider');
-		notificationProviders.push(sendNotificationWebpush);
-
-		app.get('/vapidPublicKey', (req, res) => {
-			res.send(process.env.vapidPublicKey);
-		});
-
-		app.post('/registerWebpush', express.json(), (req, res) => {
-			if (!req.body['subscription'] || !req.body['jwt']) {
-				res.status(INVALID_ARGS).send({error: true, message: 'Missing Arguments'});
-				return;
+		case 'Mail': {
+			if(
+				!process.env.SMTP_HOST ||
+				!process.env.SMTP_PORT ||
+				!process.env.SMTP_USER ||
+				!process.env.SMTP_PASS
+			){
+				console.log('Missing env vars for Mail');
+				process.exit(1);
 			}
 
-			decodeJwt(req.body.jwt).then((decoded) => {
-				//TODO: Add subscription
+			notificationProviders.push(sendNotificationMail);
+			//TODO: Add mail endpoints
+			return 'Mail';
+		}
+		case 'Webpush': {
+			if (
+				!process.env.VAPID_PUBLIC_KEY ||
+				!process.env.VAPID_PRIVATE_KEY
+			) {
+				console.log('Missing env vars for webpush');
+				process.exit(1);
+			}
+			notificationProviders.push(sendNotificationWebpush);
 
-				res.sendStatus(201);
-			}).catch((err) => {
-				res.status(INVALID_ARGS).json({error: true, message: errorHandler(err)});
+			app.get('/vapidPublicKey', (req, res) => {
+				res.send(process.env.vapidPublicKey);
 			});
-		});
 
-		app.post('/unregisterWebpush', express.json(), (req, res) => {
-			if (!req.body.jwt) {
-				res.status(INVALID_ARGS).send({error: true, message: 'Missing Arguments'});
-			}
+			app.post('/registerWebpush', express.json(), (req, res) => {
+				if (!req.body['subscription'] || !req.body['jwt']) {
+					res.status(INVALID_ARGS).send({error: true, message: 'Missing Arguments'});
+					return;
+				}
 
-			//TODO: Implement
+				decodeJwt(req.body.jwt).then((decoded) => {
+					//TODO: Add subscription
 
-			res.status(200).json({message: 'OK'});
-		});
+					res.sendStatus(201);
+				}).catch((err) => {
+					res.status(INVALID_ARGS).json({error: true, message: errorHandler(err)});
+				});
+			});
+
+			app.post('/unregisterWebpush', express.json(), (req, res) => {
+				if (!req.body.jwt) {
+					res.status(INVALID_ARGS).send({error: true, message: 'Missing Arguments'});
+				}
+
+				//TODO: Implement
+
+				res.status(200).json({message: 'OK'});
+			});
+			return 'Webpush';
+		}
 	}
 });
 
+console.log('Using these notification providers: ');
+providers.forEach((provider) => {
+	console.log(' - ' + provider);
+});
 
 app.get('/status', (req, res) => {
 	db.query('SELECT * FROM user LIMIT 1', (err) => {
@@ -153,12 +175,14 @@ app.get('/status', (req, res) => {
 			res.status(500).json({
 				api: 'ok',
 				db: 'not ok',
+				providers,
 			});
 			return;
 		}
 		res.json({
 			api: 'ok',
 			db: 'ok',
+			providers,
 		});
 	});
 });
