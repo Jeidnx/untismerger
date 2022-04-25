@@ -5,21 +5,7 @@ import {alpha, Box, Checkbox, FormControlLabel, FormGroup, useTheme} from '@mui/
 import React from 'react';
 import {useCustomTheme} from '../components/CustomTheme';
 import LoadingSpinner from '../components/LoadingSpinner';
-
-const endPoints = [
-	'getTimeTableWeek',
-	'timetableWeek',
-	'setup',
-	'register',
-	'getStats',
-	'deleteUser',
-	'updateUserPrefs',
-	'getDiscordToken',
-	'rawRequest',
-	'checkCredentials',
-	'getPreferences',
-	'setPreferences',
-];
+import {Statistic} from "../../globalTypes";
 
 interface statisticsDataType {
 	[key: string]: {
@@ -42,7 +28,8 @@ export default function Statistics() {
 
 	const [error, setError] = React.useState(undefined);
 	const [data, setData] = React.useState<statisticsDataType>((undefined as unknown as statisticsDataType));
-	const [indices, setIndices] = React.useState<string[]>(endPoints);
+	const [endPoints, setEndPoints] = React.useState<string[]>([]);
+	const [indices, setIndices] = React.useState<string[]>([]);
 
 
 	React.useEffect(() => {
@@ -52,23 +39,23 @@ export default function Statistics() {
 			query: {},
 			useCache: false,
 		}).then((json) => {
-			setData(processData(json));
+			const a = json as { endpoints: string[], stats: Statistic[] };
+			setEndPoints(a.endpoints);
+			setIndices(a.endpoints);
+			setData(processData(a));
 		}).catch((err) => {
 			setError(err);
 		});
 	}, []);
 
 
-	const processData = React.useCallback((jsonData) => {
-		if (typeof jsonData === 'undefined') return {};
+	const processData = React.useCallback(({endpoints, stats}) => {
 		const dataObj: statisticsDataType = {};
-		endPoints.forEach((endpoint) => {
-			dataObj[endpoint] = jsonData.requests.map((dataPoint: any) => {
-				const json = JSON.parse(dataPoint.json);
+		endpoints.forEach((endpoint: string) => {
+			dataObj[endpoint] = stats.map((statistic: Statistic) => {
 				return {
-					date: dataPoint.date,
-					//Use new system first, fallback to old or 0
-					value: json['/' + endpoint] || json[endpoint] || dataPoint[endpoint] || 0
+					date: statistic.date,
+					value: statistic.requests[endpoint] || 0
 				}
 			});
 		});

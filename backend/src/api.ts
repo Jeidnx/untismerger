@@ -18,6 +18,7 @@ import {sendNotification as sendNotificationMail} from './notificationProviders/
 import {sendNotification as sendNotificationWebpush} from './notificationProviders/webpush';
 import {sendNotification as sendNotificationDiscord} from './notificationProviders/discord';
 import {NotificationProps} from '../types';
+import {createClient} from 'redis';
 
 // Constants
 const INVALID_ARGS = 418;
@@ -670,6 +671,14 @@ app.post('/addHomework', express.json(), (req, res) => {
 
 if (process.env.USE_STATISTICS === 'TRUE') {
 
+	if(
+		typeof process.env.REDIS_HOST === 'undefined' ||
+		typeof process.env.REDIS_PASS === 'undefined'
+	){
+		console.log('Missing env vars for statistics');
+		process.exit(1);
+	}
+
 	app.get('/getStats', (req, res) => {
 		if (!req.query['jwt'] || typeof req.query.jwt !== 'string') {
 			res.status(406).send({error: true, message: 'missing args'});
@@ -680,16 +689,8 @@ if (process.env.USE_STATISTICS === 'TRUE') {
 			isUserAdmin(decoded['username']).then(async bool => {
 				if (bool) {
 					res.json({
-						requests: await dbQuery('SELECT * FROM statistics;', []).catch((e) => {
-							errorHandler(e);
-							return {};
-						}),
-						users: await dbQuery('SELECT COUNT(id) as c FROM user;', []).then((result: { c: number }[]) => {
-							return result[0].c;
-						}).catch((err) => {
-							errorHandler(err);
-							return -1;
-						}),
+						stats: await statistics.getStats(),
+						endpoints: ['users', ...routes],
 					});
 
 				} else {
@@ -705,7 +706,28 @@ if (process.env.USE_STATISTICS === 'TRUE') {
 			routes.push(middleware.route.path);
 		}
 	});
-	statistics.initStatisticsScheduler(10,routes, dbQuery);
+
+	const redisClient = createClient({
+		password: process.env.REDIS_PASS,
+		socket: {
+			host: process.env.REDIS_HOST,
+		}
+	});
+
+	redisClient.on('error', errorHandler);
+	redisClient.connect().then(() => {
+		console.log('Connected to Redis');
+	}).catch(errorHandler);
+
+	statistics.initStatistics(routes, redisClient);
+	setTimeout(async () => {
+		redisClient.HSET('statistics:' + dayjs().format('YYYY-MM-DD'), 'users', await dbQuery('SELECT COUNT(id) as c FROM user;', []).then((result: { c: number }[]) => {
+			return result[0].c;
+		}).catch((err) => {
+			errorHandler(err);
+			return undefined;
+		}),);
+	}, 10 * 60 * 60);
 }
 
 function hash(str: string): string {

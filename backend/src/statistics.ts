@@ -1,45 +1,62 @@
-let queryDB: (query: string, args: unknown[]) => Promise<unknown>;
+import dayjs from 'dayjs';
+import {RedisClientType } from 'redis';
+import {Statistic} from '../../globalTypes';
+import {errorHandler} from './errorHandler';
 
-/// Contains the endpoints to track and their respective count. To track more or less endpoints just add / remove them here.
-let stats: { [key: string]: number, } = {};
+let redisClient: RedisClientType;
+let routes: string[] = [];
 
 const addRequest = (endpoint: string) => {
-	if(typeof stats[endpoint] !== 'undefined') stats[endpoint]++;
+	if(routes.includes(endpoint)){
+		redisClient.HINCRBY('statistics:' + dayjs().format('YYYY-MM-DD'), endpoint, 1);
+	}
 };
 
-function saveData() {
-	const date = new Date().toISOString().slice(0, 10);
 
-	queryDB('SELECT json FROM statistics WHERE date = ?', [date]).then((res: {json: any}[]) => {
-		if (res.length && res.length > 0) {
-			const dbStats = JSON.parse(res[0].json);
-			for (const key in stats) {
 
-				stats[key] = dbStats[key] ?
-					stats[key] + dbStats[key] :
-					stats[key];
-			}
-		}
+const getStats = async (): Promise<Statistic[]> => {
 
-		queryDB('INSERT INTO statistics(date,json) VALUES (?,?) ON DUPLICATE KEY UPDATE json = ?', [date, JSON.stringify(stats), JSON.stringify(stats)]).then(() => {
-			for (const key in stats) {
-				stats[key] = 0;
-			}
+	let cursor = 0;
+	const keys = [];
+	do{
+		await redisClient.SCAN(cursor, {
+			MATCH: 'statistics:*',
+		}).then((data) => {
+			cursor = data.cursor;
+			keys.push(...data.keys);
 		});
+	} while (cursor !== 0);
+
+	keys.sort((a, b) => {
+		return Number(a.substring(11).split('-').join('')) - Number(b.substring(11).split('-').join(''));
 	});
-}
 
-/**
- * Creates scheduler to  write traffic statistics to DB
- */
-function initStatisticsScheduler(saveInterval: number, routes, queryFunc: (query: string, args: unknown[]) => Promise<unknown>) {
-	queryDB = queryFunc;
-	stats = routes.reduce((a, v) => ({ ...a, [v]: 0}), {}) ;
+	return await Promise.all(keys.map(async (key) => {
+		const date = key.substring(11);
+		return redisClient.HGETALL(key).then((data) => {
+				return {
+					date: date,
+					requests: data as {users: string, [key: string]: string},
+				};
+			}).catch(err => {
+				errorHandler(err);
+				return {
+					date: date,
+					requests: {users: -1,},
+				};
+			});
+	}));
+};
+
+function initStatistics(routesIn: string[], redisIn) {
+	redisClient = redisIn;
+	routes = routesIn;
 	console.log('Using statistics');
-	console.log('Tracking statistics for: ', routes);
-	setInterval(function () {
-		saveData();
-	}, saveInterval * 60 * 1000);
+	console.log('Tracking statistics for: ');
+	routes.forEach((route) => {
+		console.log(' - ', route);
+	});
+	return redisClient;
 }
 
-export {addRequest, initStatisticsScheduler};
+export {addRequest,getStats, initStatistics};

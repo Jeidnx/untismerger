@@ -65,3 +65,13 @@ export interface CustomHomework {
     attachments: any[],
     course: string,
 }
+
+type Endpoint = string;
+
+export interface Statistic {
+        date: string,
+        requests: {
+            users: number | string,
+            [key: Endpoint]: number | string,
+        }
+}
