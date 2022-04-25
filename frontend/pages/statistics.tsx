@@ -68,8 +68,8 @@ export default function Statistics() {
 				return {
 					date: dataPoint.date,
 					//Use new system first, fallback to old or 0
-					value: json[endpoint] || dataPoint[endpoint] || 0
-				};
+					value: json['/' + endpoint] || json[endpoint] || dataPoint[endpoint] || 0
+				}
 			});
 		});
 		return dataObj;
