@@ -214,6 +214,7 @@ app.get('/timetableWeek', (req, res) => {
 
 							//TODO: figure this out properly instead of sending everything everytime
 							if (
+								// eslint-disable-next-line no-constant-condition
 								reqStartDateAsUntisTime >= (holiday.startDate as unknown as number) &&
 								reqEndDateAsUntisTime <= (holiday.endDate as unknown as number) || true
 							) {
@@ -720,13 +721,11 @@ if (process.env.USE_STATISTICS === 'TRUE') {
 	}).catch(errorHandler);
 
 	statistics.initStatistics(routes, redisClient);
-	setTimeout(async () => {
-		redisClient.HSET('statistics:' + dayjs().format('YYYY-MM-DD'), 'users', await dbQuery('SELECT COUNT(id) as c FROM user;', []).then((result: { c: number }[]) => {
-			return result[0].c;
-		}).catch((err) => {
-			errorHandler(err);
-			return undefined;
-		}),);
+	setInterval( () => {
+		console.log('Redis: saving users to hash');
+		dbQuery('SELECT COUNT(id) as c FROM user;', []).then((result: { c: number }[]) => {
+			redisClient.HSET('statistics:' + dayjs().format('YYYY-MM-DD'), 'users', result[0].c);
+		}).catch(errorHandler);
 	}, 10 * 60 * 60);
 }
 
