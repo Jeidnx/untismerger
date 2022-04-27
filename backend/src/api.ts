@@ -91,7 +91,7 @@ app.use((req, res, next) => {
 http.createServer(app).listen(process.env.PORT);
 
 // Notification Provider specific settings
-const providers = process.env.NOTIFICATION_PROVIDERS.split(' ').map((provider) => {
+const providers = process.env.NOTIFICATION_PROVIDERS.split(' ').flatMap((provider) => {
 	switch(provider) {
 		case 'Discord': {
 			if(
@@ -103,7 +103,7 @@ const providers = process.env.NOTIFICATION_PROVIDERS.split(' ').map((provider) =
 
 			notificationProviders.push(sendNotificationDiscord);
 			//TODO: add Discord endpoints
-			return 'Discord';
+			return ['Discord'];
 		}
 		case 'Mail': {
 			if(
@@ -118,7 +118,7 @@ const providers = process.env.NOTIFICATION_PROVIDERS.split(' ').map((provider) =
 
 			notificationProviders.push(sendNotificationMail);
 			//TODO: Add mail endpoints
-			return 'Mail';
+			return ['Mail'];
 		}
 		case 'Webpush': {
 			if (
@@ -158,20 +158,25 @@ const providers = process.env.NOTIFICATION_PROVIDERS.split(' ').map((provider) =
 
 				res.status(200).json({message: 'OK'});
 			});
-			return 'Webpush';
+			return ['Webpush'];
+		}
+		default: {
+			return [];
 		}
 	}
 });
 
-console.log('Using these notification providers: ');
-providers.forEach((provider) => {
-	console.log(' - ' + provider);
-});
+if(providers.length > 0){
+	console.log('Using notification providers: ');
+	providers.forEach((provider) => {
+		console.log(' - ' + provider);
+	});
+}
 
-app.get('/status', (req, res) => {
+
+app.get('/info', (req, res) => {
 	db.query('SELECT * FROM user LIMIT 1', (err) => {
 		if (err) {
-			console.error(err);
 			errorHandler(new Error('Cannot connect to db'));
 			res.status(500).json({
 				api: 'ok',
@@ -722,11 +727,10 @@ if (process.env.USE_STATISTICS === 'TRUE') {
 
 	statistics.initStatistics(routes, redisClient);
 	setInterval( () => {
-		console.log('Redis: saving users to hash');
 		dbQuery('SELECT COUNT(id) as c FROM user;', []).then((result: { c: number }[]) => {
 			redisClient.HSET('statistics:' + dayjs().format('YYYY-MM-DD'), 'users', result[0].c);
 		}).catch(errorHandler);
-	}, 10 * 60 * 60);
+	}, 10 * 60 * 60 * 60);
 }
 
 function hash(str: string): string {
