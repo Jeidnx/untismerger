@@ -1,7 +1,7 @@
 //@ts-expect-error react-charts has no ts declaration
 import {Chart} from 'react-charts';
 import Head from 'next/head';
-import {alpha, Box, Checkbox, FormControlLabel, FormGroup, useTheme} from '@mui/material';
+import {alpha, Box, Button, ButtonGroup, Checkbox, FormControlLabel, useTheme} from '@mui/material';
 import React from 'react';
 import {useCustomTheme} from '../components/CustomTheme';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -9,7 +9,7 @@ import {Statistic} from "../../globalTypes";
 
 interface statisticsDataType {
 	[key: string]: {
-		date: string, value: number
+		date: string, value: number | string
 	}[]
 }
 
@@ -26,7 +26,7 @@ export default function Statistics() {
 		[]
 	);
 
-	const [error, setError] = React.useState(undefined);
+	const [error, setError] = React.useState<undefined | string>(undefined);
 	const [data, setData] = React.useState<statisticsDataType>((undefined as unknown as statisticsDataType));
 	const [endPoints, setEndPoints] = React.useState<string[]>([]);
 	const [indices, setIndices] = React.useState<string[]>([]);
@@ -40,25 +40,35 @@ export default function Statistics() {
 			useCache: false,
 		}).then((json) => {
 			const a = json as { endpoints: string[], stats: Statistic[] };
-			setEndPoints(a.endpoints);
-			setIndices(a.endpoints);
 			setData(processData(a));
+			//TODO: figure out why this doesn't work
+			//setIndices(a.endpoints);
 		}).catch((err) => {
 			setError(err);
 		});
 	}, []);
 
-
-	const processData = React.useCallback(({endpoints, stats}) => {
+	const processData = React.useCallback(({stats}) => {
 		const dataObj: statisticsDataType = {};
-		endpoints.forEach((endpoint: string) => {
+
+		const tmpEndpoints: string[] = [];
+
+		stats.forEach(({requests}: Statistic) => {
+			Object.keys(requests).forEach((key) => {
+				if (key && !tmpEndpoints.includes(key)) {
+					tmpEndpoints.push(key);
+				}
+			})
+		})
+		tmpEndpoints.forEach((endpoint: string) => {
 			dataObj[endpoint] = stats.map((statistic: Statistic) => {
 				return {
 					date: statistic.date,
-					value: statistic.requests[endpoint] || 0
+					value: Number(statistic.requests[endpoint]) || 0
 				}
 			});
 		});
+		setEndPoints(tmpEndpoints);
 		return dataObj;
 	}, []);
 
@@ -98,26 +108,50 @@ export default function Statistics() {
 			<title>Statistiken</title>
 		</Head>
 
-		<Box
+		{ error ? <h1>{error}</h1> :
+			data ?
+			<Box
 			sx={{
 				width: '100%',
 				height: '100%',
+				overflowY: "scroll",
 				display: 'flex',
-				flexDirection: 'row',
-				justifyContent: 'center',
+				flexDirection: 'column',
 				alignItems: 'center',
+				padding: '1%',
 			}}>
 			<Box
 				sx={{
 					backgroundColor: alpha(theme.palette.background.default, theme.designData.alpha),
-					flexGrow: '0',
-					flexShrink: '0',
-					height: 'min-content',
-					width: 'min-content',
+					display: 'flex',
+					flexDirection: 'row',
+					width: '100%',
 				}}
 			>
-				<h1>Endpunkte:</h1>
-				<FormGroup>
+				<Box
+					sx={{
+						display: 'flex',
+						flexDirection: 'column',
+						width: 'min-content',
+					}}
+				>
+					<h1>Endpunkte:</h1>
+					<ButtonGroup
+						sx={{
+							alignSelf: 'center',
+						}}
+					>
+						<Button
+							onClick={() => {
+								setIndices(endPoints)
+							}}
+						>Alle</Button>
+						<Button
+							onClick={() => {
+								setIndices([]);
+							}}
+						>Keine</Button>
+					</ButtonGroup>
 					{
 						endPoints.map((endpoint: string, idx: number) => (
 							<FormControlLabel
@@ -137,33 +171,49 @@ export default function Statistics() {
 								label={endpoint}/>
 						))
 					}
-				</FormGroup>
+				</Box>
+				<div
+					style={{
+						backgroundColor: theme.palette.background.default,
+						width: '70%',
+						flexGrow: 1,
+						height: '80vh',
+
+					}}
+				>
+								<Chart
+									axes={axes}
+									data={indices}
+									getDatums={getDatums}
+									getPrimary={getPrimary}
+									getSecondary={getSecondary}
+									getLabel={getLabel}
+									tooltip={tooltip}
+									dark={theme.designData.mode === 'dark'}
+								/>
+				</div>
 			</Box>
-			<div
-				style={{
-					backgroundColor: theme.palette.background.default,
-					flexShrink: '0',
-					flexGrow: '1',
-					height: '50%',
-					width: 'max-content',
+			<Box
+				sx={{
+					display: "flex",
+					flexDirection: "column",
+					backgroundColor: alpha(theme.palette.background.default, theme.designData.alpha),
+					padding: '50px',
 				}}
 			>
-				{
-					error ? <h1>{error}</h1>
-						:
-						data ?
-							<Chart
-								axes={axes}
-								data={indices}
-								getDatums={getDatums}
-								getPrimary={getPrimary}
-								getSecondary={getSecondary}
-								getLabel={getLabel}
-								tooltip={tooltip}
-								dark={theme.designData.mode === 'dark'}
-							/> : <LoadingSpinner/>
+				<h1>Total </h1>
+				{data && endPoints.length > 1 && endPoints.map((key, idx) => {
+					if (key === 'users') return <span>users: {data['users'][data.users.length - 1].value}</span>;
+					let count = 0;
+
+					data[key].forEach(({value}) => {
+						count += Number(value);
+					})
+
+					return <span key={idx}>{key}: {count}</span>
+				})
 				}
-			</div>
-		</Box>
+			</Box>
+		</Box> : <LoadingSpinner/> }
 	</>);
 }
