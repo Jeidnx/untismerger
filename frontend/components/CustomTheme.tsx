@@ -15,7 +15,6 @@ dayjs.tz.setDefault('Europe/Berlin');
 
 const CustomThemeContext = createContext(({} as customThemeType));
 
-const useDevApi = false;
 let debounceSave: NodeJS.Timeout;
 
 // Provider
@@ -45,8 +44,6 @@ export function CustomThemeProvider({children}: any) {
 
 	const [designData, setDesignData] = useState<DesignDataType>(getDesignData());
 	const [rawJwt, setRawJwt] = useState(localStorage.getItem('jwt'));
-
-	const apiEndpoint = useDevApi ? 'http://localhost:8080/' : 'https://api.untismerger.hems2.de/';
 
 	useEffect(() => {
 		clearTimeout(debounceSave);
@@ -100,7 +97,7 @@ export function CustomThemeProvider({children}: any) {
 				...query,
 			};
 
-			fetch(apiEndpoint + endpoint + ((method === 'GET') ? `?${new URLSearchParams(mQuery)}` : ''), {
+			fetch('/api/' + endpoint + ((method === 'GET') ? `?${new URLSearchParams(mQuery)}` : ''), {
 				method: method,
 				cache: useCache ? 'default' : 'no-cache',
 				body: method === 'POST' ? JSON.stringify(mQuery) : undefined,
@@ -125,7 +122,7 @@ export function CustomThemeProvider({children}: any) {
 				reject('Fehler: ' + (err.message || err));
 			});
 		});
-	}, [apiEndpoint, rawJwt])
+	}, [ rawJwt ])
 
 	const jwt: JwtObject = useMemo(() => ({
 		set: (newJwt: string) => {
@@ -160,7 +157,7 @@ export function CustomThemeProvider({children}: any) {
 		return (
 			<ThemeProvider theme={theme}>
 				<CustomThemeContext.Provider
-					value={{apiEndpoint, dayjs, fetcher, jwt, setDesignData, setLessonColorEnum}}>
+					value={{ dayjs, fetcher, jwt, setDesignData, setLessonColorEnum}}>
 					<Box
 						component={'main'}
 						sx={{
@@ -205,7 +202,7 @@ export function CustomThemeProvider({children}: any) {
 
 	return (
 		<ThemeProvider theme={theme}>
-			<CustomThemeContext.Provider value={{apiEndpoint, dayjs, fetcher, jwt, setDesignData, setLessonColorEnum}}>
+			<CustomThemeContext.Provider value={{ dayjs, fetcher, jwt, setDesignData, setLessonColorEnum}}>
 				{children}
 			</CustomThemeContext.Provider>
 		</ThemeProvider>

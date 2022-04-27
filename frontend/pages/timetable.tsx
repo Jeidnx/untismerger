@@ -7,7 +7,6 @@ import {Box} from '@mui/material';
 import {LessonData, lsTimetable, TimetableData, WeekData} from '../types';
 import {ApiLessonData, Holiday} from '../../globalTypes';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import {useCustomTheme} from '../components/CustomTheme';
 import {useLayoutContext} from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -102,7 +101,6 @@ function getWeekFromDay(date: Date) {
 
 export default function Timetable() {
 
-	const {apiEndpoint} = useCustomTheme();
 	const {setFabs} = useLayoutContext();
 
 	const [timetables, setTimetables] = useState<TimetableData[]>([]);
@@ -121,7 +119,7 @@ export default function Timetable() {
 			endDate: dayjs(week[4]).format('YYYY-MM-DD'),
 			jwt: localStorage.getItem('jwt') ?? ''
 		});
-		const request = new Request(apiEndpoint + 'timetableWeek?' + query);
+		const request = new Request('/api/timetableWeek?' + query);
 
 		// No caching for now
 		return fetch(request).then((resp) => resp.json()).then((json) => {

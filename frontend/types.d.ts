@@ -59,7 +59,6 @@ export interface fetcherParams {
 }
 
 export interface customThemeType {
-	apiEndpoint: string,
 	dayjs: typeof dayjs,
 	setDesignData: Function,
 	setLessonColorEnum: Function,

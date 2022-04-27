@@ -14,7 +14,7 @@ import {
 
 import {FormEvent, useState} from 'react';
 import {useCustomTheme} from './CustomTheme';
-import {setupData} from '../types';
+import {JwtObject, setupData} from '../types';
 import {ethikKurse, fachrichtungen, leistungskurse, naturwissenschaften, sonstigesKurse, sportKurse} from '../enums';
 import {Jwt} from "../../globalTypes";
 
@@ -47,7 +47,7 @@ const SetupBody = ({
 	const [buttonColor, setButtonColor] = useState<'primary' | 'success' | 'error'>('primary');
 	const [autoValue, setAutoValue] = useState<{ label: string, value: string }[]>([]);
 
-	const {apiEndpoint, fetcher, jwt} = useCustomTheme();
+	const { fetcher, jwt} = useCustomTheme();
 
 	const checkLoginCredentials = (e: FormEvent) => {
 		e.preventDefault();
@@ -62,9 +62,10 @@ const SetupBody = ({
 			},
 			useCache: false,
 		}).then((json) => {
-			if ((json as { jwt: Jwt }).jwt) {
+			const a = json as {jwt?: Jwt, message?: string}
+			if (a.jwt) {
 				setTimeout(() => {
-					jwt.set((json as { jwt: Jwt }).jwt);
+					jwt.set(a.jwt);
 					nextStep(3);
 					saveData({disableButton: false});
 				});
@@ -72,7 +73,7 @@ const SetupBody = ({
 			}
 			setTimeout(() => {
 				setIsLoading(false);
-				if ((json as { message: string }).message !== 'OK') {
+				if (a.message !== 'OK') {
 					setButtonColor('error');
 					saveData({disableButton: true});
 					setTimeout(() => {
@@ -135,32 +136,14 @@ const SetupBody = ({
 				<h1>Fächer wählen</h1>
 				<form onSubmit={(e) => {
 					e.preventDefault();
-					//TODO: use new fetcher
-					fetch(apiEndpoint + 'register', {
-						method: 'post',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify(data)
-					}).then(async (response) => {
-						let json;
-
-						try {
-							json = await response.json();
-						} catch (e) {
-							throw new Error(response.statusText);
-						}
-
-						if (!response.ok) {
-							if (json?.error) {
-								throw new Error(json?.message);
-							}
-							throw new Error('Server konnte nicht erreicht werden.');
-						}
-						jwt.set(json.jwt);
-					}).catch((e) => {
-						console.error(e);
-					});
+					fetcher({
+						endpoint: 'register',
+						method: 'POST',
+						useCache: false,
+						query: data
+					}).then((json) => {
+						jwt.set((json as {jwt: JwtObject}).jwt);
+					})
 
 				}}>
 					<Stack {...stackProps}>
