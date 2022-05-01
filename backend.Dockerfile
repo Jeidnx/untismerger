@@ -1,10 +1,10 @@
 FROM node:latest
 
-WORKDIR /untismerger/src
-COPY backend /untismerger/src
-COPY globalTypes.d.ts /untismerger
+WORKDIR /untismerger/backend
+COPY . /untismerger/
+
 RUN npm install
 RUN npm run build
 
-ENTRYPOINT [ "node", "./build/src/api.js" ]
+ENTRYPOINT [ "node", "./out/src/api.js" ]
 

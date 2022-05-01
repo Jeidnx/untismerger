@@ -1,17 +1,11 @@
 /* Handles cancelled Lessons and periodically checks for cancelled lessons */
-import {configInterface} from '../types';
 import {errorHandler} from './errorHandler';
-import {Pool} from 'mysql2';
 import * as  WebUntisLib from 'webuntis';
-
-let config;
-
-let db: Pool;
+import {RedisClientType} from 'redis';
 
 const startTimes = [
 	800, 945, 1130, 1330, 1515
 ];
-
 
 const idsToCheck = [
 	2267,
@@ -28,19 +22,21 @@ const idsToCheck = [
 	2257,
 	2262,
 ];
-
-function initCancelScheduler(saveInterval: number, database: Pool, conf: configInterface) {
-	db = database;
-	config = conf;
+let redisClient: RedisClientType;
+let providers: [];
+function initNotifications(checkInterval: number, redis, notificationProviders) {
+	redisClient = redis;
+	providers = notificationProviders;
 	setInterval(function () {
 		const date = new Date();
 		date.setDate(date.getDate() + 7);
 		checkCancelled(new Date(), date);
-	}, saveInterval * 60 * 1000);
+	}, checkInterval * 60 * 60);
 }
 
 function checkCancelled(startDate: Date, endDate: Date) {
-	const untis = new WebUntisLib.WebUntisSecretAuth(
+	return;
+/*	const untis = new WebUntisLib.WebUntisSecretAuth(
 		config.secrets.SCHOOL_NAME,
 		config.secrets.UNTIS_USERNAME,
 		config.secrets.UNTIS_SECRET,
@@ -69,15 +65,16 @@ function checkCancelled(startDate: Date, endDate: Date) {
 		untis.logout().catch(errorHandler);
 
 
-	}).catch(errorHandler);
+	}).catch(errorHandler);*/
 }
 
 async function cancelHandler(elem: WebUntisLib.Lesson, lessonNr: string | number) {
 	if (!elem['su'][0] || !elem['su'][0]['name']) {
 		return;
 	}
+	console.log(elem);
 	return;
-	db.query('INSERT IGNORE INTO canceled_lessons (fach, lessonid) VALUES (?, ?)',
+/*	db.query('INSERT IGNORE INTO canceled_lessons (fach, lessonid) VALUES (?, ?)',
 		[elem['su'][0]['name'], elem['id']], (err, result) => {
 			if (err) {
 				errorHandler(err);
@@ -88,7 +85,7 @@ async function cancelHandler(elem: WebUntisLib.Lesson, lessonNr: string | number
 				sendNotification(elem.su[0].longname, convertUntisTimeDateToDate(elem.date, elem.startTime), lessonNr);
 
 			}
-		});
+		});*/
 }
 
 async function sendNotification(lesson: string, date: Date, lessonNr: string | number) {
@@ -142,4 +139,4 @@ function convertUntisTimeDateToDate(date: number, startTime: number): Date {
 	return new Date(year, month - 1, day, hour, minutes);
 }
 
-export {initCancelScheduler, cancelHandler};
+export {initNotifications, cancelHandler};
