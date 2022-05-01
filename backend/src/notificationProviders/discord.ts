@@ -16,8 +16,6 @@ export function sendNotification({title, payload, targets}: NotificationProps) {
 				dm.sendMessage(
 					title + '\n' + payload,
 					res);
-			} else {
-				errorHandler(new Error('Couldnt send notification via Discord to: ' + target));
 			}
 		}).catch(errorHandler);
 	});
@@ -120,7 +118,7 @@ dm.onMessage = async (msg, id, send, waitFor) => {
 				send('Du musst als nächstes einen Token von der Website anfordern.' +
 					'Gehe dazu auf https://untismerger.hems2.de/settings' +
 					'\nAnschließend kannst du den Token einfach hier einfügen.');
-				await waitFor(10).then((response) => {
+				await waitFor(120).then((response) => {
 					if (/^\d+$/.test(response)) {
 						if (response === discordAuthObj[chats[id]]?.toString()) {
 							return redisClient.SET('discordForward:' + chats[id], id).then((res) => {
