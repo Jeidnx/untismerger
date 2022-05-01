@@ -207,7 +207,7 @@ const providers = process.env.NOTIFICATION_PROVIDERS ? process.env.NOTIFICATION_
 }) : [];
 
 if (providers.length > 0) {
-	Notify.initNotifications(10, redisClient, notificationProviders);
+	Notify.initNotifications(1, redisClient, notificationProviders, getTargets);
 	console.log('Using notification providers: ');
 	providers.forEach((provider) => {
 		console.log(' - ' + provider);
@@ -855,6 +855,12 @@ function getUserData(username: string): Promise<{
 					sonstiges: await dbQuery('SELECT fach FROM fach WHERE user = ?', [res1[0].id]).then((res2: []) => res2.map((elem: { fach: string }) => (elem.fach))),
 				});
 			});
+	});
+}
+
+async function getTargets(lessonNr: string | number){
+	return dbQuery('SELECT username from user LEFT JOIN fach on user.id = fach.user WHERE ? in (lk, fachrichtung, fach.fach) GROUP BY username;', [lessonNr]).then((res) => {
+		return (res as {username: string}[]).map((e) => e.username);
 	});
 }
 

@@ -2,6 +2,7 @@
 import {errorHandler} from './errorHandler';
 import * as  WebUntisLib from 'webuntis';
 import {RedisClientType} from 'redis';
+import {NotificationProps} from '../types';
 
 const startTimes = [
 	800, 945, 1130, 1330, 1515
@@ -23,9 +24,11 @@ const idsToCheck = [
 	2262,
 ];
 let redisClient: RedisClientType;
-let providers: [];
-function initNotifications(checkInterval: number, redis, notificationProviders) {
+let providers: ((props: NotificationProps) => void)[] = [];
+let getTargets;
+function initNotifications(checkInterval: number, redis, notificationProviders, getTargetsFromDb) {
 	redisClient = redis;
+	getTargets = getTargetsFromDb;
 	providers = notificationProviders;
 	setInterval(function () {
 		const date = new Date();
@@ -72,28 +75,33 @@ async function cancelHandler(elem: WebUntisLib.Lesson, lessonNr: string | number
 	if (!elem['su'][0] || !elem['su'][0]['name']) {
 		return;
 	}
-	console.log(elem);
-	return;
-/*	db.query('INSERT IGNORE INTO canceled_lessons (fach, lessonid) VALUES (?, ?)',
-		[elem['su'][0]['name'], elem['id']], (err, result) => {
-			if (err) {
-				errorHandler(err);
-				return;
-			}
-			//@ts-ignore
-			if (result.affectedRows > 0) {
-				sendNotification(elem.su[0].longname, convertUntisTimeDateToDate(elem.date, elem.startTime), lessonNr);
+	redisClient.GET('sentNotifications:' + elem.id).then((res) => {
+		if(res === 'sent'){
+			return;
+		}
 
-			}
-		});*/
+		const date = convertUntisTimeDateToDate(elem.date, elem.startTime);
+		if(date > new Date()){
+			sendNotification(elem,lessonNr, date);
+			redisClient.SET('sentNotifications:' + elem.id, 'sent');
+		}
+	});
 }
 
-async function sendNotification(lesson: string, date: Date, lessonNr: string | number) {
-	if (date < new Date()) {
-		return;
-	}
-	const notificationBody = getNotificationBody(lesson, date);
+async function sendNotification(elem: WebUntisLib.Lesson,lessonNr: string | number, date: Date) {
+	return new Promise((resolve, reject) => {
+		getTargets(lessonNr).then((res) => {
+			const notify: NotificationProps = {
+				title: 'Unterricht entfällt:',
+				payload: getNotificationBody(elem.su[0].longname, date),
+				targets: res,
+			};
 
+			providers.forEach((provider) => {
+				provider(notify);
+			});
+		}).catch(reject);
+	});
 }
 
 function getNotificationBody(lesson: string, date: Date): string {
@@ -105,7 +113,6 @@ function getNotificationBody(lesson: string, date: Date): string {
 
 	for (let i = 0; i < 3; i++) {
 		if (now.getDate() === help.getDate() && now.getMonth() === help.getMonth()) {
-			console.log(i);
 			if (i === 0) {
 				return `${lesson} entfällt heute.`;
 			}
