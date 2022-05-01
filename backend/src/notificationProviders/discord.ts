@@ -16,7 +16,7 @@ export function sendNotification({title, payload, targets}: NotificationProps) {
 				dm.sendMessage(
 					title + '\n' + payload,
 					res);
-			}else{
+			} else {
 				errorHandler(new Error('Couldnt send notification via Discord to: ' + target));
 			}
 		}).catch(errorHandler);
@@ -55,19 +55,19 @@ dm.onMessage = async (msg, id, send, waitFor) => {
 		return null;
 	});
 
-	switch (msg.toLowerCase()){
+	switch (msg.toLowerCase()) {
 		case 'stop': {
-			if(discordBackward && discordForward){
+			if (discordBackward && discordForward) {
 				redisClient.DEL('discordForward:' + discordBackward).then((res) => {
-					if(res){
+					if (res) {
 						redisClient.DEL('discordBackward:' + discordForward).then((res2) => {
-							if(res2){
+							if (res2) {
 								send('Erfolgreich entfernt');
-							}else{
+							} else {
 								throw new Error('Fehler');
 							}
 						});
-					}else{
+					} else {
 						throw new Error('Fehler');
 					}
 				}).catch((err) => {
@@ -87,16 +87,22 @@ dm.onMessage = async (msg, id, send, waitFor) => {
 			return;
 		}
 		case 'status': {
-			if(discordBackward){
-				send('Dein Discord account mit der ID `' + id + '` ist mit dem Untis account mit dem hash `' + discordBackward + '` verbunden.');
+			if (discordBackward) {
+				send('Dein Discord account mit der ID `' + id + '` ist mit dem Untis account mit dem hash `' + discordBackward + '` verbunden.\n' +
+					'Um den hash deines Untis accounts zu überprüfen, kannst du jetzt den Namen deines Untis accounts eingeben, um den Hash zu berechnen.');
+				waitFor(20).then((reply) => {
+					send('Der SHA256 hash von`' + reply + '` ist: `' + hash(reply) + '`.');
+				}).catch(() => {
+					send('Ok, dann nicht :(');
+				});
 				return;
 			}
 			send('Um deinen Discord account mit deinem Untis account zu verknüpfen, gib hier deinen Untis Namen ein.');
 			return;
 		}
 		default: {
-			if(discordBackward && discordForward){
-				send('Du bist bereits Registriert.');
+			if (discordBackward && discordForward) {
+				send('Du bist bereits Registriert. Wenn du hilfe benötigst, gib `help` ein.');
 				return;
 			}
 
@@ -118,9 +124,9 @@ dm.onMessage = async (msg, id, send, waitFor) => {
 					if (/^\d+$/.test(response)) {
 						if (response === discordAuthObj[chats[id]]?.toString()) {
 							return redisClient.SET('discordForward:' + chats[id], id).then((res) => {
-								if(res === 'OK'){
+								if (res === 'OK') {
 									return redisClient.SET('discordBackward:' + id, chats[id]).then((res2) => {
-										if(res2 === 'OK') {
+										if (res2 === 'OK') {
 											send('Dein Discord account mit der ID:`' + id + '` wurde efolgreich mit dem Untis Account mit dem hash `' + chats[id] + '` verbunden.');
 											return;
 										}
@@ -155,14 +161,23 @@ dm.onUserAdd = (name, id) => {
 		id).catch(errorHandler);
 };
 
-export function getAuthToken(username: string): number | undefined {
-	if (!Object.values(chats).includes(hash(username.toLowerCase()))){
-		return undefined;
-	}
+export function getAuthToken(username: string): Promise<number> {
+	return new Promise((resolve, reject) => {
+		const hName = hash(username.toLowerCase());
 
-	if (discordAuthObj[hash(username)]) return discordAuthObj[hash(username)];
+		redisClient.GET('discordForward:' + hName).then((res) => {
+			if (typeof res === 'string') {
+				reject('Dieser account ist bereits mit einem Discord Account verknüpft.');
+			}
+			if (!Object.values(chats).includes(hName)) {
+				reject('Du musst zuerst dem Discord Server beitreten, und den Anweisungen des bots folgen.');
+			}
 
-	const code = parseInt(Math.random().toFixed(6).replace('0.',''));
-	discordAuthObj[hash(username)] = code;
-	return code;
+			if (discordAuthObj[hName]) resolve(discordAuthObj[hName]);
+
+			const code = Math.floor(Math.random() * 900000) + 100000;
+			discordAuthObj[hName] = code;
+			resolve(code);
+		});
+	});
 }

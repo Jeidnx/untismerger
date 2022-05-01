@@ -134,11 +134,11 @@ const providers = process.env.NOTIFICATION_PROVIDERS ? process.env.NOTIFICATION_
 				}
 
 				decodeJwt(req.query.jwt as unknown as string).then((decoded) => {
-					const token = Discord.getAuthToken(decoded.username);
-					typeof token === 'undefined' ? res.status(INVALID_ARGS).json({
-						error: true,
-						message: 'Du musst zuerst dein Discord Account mit deinem Untis account verknüpfen. Trete dazu dem Server bei und befolge die Anweisung des Bots.'
-						}) : res.json({token});
+					Discord.getAuthToken(decoded.username).then((token) => {
+						res.json({token});
+					}).catch((err) => {
+						res.status(INVALID_ARGS).json({error: true, message: err});
+					});
 				});
 			});
 
