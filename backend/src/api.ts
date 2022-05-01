@@ -6,9 +6,10 @@ import express from 'express';
 import WebUntisLib from 'webuntis';
 import crypto from 'crypto';
 import dayjs from 'dayjs';
+import {createClient} from 'redis';
 
 import {errorHandler} from './errorHandler';
-import {cancelHandler} from './notifyHandler';
+import * as Notify from './notifyHandler';
 import * as statistics from './statistics';
 
 import {ApiLessonData, CustomExam, CustomHomework, Holiday, Jwt} from '../../globalTypes';
@@ -17,7 +18,6 @@ import {ApiLessonData, CustomExam, CustomHomework, Holiday, Jwt} from '../../glo
 import {sendNotification as sendNotificationMail} from './notificationProviders/mail';
 import {sendNotification as sendNotificationWebpush} from './notificationProviders/webpush';
 import {NotificationProps} from '../types';
-import {createClient} from 'redis';
 import * as Discord from './notificationProviders/discord';
 
 // Constants
@@ -207,6 +207,7 @@ const providers = process.env.NOTIFICATION_PROVIDERS ? process.env.NOTIFICATION_
 }) : [];
 
 if (providers.length > 0) {
+	Notify.initNotifications(10, redisClient, notificationProviders);
 	console.log('Using notification providers: ');
 	providers.forEach((provider) => {
 		console.log(' - ' + provider);
@@ -291,7 +292,7 @@ app.get('/timetableWeek', (req, res) => {
 						if (startTimes.includes(element.startTime)) {
 							out.push(element);
 							if (element.code === 'cancelled') {
-								cancelHandler(element, decoded.lk);
+								Notify.cancelHandler(element, decoded.lk);
 							}
 						}
 					}
@@ -302,7 +303,7 @@ app.get('/timetableWeek', (req, res) => {
 						if (startTimes.includes(element.startTime)) {
 							out.push(element);
 							if (element.code === 'cancelled') {
-								cancelHandler(element, decoded.fachrichtung);
+								Notify.cancelHandler(element, decoded.fachrichtung);
 							}
 						}
 					}
@@ -314,7 +315,7 @@ app.get('/timetableWeek', (req, res) => {
 						if (stArr[i]['su'].length < 1) continue;
 						const element = stArr[i];
 						if (element.code === 'cancelled') {
-							cancelHandler(element, element.su[0].name);
+							Notify.cancelHandler(element, element.su[0].name);
 						}
 						for (let j = 0; j < decoded['sonstiges'].length; j++) {
 							if (element['su'][0]['name'] === decoded['sonstiges'][j]) {
@@ -677,7 +678,9 @@ app.get('/getHomework', (req, res) => {
 					}).catch((err) => {
 						res.status(500).json({error: true, message: errorHandler(err)});
 					});
-				});
+				}).catch((err) => {
+					res.status(INVALID_ARGS).json({error: true, message: errorHandler(err)});
+			});
 		});
 });
 app.post('/addExam', express.json(), (req, res) => {

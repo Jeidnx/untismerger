@@ -125,6 +125,7 @@ export default function Timetable() {
 
 		// No caching for now
 		return fetch(request).then((resp) => resp.json()).then((json) => {
+			if(json.error) return Promise.reject('error');
 			const processedData = processData(json.lessons, json.holidays, week);
 			const fullTimeTable: WeekData = ({...processedData, type: 'fetched'} as WeekData);
 

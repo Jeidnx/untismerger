@@ -204,7 +204,7 @@ const Settings = () => {
 											method: 'GET',
 											query: {},
 										}).then((res) => {
-											setDiscordAuthCode(res.token as string);
+											setDiscordAuthCode((res as {token: string}).token);
 										}).catch((err) => {
 											setSnackbar({
 												text: err,
