@@ -15,6 +15,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import {useCustomTheme} from '../components/CustomTheme';
 import {DesignDataType} from '../../globalTypes';
 import {useLayoutContext} from '../components/Layout';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 import packageJson from '../package.json';
 
@@ -46,6 +47,7 @@ const Settings = () => {
 
 	const [appVersion, setAppVersion] = useState<string>('wird geladen');
 	const [theme, setTheme] = useState(renderTheme(initialTheme.designData));
+	const [discordAuthCode, setDiscordAuthCode] = useState<string | undefined>(undefined);
 
 	const {setDesignData, jwt, fetcher} = useCustomTheme();
 	const {setSnackbar} = useLayoutContext();
@@ -178,7 +180,52 @@ const Settings = () => {
 						Abmelden
 					</Button>
 					<h3>Benachrichtigungen</h3>
-					<p>work in progress</p>
+					{
+						//TODO: Check for notification provider instead of this
+						true && (<Box
+						sx={{
+							textAlign: 'center',
+						}}
+						>
+							{discordAuthCode ? <h3>{discordAuthCode} <IconButton
+							onClick={() => {
+							navigator.clipboard.writeText(discordAuthCode);
+						}}
+							>
+							<ContentCopyIcon />
+							</IconButton></h3> : <h4>Noch nicht angefordert</h4>}
+
+							<ButtonGroup>
+								<Button
+									onClick={() => {
+										fetcher({
+											endpoint: 'discordToken',
+											useCache: false,
+											method: 'GET',
+											query: {},
+										}).then((res) => {
+											setDiscordAuthCode(res.token as string);
+										}).catch((err) => {
+											setSnackbar({
+												text: err,
+												type: 'error',
+												open: true,
+											});
+										});
+									}}
+								>
+									Token Erhalten
+								</Button>
+								<Button
+									onClick={() => {
+										window.open('https://discord.gg/P8adQc8N63', '_blank')?.focus();
+									}}
+								>
+									Server beitreten
+								</Button>
+							</ButtonGroup>
+						</Box>)
+					}
 				</Box>
 				<Box
 					sx={{

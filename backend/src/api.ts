@@ -16,9 +16,9 @@ import {ApiLessonData, CustomExam, CustomHomework, Holiday, Jwt} from '../../glo
 // Notification Providers
 import {sendNotification as sendNotificationMail} from './notificationProviders/mail';
 import {sendNotification as sendNotificationWebpush} from './notificationProviders/webpush';
-import {sendNotification as sendNotificationDiscord} from './notificationProviders/discord';
 import {NotificationProps} from '../types';
 import {createClient} from 'redis';
+import * as Discord from './notificationProviders/discord';
 
 // Constants
 const INVALID_ARGS = 418;
@@ -36,7 +36,9 @@ if (
 	!process.env.MYSQL_HOST ||
 	!process.env.MYSQL_USER ||
 	!process.env.MYSQL_PASS ||
-	!process.env.MYSQL_DB
+	!process.env.MYSQL_DB ||
+	!process.env.REDIS_HOST ||
+	typeof process.env.REDIS_PASS === 'undefined'
 ) {
 	console.error('Missing env vars');
 	console.log(process.env);
@@ -75,6 +77,28 @@ try {
 	process.exit(1);
 }
 
+const redisClient = createClient({
+	password: process.env.REDIS_PASS,
+	socket: {
+		host: process.env.REDIS_HOST,
+	}
+});
+
+redisClient.on('error', errorHandler);
+redisClient.connect().catch(errorHandler);
+
+redisClient.SET('STARTUP_TEST', 123).then((res) => {
+	if (res !== 'OK') {
+		errorHandler(new Error('Cannot connect to Redis'));
+		process.exit(1);
+	}
+	redisClient.DEL('STARTUP_TEST');
+	console.log('Successfully connected to redis');
+}).catch((err) => {
+	console.log(errorHandler(err));
+	process.exit(1);
+});
+
 /// init vector used for encryption
 const iv = Buffer.alloc(16, process.env.SCHOOL_NAME);
 
@@ -91,27 +115,43 @@ app.use((req, res, next) => {
 http.createServer(app).listen(process.env.PORT);
 
 // Notification Provider specific settings
-const providers = process.env.NOTIFICATION_PROVIDERS.split(' ').flatMap((provider) => {
-	switch(provider) {
-		case 'Discord': {
-			if(
+const providers = process.env.NOTIFICATION_PROVIDERS ? process.env.NOTIFICATION_PROVIDERS.split(' ').flatMap((provider) => {
+	switch (provider) {
+		case 'discord': {
+			if (
 				!process.env.DISCORD_TOKEN
-			){
+			) {
 				console.log('Missing env vars for discord');
 				process.exit(1);
 			}
 
-			notificationProviders.push(sendNotificationDiscord);
-			//TODO: add Discord endpoints
+			notificationProviders.push(Discord.sendNotification);
+
+			app.get('/discordToken', (req, res) => {
+
+				if (!req.query.jwt) {
+					res.status(INVALID_ARGS).json({error: true, message: 'Invalid Args'});
+				}
+
+				decodeJwt(req.query.jwt as unknown as string).then((decoded) => {
+					const token = Discord.getAuthToken(decoded.username);
+					typeof token === 'undefined' ? res.status(INVALID_ARGS).json({
+						error: true,
+						message: 'Du musst zuerst dein Discord Account mit deinem Untis account verknüpfen. Trete dazu dem Server bei und befolge die Anweisung des Bots.'
+						}) : res.json({token});
+				});
+			});
+
+			Discord.initDiscord(process.env.DISCORD_TOKEN, redisClient, isUserRegistered, hash);
 			return ['Discord'];
 		}
 		case 'Mail': {
-			if(
+			if (
 				!process.env.SMTP_HOST ||
 				!process.env.SMTP_PORT ||
 				!process.env.SMTP_USER ||
 				!process.env.SMTP_PASS
-			){
+			) {
 				console.log('Missing env vars for Mail');
 				process.exit(1);
 			}
@@ -164,15 +204,14 @@ const providers = process.env.NOTIFICATION_PROVIDERS.split(' ').flatMap((provide
 			return [];
 		}
 	}
-});
+}) : [];
 
-if(providers.length > 0){
+if (providers.length > 0) {
 	console.log('Using notification providers: ');
 	providers.forEach((provider) => {
 		console.log(' - ' + provider);
 	});
 }
-
 
 app.get('/info', (req, res) => {
 	db.query('SELECT * FROM user LIMIT 1', (err) => {
@@ -676,15 +715,6 @@ app.post('/addHomework', express.json(), (req, res) => {
 });
 
 if (process.env.USE_STATISTICS === 'TRUE') {
-
-	if(
-		typeof process.env.REDIS_HOST === 'undefined' ||
-		typeof process.env.REDIS_PASS === 'undefined'
-	){
-		console.log('Missing env vars for statistics');
-		process.exit(1);
-	}
-
 	app.get('/getStats', (req, res) => {
 		if (!req.query['jwt'] || typeof req.query.jwt !== 'string') {
 			res.status(406).send({error: true, message: 'missing args'});
@@ -708,25 +738,13 @@ if (process.env.USE_STATISTICS === 'TRUE') {
 	//TODO: why does stack.map return undefined four times??
 	const routes = [];
 	app._router.stack.forEach((middleware) => {
-		if(middleware.route){
+		if (middleware.route) {
 			routes.push(middleware.route.path);
 		}
 	});
 
-	const redisClient = createClient({
-		password: process.env.REDIS_PASS,
-		socket: {
-			host: process.env.REDIS_HOST,
-		}
-	});
-
-	redisClient.on('error', errorHandler);
-	redisClient.connect().then(() => {
-		console.log('Connected to Redis');
-	}).catch(errorHandler);
-
 	statistics.initStatistics(routes, redisClient);
-	setInterval( () => {
+	setInterval(() => {
 		dbQuery('SELECT COUNT(id) as c FROM user;', []).then((result: { c: number }[]) => {
 			redisClient.HSET('statistics:' + dayjs().format('YYYY-MM-DD'), 'users', result[0].c);
 		}).catch(errorHandler);

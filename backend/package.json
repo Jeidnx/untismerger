@@ -3,8 +3,8 @@
   "version": "3.3.0",
   "description": "Untis Stundenplan sortierung",
   "scripts": {
-    "dev": "nodemon src/api.ts",
-    "build": "rm -rf build/ && tsc"
+    "dev": "npm run build && node out/src/api.js",
+    "build": "rm -rf out/ && tsc"
   },
   "author": "Jeidnx",
   "dependencies": {

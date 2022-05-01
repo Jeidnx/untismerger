@@ -7,7 +7,7 @@
     "target": "ESNext",
     "skipLibCheck": true,
     "strict": false,
-    "outDir": "./build",
+    "outDir": "./out",
     "alwaysStrict": true,
     "moduleResolution": "node",
     "removeComments": true,
