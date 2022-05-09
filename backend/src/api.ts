@@ -17,7 +17,7 @@ import {ApiLessonData, CustomExam, CustomHomework, Holiday, Jwt} from '../../glo
 // Notification Providers
 import {sendNotification as sendNotificationMail} from './notificationProviders/mail';
 import {sendNotification as sendNotificationWebpush} from './notificationProviders/webpush';
-import {NotificationProps} from '../types';
+import {LessonCache, NotificationProps,} from '../types';
 import * as Discord from './notificationProviders/discord';
 
 // Constants
@@ -28,7 +28,6 @@ const JWT_VERSION = 3;
 // Environment setup
 
 if (
-	!process.env.PORT ||
 	!process.env.SCHOOL_DOMAIN ||
 	!process.env.SCHOOL_NAME ||
 	!process.env.ENCRYPT ||
@@ -81,6 +80,7 @@ const redisClient = createClient({
 	password: process.env.REDIS_PASS,
 	socket: {
 		host: process.env.REDIS_HOST,
+		port: Number(process.env.REDIS_PORT),
 	}
 });
 
@@ -112,7 +112,7 @@ app.use((req, res, next) => {
 	statistics.addRequest(req.path);
 });
 
-http.createServer(app).listen(process.env.PORT);
+http.createServer(app).listen(8080);
 
 // Notification Provider specific settings
 const providers = process.env.NOTIFICATION_PROVIDERS ? process.env.NOTIFICATION_PROVIDERS.split(' ').flatMap((provider) => {
@@ -326,8 +326,8 @@ app.get('/timetableWeek', (req, res) => {
 					}
 
 					const sendArr = out.map((element): ApiLessonData => ({
-						date: element.date,
-						startTime: element.startTime,
+						startTime: convertUntisTimeDateToDate(element.date, element.startTime),
+						endTime: convertUntisTimeDateToDate(element.date, element.endTime),
 						code: element['code'] || 'regular',
 						shortSubject: element['su'][0]
 							? element['su'][0]['name'] : '🤷',
@@ -335,6 +335,7 @@ app.get('/timetableWeek', (req, res) => {
 							? element['su'][0]['longname'] : '🤷',
 						teacher: element['te'][0]
 							? element['te'][0]['longname'] : '🤷',
+						shortTeacher: element.su[0] ? element.su[0].longname : '🤷‍',
 						room: element['ro'][0] ? element['ro'][0]['name'] : '🤷‍',
 
 						//Text stuff
@@ -679,7 +680,7 @@ app.get('/getHomework', (req, res) => {
 						res.status(500).json({error: true, message: errorHandler(err)});
 					});
 				}).catch((err) => {
-					res.status(INVALID_ARGS).json({error: true, message: errorHandler(err)});
+				res.status(INVALID_ARGS).json({error: true, message: errorHandler(err)});
 			});
 		});
 });
@@ -711,6 +712,30 @@ app.post('/addHomework', express.json(), (req, res) => {
 			res.status(201).send({message: 'created'});
 		}).catch((e) => {
 			res.status(500).json({error: true, message: e.message});
+		});
+	}).catch((err) => {
+		res.status(INVALID_ARGS).json({error: true, message: errorHandler(err)});
+	});
+});
+
+app.post('/search', express.json(), (req, res) => {
+	if (
+		!req.body.jwt ||
+		!req.body.date ||
+		!req.body.param ||
+		!req.body.what ||
+		!['room', 'subject', 'teacher'].includes(req.body.what)
+	) {
+		res.status(INVALID_ARGS).json({error: true, message: 'Invalid args'});
+		return;
+	}
+
+	decodeJwt(req.body.jwt as string).then(getUntisSession).then((untis) => {
+		const start = performance.now();
+		searchThing(req.body.what, new Date(req.body.date as string), req.body.param, untis).then((searchRes) => {
+			res.json({time: Number(performance.now() - start).toFixed(), result: searchRes});
+		}).catch((err) => {
+			res.status(INVALID_ARGS).json({error: true, message: errorHandler(err)});
 		});
 	}).catch((err) => {
 		res.status(INVALID_ARGS).json({error: true, message: errorHandler(err)});
@@ -858,9 +883,9 @@ function getUserData(username: string): Promise<{
 	});
 }
 
-async function getTargets(lessonNr: string | number){
+async function getTargets(lessonNr: string | number) {
 	return dbQuery('SELECT username from user LEFT JOIN fach on user.id = fach.user WHERE ? in (lk, fachrichtung, fach.fach) GROUP BY username;', [lessonNr]).then((res) => {
-		return (res as {username: string}[]).map((e) => e.username);
+		return (res as { username: string }[]).map((e) => e.username);
 	});
 }
 
@@ -931,10 +956,126 @@ function decodeJwt(jwtString: string): Promise<Jwt> {
 	return new Promise((resolve, reject) => {
 		jwt.verify(jwtString, jwtSecret, (err, decoded) => {
 			if (err) {
-				reject();
+				reject(err);
 				return;
 			}
 			resolve((decoded as Jwt));
 		});
 	});
+}
+//TODO: Implement caching for all requests
+let latestImportTime = 0;
+let lessonCache: LessonCache = {};
+
+async function searchThing(what: 'teacher' | 'room' | 'subject', date: Date, param: string, untis: WebUntisLib) {
+	const updateLessonCache = async (): Promise<LessonCache> => {
+
+		const classIDs = await untis.getClasses().then((a) => a.map((b) => b.id));
+
+		const returnObj: LessonCache = {};
+
+		const newDate = new Date(date);
+		newDate.setDate(newDate.getDate() + 1);
+		await Promise.all(classIDs.map((id) => {
+			return untis.getTimetableForRange(date, newDate, id, 1).then((lessons) => {
+				return lessons.map((lesson) => {
+					const startTime = convertUntisTimeDateToDate(lesson.date, lesson.startTime);
+					const endTime = convertUntisTimeDateToDate(lesson.date, lesson.endTime);
+
+					if (typeof returnObj[getDateString(startTime)] !== 'object') {
+						returnObj[getDateString(startTime)] = {};
+					}
+
+
+					if (!Array.isArray(returnObj[getDateString(startTime)][getTimeString(startTime)])) {
+						returnObj[getDateString(startTime)][getTimeString(startTime)] = [];
+					}
+
+					//TODO: Centralize this conversion so we dont get any fuckups
+					returnObj[getDateString(startTime)][getTimeString(startTime)].push({
+						startTime,
+						endTime,
+						code: lesson.code || 'regular',
+						shortSubject: lesson.su[0]?.name || 'idk',
+						subject: lesson.su[0]?.longname || 'idk',
+						shortTeacher: lesson.te[0]?.name || 'idk',
+						teacher: lesson.te[0]?.longname || 'idk',
+						room: lesson.ro[0]?.name || 'idk',
+						lstext: lesson.lstext,
+						info: lesson.info,
+						subsText: lesson.substText,
+						sg: lesson.sg,
+						bkRemark: lesson.bkRemark,
+						bkText: lesson.bkText,
+					});
+					return Promise.resolve();
+				});
+			});
+		}));
+		return returnObj;
+
+	};
+
+	const findTimeKey = (keys: string[], key: string) => {
+		if (keys.includes(key)) return key;
+
+		const timeKeyCompareFunc = (a, b) => {
+			const as = Number(a.substring(0, 2));
+			const bs = Number(b.substring(0, 2));
+			return as !== bs ? as - bs
+				: Number(a.substring(3, 5)) - Number(b.substring(3, 5));
+		};
+
+		keys.sort(timeKeyCompareFunc);
+
+		let outKey = '00:00';
+		keys.forEach((e) => {
+			if (timeKeyCompareFunc(e, key) < 0) {
+				outKey = e;
+			}
+		});
+		return outKey;
+	};
+
+	return new Promise((resolve, reject) => {
+		if (date.getTime() !== date.getTime()) {
+			reject('Invalid Date');
+			return;
+		}
+
+		untis.getLatestImportTime().then(async (time) => {
+			if (time > latestImportTime) {
+				lessonCache = await updateLessonCache();
+				latestImportTime = time;
+			}
+			if (!lessonCache[getDateString(date)]) {
+				await updateLessonCache().then((lc) => {
+					lessonCache = {
+						...lessonCache,
+						...lc,
+					};
+				});
+			}
+
+			if (!lessonCache[getDateString(date)]) {
+				resolve([]);
+				return;
+			}
+
+			const outDate = lessonCache[getDateString(date)];
+			resolve(outDate[findTimeKey(Object.keys(outDate), getTimeString(date))].flatMap((e) => {
+				if (e[what].toLowerCase() == param.toLowerCase()) return [e];
+				return [];
+			}));
+			return;
+		});
+	});
+}
+//TODO: figure out timezone fuckery
+function getDateString(date: Date): string {
+	return date.toISOString().substring(0, 10);
+}
+
+function getTimeString(date: Date): string {
+	return date.toISOString().substring(11, 16);
 }

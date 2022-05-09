@@ -28,11 +28,12 @@ export interface DesignDataType {
 }
 
 export interface ApiLessonData {
-    date: number,
-    startTime: number,
+    startTime: Date,
+    endTime: Date,
     code: "regular" | "cancelled" | "irregular",
     shortSubject: string,
     subject: string,
+    shortTeacher: string,
     teacher: string,
     room: string,
     lstext: string,
