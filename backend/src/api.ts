@@ -5,7 +5,7 @@ import cors from 'cors';
 import express from 'express';
 import WebUntisLib from 'webuntis';
 import crypto from 'crypto';
-import dayjs from 'dayjs';
+import dayjs, {Dayjs} from 'dayjs';
 import {createClient} from 'redis';
 
 import {errorHandler} from './errorHandler';
@@ -329,6 +329,10 @@ app.get('/timetableWeek', (req, res) => {
 						startTime: convertUntisTimeDateToDate(element.date, element.startTime),
 						endTime: convertUntisTimeDateToDate(element.date, element.endTime),
 						code: element['code'] || 'regular',
+						courseNr: -1,
+						courseShortName: '',
+						courseName: '',
+						//TOOD
 						shortSubject: element['su'][0]
 							? element['su'][0]['name'] : '🤷',
 						subject: element['su'][0]
@@ -732,7 +736,7 @@ app.post('/search', express.json(), (req, res) => {
 
 	decodeJwt(req.body.jwt as string).then(getUntisSession).then((untis) => {
 		const start = performance.now();
-		searchThing(req.body.what, new Date(req.body.date as string), req.body.param, untis).then((searchRes) => {
+		searchThing(req.body.what, dayjs(req.body.date as string), req.body.param, untis).then((searchRes) => {
 			res.json({time: Number(performance.now() - start).toFixed(), result: searchRes});
 		}).catch((err) => {
 			res.status(INVALID_ARGS).json({error: true, message: errorHandler(err)});
@@ -963,24 +967,38 @@ function decodeJwt(jwtString: string): Promise<Jwt> {
 		});
 	});
 }
+
 //TODO: Implement caching for all requests
 let latestImportTime = 0;
 let lessonCache: LessonCache = {};
+const courseNameEnum: {
+	[key:string]: {
+		courseShortName: string,
+		courseName: string
+	}
+} = {};
 
-async function searchThing(what: 'teacher' | 'room' | 'subject', date: Date, param: string, untis: WebUntisLib) {
+
+async function searchThing(what: 'teacher' | 'room' | 'subject', date: Dayjs, param: string, untis: WebUntisLib) {
 	const updateLessonCache = async (): Promise<LessonCache> => {
-
-		const classIDs = await untis.getClasses().then((a) => a.map((b) => b.id));
+		const classIDs = await untis.getClasses().then((klassen) => {
+			return klassen.map((klasse) => {
+				courseNameEnum[klasse.id] = {
+					courseShortName: klasse.name,
+					courseName: klasse.longName,
+				};
+				return klasse.id;
+			});
+		});
 
 		const returnObj: LessonCache = {};
 
-		const newDate = new Date(date);
-		newDate.setDate(newDate.getDate() + 1);
+		const newDate = date.add(1, 'day').toDate();
 		await Promise.all(classIDs.map((id) => {
-			return untis.getTimetableForRange(date, newDate, id, 1).then((lessons) => {
-				return lessons.map((lesson) => {
-					const startTime = convertUntisTimeDateToDate(lesson.date, lesson.startTime);
-					const endTime = convertUntisTimeDateToDate(lesson.date, lesson.endTime);
+			return untis.getTimetableForRange(date.toDate(), newDate, id, 1).then((lessons) => {
+				return lessons.map(async (lesson) => {
+					const startTime = dayjs(convertUntisTimeDateToDate(lesson.date, lesson.startTime));
+					const endTime = dayjs(convertUntisTimeDateToDate(lesson.date, lesson.endTime));
 
 					if (typeof returnObj[getDateString(startTime)] !== 'object') {
 						returnObj[getDateString(startTime)] = {};
@@ -991,11 +1009,21 @@ async function searchThing(what: 'teacher' | 'room' | 'subject', date: Date, par
 						returnObj[getDateString(startTime)][getTimeString(startTime)] = [];
 					}
 
+					function getCourseNames(id: number){
+						const a = courseNameEnum[id];
+						return {
+							courseShortName: a?.courseShortName,
+							courseName: a?.courseName,
+						};
+					}
+
 					//TODO: Centralize this conversion so we dont get any fuckups
 					returnObj[getDateString(startTime)][getTimeString(startTime)].push({
-						startTime,
-						endTime,
+						startTime: startTime.toDate(),
+						endTime: endTime.toDate(),
 						code: lesson.code || 'regular',
+						courseNr: id,
+						...getCourseNames(id),
 						shortSubject: lesson.su[0]?.name || 'idk',
 						subject: lesson.su[0]?.longname || 'idk',
 						shortTeacher: lesson.te[0]?.name || 'idk',
@@ -1013,32 +1041,37 @@ async function searchThing(what: 'teacher' | 'room' | 'subject', date: Date, par
 			});
 		}));
 		return returnObj;
-
 	};
 
-	const findTimeKey = (keys: string[], key: string) => {
-		if (keys.includes(key)) return key;
+	const findTimeKey = async (keys: string[], key: string): Promise<string> => {
+		return new Promise((resolve, reject) => {
 
-		const timeKeyCompareFunc = (a, b) => {
-			const as = Number(a.substring(0, 2));
-			const bs = Number(b.substring(0, 2));
-			return as !== bs ? as - bs
-				: Number(a.substring(3, 5)) - Number(b.substring(3, 5));
-		};
-
-		keys.sort(timeKeyCompareFunc);
-
-		let outKey = '00:00';
-		keys.forEach((e) => {
-			if (timeKeyCompareFunc(e, key) < 0) {
-				outKey = e;
+			if (keys.includes(key)){
+				resolve(key);
+				return;
 			}
+
+			const timeKeyCompareFunc = (a, b) => {
+				const as = Number(a.substring(0, 2));
+				const bs = Number(b.substring(0, 2));
+				return as !== bs ? as - bs
+					: Number(a.substring(3, 5)) - Number(b.substring(3, 5));
+			};
+
+			keys.sort(timeKeyCompareFunc);
+
+			let outKey;
+			keys.forEach((e) => {
+				if (timeKeyCompareFunc(e, key) < 0) {
+					outKey = e;
+				}
+			});
+			outKey ? resolve(outKey) : reject();
 		});
-		return outKey;
 	};
 
 	return new Promise((resolve, reject) => {
-		if (date.getTime() !== date.getTime()) {
+		if (!date.isValid()) {
 			reject('Invalid Date');
 			return;
 		}
@@ -1063,19 +1096,23 @@ async function searchThing(what: 'teacher' | 'room' | 'subject', date: Date, par
 			}
 
 			const outDate = lessonCache[getDateString(date)];
-			resolve(outDate[findTimeKey(Object.keys(outDate), getTimeString(date))].flatMap((e) => {
-				if (e[what].toLowerCase() == param.toLowerCase()) return [e];
-				return [];
-			}));
-			return;
-		});
+
+			findTimeKey(Object.keys(outDate), getTimeString(date)).then((key) => {
+				resolve(outDate[key as string].flatMap((e) => {
+					if (e[what].toLowerCase() == param.toLowerCase()) return [e];
+					return [];
+				}));
+			}).catch(() => {
+				reject('Not found');
+			});
+		}).catch(reject);
 	});
 }
-//TODO: figure out timezone fuckery
-function getDateString(date: Date): string {
-	return date.toISOString().substring(0, 10);
+
+function getDateString(date: Dayjs): string {
+	return date.format('YYYY-MM-DD');
 }
 
-function getTimeString(date: Date): string {
-	return date.toISOString().substring(11, 16);
+function getTimeString(date: Dayjs): string {
+	return date.format('HH:mm');
 }
