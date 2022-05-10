@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      dockerfile: backend.Dockerfile
+      context: .
+    hostname: backend
+    depends_on:
+      - redis
+    restart: always
+    environment:
+      # Base config
+      - SCHOOL_DOMAIN=foo.webuntis.com
+      - SCHOOL_NAME=BAR-school
+
+      - JWT_SECRET=super-secret-secret
+      - ENCRYPT=secretencryption
+
+      - REDIS_HOST=redis
+      - REDIS_PASS=super-secret-password
+
+      # Statistics conf
+      - USE_STATISTICS=TRUE
+
+      # Notification providers
+      - NOTIFICATION_PROVIDERS=discord
+      - DISCORD_TOKEN=insert-discord-token-here
+
+
+
+  redis:
+    image: redis:latest
+    restart: always
+    hostname: redis
+    command: redis-server --requirepass "super-secret-password"
+    volumes:
+      - ./data/redis:/data
+
+  frontend:
+    build:
+      dockerfile: frontend.Dockerfile
+      context: .
+    restart: on-failure
