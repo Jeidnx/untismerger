@@ -24,7 +24,7 @@ export default function Exams() {
 	const [subject, setSubject] = useState('');
 	const [text, setText] = useState('');
 	const [dueDate, setDueDate] = useState(dayjs().format('YYYY-MM-DD'));
-	const [kurs, setKurs] = useState('');
+	const [course, setCourse] = useState('');
 
 	const {setSnackbar, setFabs} = useLayoutContext();
 
@@ -90,7 +90,7 @@ export default function Exams() {
 					submit={() => {
 						setErrorMessage('');
 
-						if (!subject || !text || !kurs) {
+						if (!subject || !text || !course) {
 							setErrorMessage('Bitte gib alle benötigten Daten an.');
 							return;
 						}
@@ -100,7 +100,7 @@ export default function Exams() {
 							subject: subject,
 							text: text,
 							dueDate: dueDate,
-							kurs: kurs,
+							course: course,
 						};
 						fetcher({
 							method: 'POST',
@@ -158,12 +158,12 @@ export default function Exams() {
 						<TextField
 							required
 							select
-							name={'kurs'}
-							id={'kurs'}
+							name={'course'}
+							id={'course'}
 							margin={'dense'}
-							value={kurs}
+							value={course}
 							onChange={(e) => {
-								setKurs(e.target.value);
+								setCourse(e.target.value);
 							}}
 							label={'Kurs'}
 							fullWidth
