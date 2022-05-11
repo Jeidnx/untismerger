@@ -4,8 +4,8 @@ import dayjs from 'dayjs';
 import {useEffect, useState} from 'react';
 import {Box} from '@mui/material';
 
-import {LessonData, lsTimetable, TimetableData, WeekData} from '../types';
-import {ApiLessonData, Holiday} from '../../globalTypes';
+import { lsTimetable, TimetableData, WeekData} from '../types';
+import {LessonData, Holiday} from '../../globalTypes';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {useCustomTheme} from '../components/CustomTheme';
 import {useLayoutContext} from '../components/Layout';
@@ -27,22 +27,6 @@ const startTimeEnum: any = {
 	'1515': 4,
 };
 
-const startTimeLookup: any = {
-	'800': '08:00',
-	'945': '09:45',
-	'1130': '11:30',
-	'1330': '13:30',
-	'1515': '15:15',
-};
-
-const endTimeLookup: any = {
-	'800': '09:30',
-	'945': '11:15',
-	'1130': '13:00',
-	'1330': '15:00',
-	'1515': '16:45',
-};
-
 const createTimeTableObject = (week: string[]): lsTimetable => {
 	const out: lsTimetable = {};
 	week.forEach((day: string) => {
@@ -58,7 +42,7 @@ const createTimeTableObject = (week: string[]): lsTimetable => {
 	return out;
 };
 
-const processData = (data: ApiLessonData[], holidays: Holiday[], week: string[]): lsTimetable => {
+const processData = (data: LessonData[], holidays: Holiday[], week: string[]): lsTimetable => {
 	//TODO: this could be better
 
 	const returnObj: lsTimetable = createTimeTableObject(week);
@@ -80,9 +64,9 @@ const processData = (data: ApiLessonData[], holidays: Holiday[], week: string[])
 	}
 
 	for (let i = 0; i < data.length; i++) {
-		const {date, startTime, ...newLesson} = data[i];
-		(newLesson as LessonData).startDate = dayjs(date + '' + startTimeLookup[startTime]);
-		(newLesson as LessonData).endDate = dayjs(date + '' + endTimeLookup[startTime]);
+		const {endTime, startTime, ...newLesson} = data[i];
+		(newLesson as LessonData).startTime = dayjs(startTime);
+		(newLesson as LessonData).endTime = dayjs(endTime);
 		// @ts-ignore
 		returnObj[date + ''][startTimeEnum[startTime]].push((newLesson as LessonData));
 	}

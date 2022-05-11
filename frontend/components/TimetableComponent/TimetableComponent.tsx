@@ -1,7 +1,8 @@
 import dayjs from 'dayjs';
 import Lesson from '../Lesson';
 import {alpha, Box, useTheme} from '@mui/material';
-import {displayedLesson, HolidayData, LessonData, TimetableData} from '../../types';
+import {displayedLesson, HolidayData, TimetableData} from '../../types';
+import {LessonData} from "../../../globalTypes";
 
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import de from 'dayjs/locale/de';
@@ -58,7 +59,8 @@ export default function TimetableComponent({timetableData}: { timetableData: Tim
 
 				}}>
 				{that.format('dddd')}
-			</span>);
+			</span>
+		);
 	};
 
 	return (
@@ -87,7 +89,6 @@ export default function TimetableComponent({timetableData}: { timetableData: Tim
 					padding: '1vw',
 					lineHeight: '1.0em',
 					backgroundColor: alpha(theme.palette.background.default, theme.designData.alpha),
-
 				}}>
 					{`${firstDay} - ${lastDay}`}
 				</span>
@@ -107,45 +108,47 @@ export default function TimetableComponent({timetableData}: { timetableData: Tim
 				</div>
 			</Box>
 			{
-				week.map((day: string, idx: number) =>
-					<Box
-						className={'oneDay'}
-						key={idx}
-						sx={{
-							display: 'flex',
-							flexDirection: 'column',
-							flex: '1',
-							height: '100%',
-							overflow: 'hidden',
-						}}>
-						{getWeekdaySpan(day, idx * 2)}
+				week.map((day: string, idx: number) => {
+					const dayData = timetable[day];
 
-						{
-							//TODO: why does this show a lint error???
-							instanceOfHoliday(timetable[day]) ? <Box
-									sx={{
-										flexGrow: '1',
-										margin: '1px',
-										backgroundColor: alpha(theme.palette.secondary.light, theme.designData.alpha),
-										color: theme.palette.secondary.contrastText,
-										display: 'flex',
-										justifyContent: 'center',
-										alignItems: 'center',
-										fontSize: '2em',
-										writingMode: {desktop: 'horizontal-tb', mobile: 'vertical-rl'},
-									}}
-								>
-									{
-										//@ts-expect-error Idk why
-										timetable[day].name}
-								</Box> :
-								//@ts-expect-error Idk why
-								timetable[day]?.map((lesson: displayedLesson, jdx: number) => {
-									return <Lesson lessons={lesson as (LessonData | undefined)[]} parentIdx={idx}
-												   jdx={jdx} key={idx + '' + jdx}/>;
-								})}
-					</Box>
-				)
+
+					return (
+						<Box
+							className={'oneDay'}
+							key={idx}
+							sx={{
+								display: 'flex',
+								flexDirection: 'column',
+								flex: '1',
+								height: '100%',
+								overflow: 'hidden',
+							}}>
+							{getWeekdaySpan(day, idx * 2)}
+
+							{
+								instanceOfHoliday(dayData) ? (
+									<Box
+										sx={{
+											flexGrow: '1',
+											margin: '1px',
+											backgroundColor: alpha(theme.palette.secondary.light, theme.designData.alpha),
+											color: theme.palette.secondary.contrastText,
+											display: 'flex',
+											justifyContent: 'center',
+											alignItems: 'center',
+											fontSize: '2em',
+											writingMode: {desktop: 'horizontal-tb', mobile: 'vertical-rl'},
+										}}
+									>{dayData.name}</Box>
+								) : (
+									dayData.map((lesson: displayedLesson, jdx: number) => {
+										return <Lesson lessons={lesson as (LessonData | undefined)[]} parentIdx={idx}
+													   jdx={jdx} key={idx + '' + jdx}/>;
+									})
+								)
+							}
+						</Box>)
+				})
 			}
 		</Box>
 	);

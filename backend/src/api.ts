@@ -12,7 +12,7 @@ import {errorHandler} from './errorHandler';
 import * as Notify from './notifyHandler';
 import * as statistics from './statistics';
 
-import {ApiLessonData, CustomExam, CustomHomework, Holiday, Jwt} from '../../globalTypes';
+import {LessonData, CustomExam, CustomHomework, Holiday, Jwt} from '../../globalTypes';
 
 // Notification Providers
 import {sendNotification as sendNotificationMail} from './notificationProviders/mail';
@@ -325,7 +325,7 @@ app.get('/timetableWeek', (req, res) => {
 						}
 					}
 
-					const sendArr = out.map((element): ApiLessonData => ({
+					const sendArr = out.map((element): LessonData => ({
 						startTime: convertUntisTimeDateToDate(element.date, element.startTime),
 						endTime: convertUntisTimeDateToDate(element.date, element.endTime),
 						code: element['code'] || 'regular',
@@ -728,7 +728,7 @@ app.post('/search', express.json(), (req, res) => {
 		!req.body.date ||
 		!req.body.param ||
 		!req.body.what ||
-		!['room', 'subject', 'teacher'].includes(req.body.what)
+		!['room', 'subject', 'teacher', 'courseNr'].includes(req.body.what)
 	) {
 		res.status(INVALID_ARGS).json({error: true, message: 'Invalid args'});
 		return;
@@ -979,7 +979,7 @@ const courseNameEnum: {
 } = {};
 
 
-async function searchThing(what: 'teacher' | 'room' | 'subject', date: Dayjs, param: string, untis: WebUntisLib) {
+async function searchThing(what: 'teacher' | 'room' | 'subject' | 'courseNr', date: Dayjs, param: string, untis: WebUntisLib) {
 	const updateLessonCache = async (): Promise<LessonCache> => {
 		const classIDs = await untis.getClasses().then((klassen) => {
 			return klassen.map((klasse) => {
@@ -1075,7 +1075,6 @@ async function searchThing(what: 'teacher' | 'room' | 'subject', date: Dayjs, pa
 			reject('Invalid Date');
 			return;
 		}
-
 		untis.getLatestImportTime().then(async (time) => {
 			if (time > latestImportTime) {
 				lessonCache = await updateLessonCache();
@@ -1098,8 +1097,9 @@ async function searchThing(what: 'teacher' | 'room' | 'subject', date: Dayjs, pa
 			const outDate = lessonCache[getDateString(date)];
 
 			findTimeKey(Object.keys(outDate), getTimeString(date)).then((key) => {
+				//TODO: write better search algorithm
 				resolve(outDate[key as string].flatMap((e) => {
-					if (e[what].toLowerCase() == param.toLowerCase()) return [e];
+					if (e[what] == param) return [e];
 					return [];
 				}));
 			}).catch(() => {

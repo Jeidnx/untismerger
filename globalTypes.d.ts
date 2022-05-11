@@ -1,3 +1,5 @@
+import dayjs from "dayjs";
+
 export interface Jwt {
     version: number,
     username: string,
@@ -27,9 +29,15 @@ export interface DesignDataType {
     alpha: number,
 }
 
-export interface ApiLessonData {
-    startTime: Date,
-    endTime: Date,
+export interface WeekData {
+    [key: string]: DayData
+}
+
+export type DayData = Holiday | LessonData[];
+
+export interface LessonData {
+    startTime: dayjs,
+    endTime: dajys,
     code: "regular" | "cancelled" | "irregular",
     courseNr: number,
     courseName: string,

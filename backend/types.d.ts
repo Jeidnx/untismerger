@@ -1,4 +1,4 @@
-import {ApiLessonData} from '../globalTypes';
+import {LessonData} from '../globalTypes';
 
 export type NotificationProviders = 'Discord' | 'Webpush' | 'Mail'
 
@@ -18,6 +18,6 @@ export type StartTime = string;
 
 export interface LessonCache {
 	[key: DateString]: {
-		[key: StartTime]: ApiLessonData[]
+		[key: StartTime]: LessonData[]
 	}
 }

@@ -1,23 +1,5 @@
-import {Dayjs} from 'dayjs';
 import {Jwt} from '../globalTypes';
 
-
-// Format for the individual lessons
-export interface LessonData {
-	startDate: Dayjs,
-	endDate: Dayjs,
-	code: 'regular' | 'cancelled' | 'irregular',
-	shortSubject: string,
-	subject: string,
-	teacher: string,
-	room: string,
-	lstext: string,
-	info: string,
-	subsText: string,
-	sg: string,
-	bkRemark: string,
-	bkText: string
-}
 
 export interface JwtObject {
 	set: (newJwt: string) => void,

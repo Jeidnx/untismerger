@@ -1,7 +1,8 @@
 import {Box, useTheme} from '@mui/material'
 import {MutableRefObject, useEffect, useMemo, useRef, useState} from 'react';
 
-import {displayedLesson, LessonData} from "../../types";
+import {displayedLesson,} from "../../types";
+import {LessonData } from "../../../globalTypes";
 import {useCustomTheme} from "../CustomTheme";
 import style from './Lesson.module.css';
 // @ts-ignore
@@ -81,7 +82,7 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: displayedLesson, parentIdx
 					const color = colors[idx];
 					const textColor = theme.palette.getContrastText(color);
 
-					if (lesson.endDate.isBefore(undefined)) {
+					if (lesson.endTime.isBefore(undefined)) {
 						setTimeout(() => {
 							if (!rootDiv.current) return;
 							rootDiv.current.style.filter = "grayscale(100%)";
