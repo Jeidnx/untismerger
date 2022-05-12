@@ -1,4 +1,16 @@
-import {Box, useTheme} from '@mui/material'
+import {
+	Box,
+	Button,
+	ButtonGroup,
+	Dialog,
+	DialogContent,
+	DialogTitle,
+	IconButton,
+	Paper,
+	useMediaQuery,
+	useTheme
+} from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close';
 import {MutableRefObject, useEffect, useMemo, useRef, useState} from 'react';
 
 import {displayedLesson, LessonData} from "../../types";
@@ -25,6 +37,8 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: displayedLesson, parentIdx
 	const [nameIsOverflowing, setNameIsOverflowing] = useState(false);
 	const theme = useTheme();
 	const {setLessonColorEnum} = useCustomTheme()
+	const [modalOpen, setModalOpen] = useState(false);
+	const [modalSelected, setModalSelected] = useState(0);
 
 	const colorEnum = theme.designData.lesson.colorEnum;
 
@@ -69,51 +83,116 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: displayedLesson, parentIdx
 			return [thisColor]
 		})
 	}, [colorEnum])
+	const isMobile = useMediaQuery(theme.breakpoints.down('desktop'));
+	const selectedLesson = lessons[modalSelected];
 	return (
-		<Box
-			className={style.lessonBox}
-			sx={{
-				borderRadius: `${theme.designData.lesson.edges}px`,
-			}} ref={rootDiv as any as MutableRefObject<HTMLDivElement>}>
-			{
-				lessons.map((lesson: (LessonData | undefined), idx: number) => {
-					if (!lesson) return null;
-					const color = colors[idx];
-					const textColor = theme.palette.getContrastText(color);
-
-					if (lesson.endDate.isBefore(undefined)) {
-						setTimeout(() => {
-							if (!rootDiv.current) return;
-							rootDiv.current.style.filter = "grayscale(100%)";
-						}, ((parentIdx + 1) * (jdx + 1)) * 100)
-
-					}
-
-					return (<Box
-						key={idx}
-						className={style.lesson}
-						sx={{
-							backgroundColor: color,
-							color: textColor,
-							borderColor: textColor,
-							background:
-								lesson.code === "cancelled" ?
-									`repeating-linear-gradient( 45deg, ${color}, ${color} 10px, #e18c9c 10px, #e18c9c 20px )` :
-									lesson.code === "irregular" ?
-										`repeating-linear-gradient( 45deg, ${color}, ${color} 10px, #e6bc1a 10px, #e6bc1a 20px )` : color,
-							borderLeftStyle: idx > 0 ? "solid" : "none",
+		<>
+			{lessons.length > 0 && <Dialog
+                open={modalOpen}
+                onClose={() => {
+					setModalOpen(false);
+				}}
+                fullScreen={isMobile}
+            >
+                <DialogTitle
+                    sx={{
+						display: "inline-flex",
+						alignItems: "center",
+						justifyContent: "space-between",
+					}}
+                >
+					{lessons[0]?.startDate.format("DD.MM HH:mm")}
+                    <IconButton
+                        size={"large"}
+                        onClick={() => {
+							setModalOpen(false)
+						}}><CloseIcon/></IconButton>
+                </DialogTitle>
+                <DialogContent>
+					{lessons.length > 1 && <ButtonGroup
+                        variant={"outlined"}
+                        disableElevation={true}
+                        sx={{
+							marginBottom: "20px",
 						}}
-					>
-						<p
-							className={style.subject}
-						>{nameIsOverflowing ? lesson.shortSubject : lesson.subject}</p>
-						<p
-							className={style.infos}
-						>{lesson.room + " - " + lesson.teacher}</p>
-					</Box>)
-				})
-			}
-		</Box>
+                    >
+						{lessons.map((lesson, idx) => {
+							if (!lesson) return null;
+							const isSelected = modalSelected === idx;
+							return <Button
+								key={idx}
+								variant={isSelected ? "contained" : "outlined"}
+								onClick={() => {
+									setModalSelected(idx);
+								}}
+							>
+								{lesson.subject}</Button>
+						})}
+                    </ButtonGroup>}
+                    <Paper
+                        variant={"outlined"}
+                        sx={{
+							padding: "5px",
+						}}
+                    >
+						{
+							//TODO: Do this better
+						}
+                        <p>Fach: {selectedLesson?.subject}</p>
+                        <p>Lehrer: {selectedLesson?.teacher}</p>
+                        <p>Raum: {selectedLesson?.room}</p>
+                        <p>Status: {selectedLesson?.code}</p>
+                    </Paper>
+                </DialogContent>
+            </Dialog>}
+			<Box
+				className={style.lessonBox}
+				onClick={() => {
+					if (lessons.length > 0) setModalOpen(prevState => !prevState);
+				}}
+				sx={{
+					borderRadius: `${theme.designData.lesson.edges}px`,
+				}} ref={rootDiv as any as MutableRefObject<HTMLDivElement>}>
+				{
+					lessons.map((lesson: (LessonData | undefined), idx: number) => {
+						if (!lesson) return null;
+						const color = colors[idx];
+						const textColor = theme.palette.getContrastText(color);
+
+						if (lesson.endDate.isBefore(undefined)) {
+							setTimeout(() => {
+								if (!rootDiv.current) return;
+								rootDiv.current.style.filter = "grayscale(100%)";
+							}, ((parentIdx + 1) * (jdx + 1)) * 100)
+
+						}
+
+						return (<Box
+							key={idx}
+							className={style.lesson}
+							sx={{
+								backgroundColor: color,
+								color: textColor,
+								borderColor: textColor,
+								background:
+									lesson.code === "cancelled" ?
+										`repeating-linear-gradient( 45deg, ${color}, ${color} 10px, #e18c9c 10px, #e18c9c 20px )` :
+										lesson.code === "irregular" ?
+											`repeating-linear-gradient( 45deg, ${color}, ${color} 10px, #e6bc1a 10px, #e6bc1a 20px )` : color,
+								borderLeftStyle: idx > 0 ? "solid" : "none",
+							}}
+						>
+							<p
+								className={style.subject}
+							>{nameIsOverflowing ? lesson.shortSubject : lesson.subject}</p>
+							<p
+								className={style.infos}
+							>{lesson.room + " - " + lesson.teacher}</p>
+						</Box>)
+					})
+				}
+			</Box>
+		</>
 	)
 }
 
