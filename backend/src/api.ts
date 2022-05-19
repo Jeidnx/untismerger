@@ -6,9 +6,8 @@ import express from 'express';
 import WebUntisLib from 'webuntis';
 import crypto from 'crypto';
 import dayjs from 'dayjs';
-import {createClient} from 'redis';
 
-import {errorHandler} from './errorHandler';
+import {errorHandler, convertUntisTimeDateToDate, hash, convertUntisDateToDate} from './utils';
 import * as Notify from './notifyHandler';
 import * as statistics from './statistics';
 
@@ -17,8 +16,9 @@ import {ApiLessonData, CustomExam, CustomHomework, Holiday, Jwt} from '../../glo
 // Notification Providers
 import {sendNotification as sendNotificationMail} from './notificationProviders/mail';
 import {sendNotification as sendNotificationWebpush} from './notificationProviders/webpush';
-import {NotificationProps} from '../types';
-import * as Discord from './notificationProviders/discord';
+import {NotificationProps} from './types';
+import Discord from './notificationProviders/discord';
+import Redis from './redis';
 
 // Constants
 const INVALID_ARGS = 418;
@@ -54,6 +54,13 @@ const jwtSecret = process.env.JWT_SECRET;
 const schoolName = process.env.SCHOOL_NAME;
 const schoolDomain = process.env.SCHOOL_DOMAIN;
 
+Redis.initRedis({
+	host: process.env.REDIS_HOST,
+	port: Number(process.env.REDIS_PORT),
+	password: process.env.REDIS_PASS,
+	username: process.env.REDIS_USER,
+});
+
 const db = mysql.createPool({
 	host: process.env.MYSQL_HOST,
 	port: Number(process.env.MYSQL_PORT) || 3306,
@@ -75,28 +82,6 @@ try {
 	errorHandler(new Error('Cannot connect to db'));
 	process.exit(1);
 }
-
-const redisClient = createClient({
-	password: process.env.REDIS_PASS,
-	socket: {
-		host: process.env.REDIS_HOST,
-	}
-});
-
-redisClient.on('error', errorHandler);
-redisClient.connect().catch(errorHandler);
-
-redisClient.SET('STARTUP_TEST', 123).then((res) => {
-	if (res !== 'OK') {
-		errorHandler(new Error('Cannot connect to Redis'));
-		process.exit(1);
-	}
-	redisClient.DEL('STARTUP_TEST');
-	console.log('Successfully connected to redis');
-}).catch((err) => {
-	console.log(errorHandler(err));
-	process.exit(1);
-});
 
 /// init vector used for encryption
 const iv = Buffer.alloc(16, process.env.SCHOOL_NAME);
@@ -141,7 +126,7 @@ const providers = process.env.NOTIFICATION_PROVIDERS ? process.env.NOTIFICATION_
 				});
 			});
 
-			Discord.initDiscord(process.env.DISCORD_TOKEN, redisClient, isUserRegistered, hash);
+			Discord.initDiscord(process.env.DISCORD_TOKEN, isUserRegistered);
 			return ['Discord'];
 		}
 		case 'Mail': {
@@ -206,7 +191,7 @@ const providers = process.env.NOTIFICATION_PROVIDERS ? process.env.NOTIFICATION_
 }) : [];
 
 if (providers.length > 0) {
-	Notify.initNotifications(1, redisClient, notificationProviders, getTargets);
+	Notify.initNotifications(1, notificationProviders, getTargets);
 	console.log('Using notification providers: ');
 	providers.forEach((provider) => {
 		console.log(' - ' + provider);
@@ -745,16 +730,14 @@ if (process.env.USE_STATISTICS === 'TRUE') {
 		}
 	});
 
-	statistics.initStatistics(routes, redisClient);
-	setInterval(() => {
-		dbQuery('SELECT COUNT(id) as c FROM user;', []).then((result: { c: number }[]) => {
-			redisClient.HSET('statistics:' + dayjs().format('YYYY-MM-DD'), 'users', result[0].c);
-		}).catch(errorHandler);
-	}, 10 * 60 * 60 * 60);
-}
+	const countUsers = () => dbQuery('SELECT COUNT(id) as c FROM user;', []).then((result: { c: number }[]) => {
+		return result[0].c;
+	}).catch((err) => {
+		errorHandler(err);
+		return -1;
+	});
 
-function hash(str: string): string {
-	return crypto.createHash('sha256').update(str).digest('hex');
+	statistics.initStatistics(routes, countUsers );
 }
 
 function encrypt(str: string): string {
@@ -875,32 +858,6 @@ function dbQuery(query: string, queryArgs: unknown[]): Promise<unknown> {
 			resolve(result);
 		});
 	});
-}
-
-function convertUntisTimeDateToDate(date: number, startTime: number): Date {
-
-	const year = Math.floor(date / 10000);
-	const month = Math.floor((date - (year * 10000)) / 100);
-	const day = (date - (year * 10000) - month * 100);
-
-	let index;
-	if (startTime >= 100) {
-		index = 2;
-	} else {
-		index = 1;
-	}
-	const hour = Math.floor(startTime / Math.pow(10, index));
-	const minutes = Math.floor(((startTime / 100) - hour) * 100);
-
-	return new Date(year, month - 1, day, hour, minutes);
-}
-
-function convertUntisDateToDate(date: number): Date {
-	const year = Math.floor(date / 10000);
-	const month = Math.floor((date - (year * 10000)) / 100);
-	const day = (date - (year * 10000) - month * 100);
-
-	return new Date(year, month - 1, day);
 }
 
 function signJwt(userObj: Jwt): Promise<string> {

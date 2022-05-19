@@ -1,7 +1,8 @@
 import dayjs from 'dayjs';
 import {RedisClientType } from 'redis';
 import {Statistic} from '../../globalTypes';
-import {errorHandler} from './errorHandler';
+import {errorHandler} from './utils';
+import Redis from './redis';
 
 let redisClient: RedisClientType;
 let routes: string[] = [];
@@ -48,15 +49,18 @@ const getStats = async (): Promise<Statistic[]> => {
 	}));
 };
 
-function initStatistics(routesIn: string[], redisIn) {
-	redisClient = redisIn;
+function initStatistics(routesIn: string[], countUsers: () => Promise<number>) {
 	routes = routesIn;
-	console.log('Using statistics');
-	console.log('Tracking statistics for: ');
+	console.log('[Statistics] Tracking statistics for: ');
 	routes.forEach((route) => {
-		console.log(' - ', route);
+		console.log('[Statistics] - ', route);
 	});
-	return redisClient;
+
+	setInterval(() => {
+		countUsers().then((users) => {
+			Redis.client.HSET('statistics:' + dayjs().format('YYYY-MM-DD'), {users});
+		});
+	}, 10 * 60 * 60 * 60);
 }
 
 export {addRequest,getStats, initStatistics};

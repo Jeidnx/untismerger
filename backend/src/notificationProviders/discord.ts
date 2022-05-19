@@ -1,15 +1,14 @@
 /* Used to send notifications via Discord */
-
-import {NotificationProps} from '../../types';
+import {hash} from '../utils';
+import {NotificationProps} from '../types';
 import dm from 'djs-messenger';
-import {errorHandler} from '../errorHandler';
+import {errorHandler} from '../utils';
 import {RedisClientType} from 'redis';
 
 let redisClient: RedisClientType;
 let isRegistered;
-let hash;
 
-export function sendNotification({title, payload, targets}: NotificationProps) {
+function sendNotification({title, payload, targets}: NotificationProps) {
 	targets.forEach((target) => {
 		redisClient.GET('discordForward:' + target).then((res) => {
 			if (typeof res === 'string') {
@@ -21,10 +20,8 @@ export function sendNotification({title, payload, targets}: NotificationProps) {
 	});
 }
 
-export function initDiscord(discordToken, redis, isUserRegistered, hashFunc) {
-	redisClient = redis;
+function initDiscord(discordToken, isUserRegistered) {
 	isRegistered = isUserRegistered;
-	hash = hashFunc;
 	dm.login(discordToken).then(client => {
 		console.log('[djs-messenger] Logged in as', client.user.tag);
 	});
@@ -159,7 +156,7 @@ dm.onUserAdd = (name, id) => {
 		id).catch(errorHandler);
 };
 
-export function getAuthToken(username: string): Promise<number> {
+function getAuthToken(username: string): Promise<number> {
 	return new Promise((resolve, reject) => {
 		const hName = hash(username.toLowerCase());
 
@@ -179,3 +176,12 @@ export function getAuthToken(username: string): Promise<number> {
 		});
 	});
 }
+
+
+const Discord = {
+	getAuthToken,
+	initDiscord,
+	sendNotification,
+};
+
+export default Discord;

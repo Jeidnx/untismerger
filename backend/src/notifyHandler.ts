@@ -1,8 +1,7 @@
 /* Handles cancelled Lessons and periodically checks for cancelled lessons */
-import {errorHandler} from './errorHandler';
 import * as  WebUntisLib from 'webuntis';
 import {RedisClientType} from 'redis';
-import {NotificationProps} from '../types';
+import {NotificationProps} from './types';
 
 const startTimes = [
 	800, 945, 1130, 1330, 1515
@@ -26,11 +25,10 @@ const idsToCheck = [
 let redisClient: RedisClientType;
 let providers: ((props: NotificationProps) => void)[] = [];
 let getTargets;
-function initNotifications(checkInterval: number, redis, notificationProviders, getTargetsFromDb) {
-	redisClient = redis;
+function initNotifications(checkInterval: number, notificationProviders, getTargetsFromDb) {
 	getTargets = getTargetsFromDb;
 	providers = notificationProviders;
-	setInterval(function () {
+	setInterval(() => {
 		const date = new Date();
 		date.setDate(date.getDate() + 7);
 		checkCancelled(new Date(), date);
@@ -53,7 +51,7 @@ function checkCancelled(startDate: Date, endDate: Date) {
 					cancelHandler(lesson, lesson.su[0].name);
 				}
 			});
-		}).catch(errorHandler);
+		}).catch(utils);
 		// General courses
 		for (let i = 0; i < idsToCheck.length; i++) {
 			await untis.getTimetableForRange(startDate, endDate, idsToCheck[i], 1).then(lessons => {
@@ -63,12 +61,12 @@ function checkCancelled(startDate: Date, endDate: Date) {
 						cancelHandler(lesson, idsToCheck[i].toString());
 					}
 				});
-			}).catch(errorHandler);
+			}).catch(utils);
 		}
-		untis.logout().catch(errorHandler);
+		untis.logout().catch(utils);
 
 
-	}).catch(errorHandler);*/
+	}).catch(utils);*/
 }
 
 async function cancelHandler(elem: WebUntisLib.Lesson, lessonNr: string | number) {
