@@ -15,7 +15,7 @@ dayjs.tz.setDefault('Europe/Berlin');
 
 const CustomThemeContext = createContext(({} as customThemeType));
 
-const useDevApi = false;
+const useDevApi = true;
 let debounceSave: NodeJS.Timeout;
 
 // Provider

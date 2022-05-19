@@ -1,14 +1,16 @@
-import dayjs from "dayjs";
+import { Dayjs } from "dayjs";
 
 export interface Jwt {
+    /// Version number to introduce breaking changes
     version: number,
+    /// Untis username
     username: string,
-    lk: number,
-    fachrichtung: number,
-    sonstiges: string[],
-    type: "password",
+    /// Encrypted untis password
     password: string,
-    secureid: number,
+    /// stringified JSON data for choosing right data
+    data: string,
+    /// Unique ID to invalidate old JWTs
+    secId: number,
 }
 
 export interface DesignDataType {
@@ -36,8 +38,9 @@ export interface WeekData {
 export type DayData = Holiday | LessonData[];
 
 export interface LessonData {
-    startTime: dayjs,
-    endTime: dajys,
+    startTime: Dayjs,
+    endTime: Dajys,
+    updatedAt,
     code: "regular" | "cancelled" | "irregular",
     courseNr: number,
     courseName: string,

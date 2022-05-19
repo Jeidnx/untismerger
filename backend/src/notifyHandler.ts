@@ -1,8 +1,8 @@
 /* Handles cancelled Lessons and periodically checks for cancelled lessons */
-import {errorHandler} from './errorHandler';
 import * as  WebUntisLib from 'webuntis';
 import {RedisClientType} from 'redis';
 import {NotificationProps} from '../types';
+import {convertUntisTimeDateToDate, errorHandler} from './utils';
 
 const startTimes = [
 	800, 945, 1130, 1330, 1515
@@ -26,8 +26,7 @@ const idsToCheck = [
 let redisClient: RedisClientType;
 let providers: ((props: NotificationProps) => void)[] = [];
 let getTargets;
-function initNotifications(checkInterval: number, redis, notificationProviders, getTargetsFromDb) {
-	redisClient = redis;
+function initNotifications(checkInterval: number, notificationProviders, getTargetsFromDb) {
 	getTargets = getTargetsFromDb;
 	providers = notificationProviders;
 	setInterval(function () {
@@ -39,6 +38,7 @@ function initNotifications(checkInterval: number, redis, notificationProviders, 
 
 function checkCancelled(startDate: Date, endDate: Date) {
 	return;
+	//TODO
 /*	const untis = new WebUntisLib.WebUntisSecretAuth(
 		config.secrets.SCHOOL_NAME,
 		config.secrets.UNTIS_USERNAME,
@@ -126,24 +126,6 @@ function getNotificationBody(lesson: string, date: Date): string {
 		now.setDate(now.getDate() + 1);
 	}
 	return `${lesson} am ${String(date.getDate() + '.' + (date.getMonth() + 1))} entfällt.`;
-}
-
-function convertUntisTimeDateToDate(date: number, startTime: number): Date {
-
-	const year = Math.floor(date / 10000);
-	const month = Math.floor((date - (year * 10000)) / 100);
-	const day = (date - (year * 10000) - month * 100);
-
-	let index;
-	if (startTime >= 100) {
-		index = 2;
-	} else {
-		index = 1;
-	}
-	const hour = Math.floor(startTime / Math.pow(10, index));
-	const minutes = Math.floor(((startTime / 100) - hour) * 100);
-
-	return new Date(year, month - 1, day, hour, minutes);
 }
 
 export {initNotifications, cancelHandler};

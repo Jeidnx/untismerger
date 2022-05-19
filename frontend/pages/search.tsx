@@ -1,4 +1,4 @@
-import {alpha, Box, FormControl, InputLabel, MenuItem, Select, Stack, TextField, useTheme} from "@mui/material";
+import {alpha, Box, FormControl, InputLabel, MenuItem, Paper, Select, Stack, TextField, useTheme} from "@mui/material";
 import {useEffect, useMemo, useState} from "react";
 import dayjs from "dayjs";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -14,16 +14,20 @@ const searchOptions: { [key: string]: string } = {
 
 let debounceTimer: NodeJS.Timeout;
 
+interface SearchResult extends LessonData{
+	entityId: number,
+}
+
 export default function Search() {
 
 
 	const [loading, setLoading] = useState(false);
-	const [results, setResults] = useState<LessonData[]>([]);
+	const [results, setResults] = useState<SearchResult[]>([]);
 	const [lastTime, setLastTime] = useState(-1);
 
-	const [what, setWhat] = useState("");
-	const [param, setParam] = useState("");
-	const [date, setDate] = useState(dayjs());
+	const [query, setQuery] = useState("");
+	const [startTime, setStartTime] = useState(dayjs());
+	const [endTime, setEndTime] = useState(dayjs().add(1, "hour"));
 
 	const {fetcher} = useCustomTheme();
 	const theme = useTheme();
@@ -38,11 +42,12 @@ export default function Search() {
 				endpoint: "search",
 				useCache: false,
 				query: {
-					what, param,
-					date: date.toDate(),
+					startTime: startTime.toDate(),
+					endTime: endTime.toDate(),
+					query,
 				}
 			}).then((json) => {
-				setResults((json as { result: LessonData[] }).result);
+				setResults((json as { result: SearchResult[] }).result);
 				setLastTime(Number((json as { time: string }).time));
 				setLoading(false);
 			}).catch((err) => {
@@ -50,16 +55,21 @@ export default function Search() {
 				//TODO
 			})
 		}, 300);
-	}, [what, param, date, fetcher]);
+	}, [startTime, endTime, query, fetcher]);
 
 
-	const calculatedDate = useMemo(() => {
-		const tDate = date.toDate();
+	const calculatedStartTime = useMemo(() => {
+		const tDate = startTime.toDate();
 		tDate.setMinutes(tDate.getMinutes() - tDate.getTimezoneOffset());
 		return tDate.toISOString().slice(0, 16);
-	}, [date])
+	}, [startTime])
 
-	console.log(calculatedDate);
+	const calculatedEndTime = useMemo(() => {
+		const tDate = endTime.toDate();
+		tDate.setMinutes(tDate.getMinutes() - tDate.getTimezoneOffset());
+		return tDate.toISOString().slice(0, 16);
+	}, [endTime])
+
 	return (<Box
 		sx={{
 			width: "100%",
@@ -78,34 +88,28 @@ export default function Search() {
 			}}
 		>
 			<h1>Suche</h1>
-			<FormControl
-				fullWidth
-			>
-				<InputLabel id="what">Was</InputLabel>
-				<Select
-					fullWidth
-					value={what}
-					labelId={"what"}
-					label={"Was"}
-					onChange={(e) => {
-						setWhat(e.target.value)
-					}
-					}
-				>{Object.keys(searchOptions).map((key, idx) => {
-					return <MenuItem value={key} key={idx}>{searchOptions[key]}</MenuItem>
-				})}</Select>
-			</FormControl>
 			<TextField
-				value={param}
+				label={"Suche"}
+				value={query}
 				onChange={(e) => {
-					setParam(e.target.value);
+					setQuery(e.target.value);
 				}}
 			/>
 			<TextField
+				label={"Von"}
 				type={"datetime-local"}
-				value={calculatedDate}
+				value={calculatedStartTime}
 				onChange={(e) => {
-					setDate(dayjs(e.target.value));
+					setStartTime(dayjs(e.target.value));
+				}}
+
+			/>
+			<TextField
+				label={"Bis"}
+				type={"datetime-local"}
+				value={calculatedEndTime}
+				onChange={(e) => {
+					setEndTime(dayjs(e.target.value));
 				}}
 
 			/>
@@ -119,29 +123,24 @@ export default function Search() {
 					}}
 				>{results.length} Ergebnisse in {lastTime} ms</h2>
 					{
-						results.map((result, idx) => {
+						results.map((result) => {
 							return (
-								<Box
-									key={idx}
+								<Paper
+									key={result.entityId}
 									sx={{
-										display: "flex",
 										backgroundColor: alpha(theme.palette.background.default, theme.designData.alpha),
-										height: "15%",
-										flexDirection: "column",
-										alignItems: "flex-start",
-										justifyContent: "space-around",
 										marginBottom: "5%",
-										padding: "2%",
 										borderRadius: `${theme.designData.lesson.edges}px`,
 										fontSize: "1.2em",
 
 									}}
 								>
-									<span>Fach: {result.subject}</span>
-									<span>Lehrer: {result.teacher}</span>
-									<span>Raum: {result.room}</span>
-									<span>Kurs: {result.courseShortName}</span>
-								</Box>
+									{
+										//TODO: Make this less shit
+										Object.keys(result).map((key, idx) => (
+										<p key={result.entityId + "" + idx}>{key}: {result[key]}</p>
+									))}
+								</Paper>
 							)
 						})
 					}

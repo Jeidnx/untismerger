@@ -5,20 +5,23 @@ import cors from 'cors';
 import express from 'express';
 import WebUntisLib from 'webuntis';
 import crypto from 'crypto';
-import dayjs, {Dayjs} from 'dayjs';
-import {createClient} from 'redis';
+import dayjs from 'dayjs';
 
-import {errorHandler} from './errorHandler';
+import {convertUntisTimeDateToDate, errorHandler, hash} from './utils';
 import * as Notify from './notifyHandler';
 import * as statistics from './statistics';
+import Redis from './redis';
+import Lesson from './lesson';
 
-import {LessonData, CustomExam, CustomHomework, Holiday, Jwt} from '../../globalTypes';
+import {CustomExam, CustomHomework, Holiday, Jwt, LessonData} from '../../globalTypes';
 
 // Notification Providers
 import {sendNotification as sendNotificationMail} from './notificationProviders/mail';
 import {sendNotification as sendNotificationWebpush} from './notificationProviders/webpush';
-import {LessonCache, NotificationProps,} from '../types';
-import * as Discord from './notificationProviders/discord';
+import {NotificationProps,} from '../types';
+import Discord from './notificationProviders/discord';
+import User from './user';
+
 
 // Constants
 const INVALID_ARGS = 418;
@@ -35,14 +38,19 @@ if (
 	!process.env.MYSQL_HOST ||
 	!process.env.MYSQL_USER ||
 	!process.env.MYSQL_PASS ||
-	!process.env.MYSQL_DB ||
-	!process.env.REDIS_HOST ||
-	typeof process.env.REDIS_PASS === 'undefined'
+	!process.env.MYSQL_DB
 ) {
 	console.error('Missing env vars');
 	console.log(process.env);
 	process.exit(1);
 }
+
+Redis.initRedis({
+	host: process.env.REDIS_HOST,
+	password: process.env.REDIS_PASS,
+	username: process.env.REDIS_USER,
+	port: Number(process.env.REDIS_PORT),
+});
 
 const notificationProviders: ((props: NotificationProps) => void)[] = [];
 
@@ -76,28 +84,6 @@ try {
 	process.exit(1);
 }
 
-const redisClient = createClient({
-	password: process.env.REDIS_PASS,
-	socket: {
-		host: process.env.REDIS_HOST,
-		port: Number(process.env.REDIS_PORT),
-	}
-});
-
-redisClient.on('error', errorHandler);
-redisClient.connect().catch(errorHandler);
-
-redisClient.SET('STARTUP_TEST', 123).then((res) => {
-	if (res !== 'OK') {
-		errorHandler(new Error('Cannot connect to Redis'));
-		process.exit(1);
-	}
-	redisClient.DEL('STARTUP_TEST');
-	console.log('Successfully connected to redis');
-}).catch((err) => {
-	console.log(errorHandler(err));
-	process.exit(1);
-});
 
 /// init vector used for encryption
 const iv = Buffer.alloc(16, process.env.SCHOOL_NAME);
@@ -142,7 +128,7 @@ const providers = process.env.NOTIFICATION_PROVIDERS ? process.env.NOTIFICATION_
 				});
 			});
 
-			Discord.initDiscord(process.env.DISCORD_TOKEN, redisClient, isUserRegistered, hash);
+			Discord.initDiscord(process.env.DISCORD_TOKEN);
 			return ['Discord'];
 		}
 		case 'Mail': {
@@ -207,7 +193,7 @@ const providers = process.env.NOTIFICATION_PROVIDERS ? process.env.NOTIFICATION_
 }) : [];
 
 if (providers.length > 0) {
-	Notify.initNotifications(1, redisClient, notificationProviders, getTargets);
+	Notify.initNotifications(1, notificationProviders, getTargets);
 	console.log('Using notification providers: ');
 	providers.forEach((provider) => {
 		console.log(' - ' + provider);
@@ -250,6 +236,7 @@ app.get('/timetableWeek', (req, res) => {
 				.then(async (untis) => {
 					const startDate = new Date(req.query.startDate as string);
 					const endDate = new Date(req.query.endDate as string);
+					const dataObj = JSON.parse(decoded.data);
 
 					const mappedHolidays = untis.getHolidays().then((holidays): Holiday[] => {
 						return holidays.flatMap((holiday) => {
@@ -274,10 +261,10 @@ app.get('/timetableWeek', (req, res) => {
 						});
 					});
 
-					const lk = untis.getTimetableForRange(startDate, endDate, decoded.lk, 1).catch(() => {
+					const lk = untis.getTimetableForRange(startDate, endDate, dataObj.lk, 1).catch(() => {
 						return [];
 					});
-					const fachRichtung = untis.getTimetableForRange(startDate, endDate, decoded.fachrichtung, 1).catch(() => {
+					const fachRichtung = untis.getTimetableForRange(startDate, endDate, dataObj.fr, 1).catch(() => {
 						return [];
 					});
 					const sonstiges = untis.getTimetableForRange(startDate, endDate, 2232, 1).catch(() => {
@@ -292,7 +279,7 @@ app.get('/timetableWeek', (req, res) => {
 						if (startTimes.includes(element.startTime)) {
 							out.push(element);
 							if (element.code === 'cancelled') {
-								Notify.cancelHandler(element, decoded.lk);
+								Notify.cancelHandler(element, dataObj.lk);
 							}
 						}
 					}
@@ -303,7 +290,7 @@ app.get('/timetableWeek', (req, res) => {
 						if (startTimes.includes(element.startTime)) {
 							out.push(element);
 							if (element.code === 'cancelled') {
-								Notify.cancelHandler(element, decoded.fachrichtung);
+								Notify.cancelHandler(element, dataObj.fr);
 							}
 						}
 					}
@@ -329,6 +316,7 @@ app.get('/timetableWeek', (req, res) => {
 						startTime: convertUntisTimeDateToDate(element.date, element.startTime),
 						endTime: convertUntisTimeDateToDate(element.date, element.endTime),
 						code: element['code'] || 'regular',
+						updatedAt: -1,
 						courseNr: -1,
 						courseShortName: '',
 						courseName: '',
@@ -357,7 +345,7 @@ app.get('/timetableWeek', (req, res) => {
 			});
 		});
 });
-app.post('/register', express.json(), (req, res) => {
+app.post('/register', express.json(), async (req, res) => {
 	if (
 		!req.body?.loginMethod ||
 		!req.body?.username ||
@@ -383,14 +371,21 @@ app.post('/register', express.json(), (req, res) => {
 
 	const userObj = {
 		username: req.body.username,
-		lk: req.body.lk,
-		fachrichtung: req.body.fachrichtung,
-		sonstiges: sonstiges,
-		version: JWT_VERSION,
-		type: 'password' as const,
-		password: encrypt(req.body.password)
+		password: encrypt(req.body.password),
+		data: JSON.stringify({
+			lk: req.body.lk,
+			fr: req.body.fachrichtung,
+			so: sonstiges,
+		})
 	};
-	signJwt({...userObj, secureid: registerUser(userObj)}).then((signed) => {
+	const user = await User.registerUser(userObj);
+
+	signJwt({
+		...userObj,
+		//@ts-ignore
+		secId: user.secId,
+		version: JWT_VERSION,
+	}).then((signed) => {
 		res.status(201).json({
 			message: 'created',
 			jwt: signed,
@@ -415,123 +410,7 @@ app.post('/deleteUser', express.urlencoded({extended: true}), (req, res) => {
 		res.status(INVALID_ARGS).json({error: true, message: errorHandler(err)});
 	});
 });
-app.post('/rawRequest', express.urlencoded({extended: true}), (req, res) => {
-	if (!req.body['jwt'] ||
-		!req.body['requestType'] ||
-		!req.body['requestData']
-	) {
-		res.status(400).send({error: true, message: 'Missing args'});
-		return;
-	}
 
-	decodeJwt(req.body.jwt).then((decoded) => {
-		const requestData = JSON.parse(req.body['requestData']);
-
-		switch (req.body['requestType']) {
-			case 'getTimeTableFor': {
-				// Check if requestBody contains data for this request, if yes login and make it
-				if (!requestData['date'] || !requestData['id']) {
-					res.status(400).send({error: true, message: 'Invalid parameters'});
-					return;
-				}
-				getUntisSession(decoded).then((untis) => {
-					untis.getTimetableFor(new Date(requestData['date']), requestData['id'], 1).then((value) => {
-						res.send(value);
-						untis.logout().then();
-					}).catch((err) => {
-						res.status(400).send({error: true, message: errorHandler(err)});
-					});
-				}).catch((err) => {
-					res.status(400).send({error: true, message: errorHandler(err)});
-				});
-				return;
-			}
-			case 'getOwnTimeTableFor': {
-				if (!requestData['date']) {
-					res.status(400).send({error: true, message: 'Invalid parameters'});
-					return;
-				}
-				getUntisSession(decoded).then((untis) => {
-					untis.getOwnTimetableFor(new Date(requestData['date'])).then((value) => {
-						res.send(value);
-						untis.logout().then();
-					}).catch((err) => {
-						res.status(400).send({error: true, message: errorHandler(err)});
-					});
-				}).catch((err) => {
-					res.status(400).send({error: true, message: errorHandler(err)});
-				});
-				return;
-			}
-			case 'getTimeTableForRange': {
-				// Check if requestBody contains data for this request, if yes login and make it
-				if (!requestData['id'] || !requestData['rangeStart'] || !requestData['rangeEnd']) {
-					res.status(400).send({error: true, message: 'Invalid parameters'});
-					return;
-				}
-				getUntisSession(decoded).then((untis) => {
-					untis.getTimetableForRange(new Date(requestData['rangeStart']), new Date(requestData['rangeEnd']), requestData['id'], 1).then(value => {
-						res.send(value);
-						untis.logout().then();
-					});
-				}).catch(err => {
-					res.status(400).send({error: true, message: errorHandler(err)});
-				});
-				return;
-			}
-			case 'getRooms': {
-				getUntisSession(decoded).then((untis) => {
-					untis.getRooms().then(value => {
-						res.status(200).send(value);
-						untis.logout().then();
-					});
-				}).catch((err) => {
-					res.status(400).send({error: true, message: errorHandler(err)});
-				});
-				return;
-			}
-			case 'getSubjects': {
-				getUntisSession(decoded).then((untis) => {
-					untis.getSubjects().then(value => {
-						res.status(200).send(value);
-						untis.logout().then();
-					});
-				}).catch((err) => {
-					res.status(400).send({error: true, message: errorHandler(err)});
-				});
-				return;
-			}
-			case 'getClasses': {
-				getUntisSession(decoded).then((untis) => {
-					untis.getClasses().then(value => {
-						res.status(200).send(value);
-						untis.logout().then();
-					});
-				}).catch((err) => {
-					res.status(400).send({error: true, message: errorHandler(err)});
-				});
-				return;
-			}
-			case 'getHolidays': {
-				getUntisSession(decoded).then((untis) => {
-					untis.getHolidays().then(value => {
-						res.status(200).send(value);
-						untis.logout().then();
-					});
-				}).catch((err) => {
-					res.status(400).send({error: true, message: errorHandler(err)});
-				});
-				return;
-			}
-			// Write cases for applicable requests.
-			default: {
-				res.status(400).send({error: true, message: 'Invalid requestType'});
-			}
-		}
-	}).catch((err) => {
-		res.status(400).send({error: true, message: errorHandler(err)});
-	});
-});
 app.post('/checkCredentials', express.json(), (req, res) => {
 	if (!req.body?.username || !req.body?.password) {
 		res.status(400).json({error: true, message: 'Missing arguments'});
@@ -544,20 +423,18 @@ app.post('/checkCredentials', express.json(), (req, res) => {
 	}, false)
 		.then((untis) => {
 			const username: string = req.body.username.toLowerCase();
+			const hUsername: string = hash(username);
 
-			isUserRegistered(username).then((isRegistered) => {
-				if (!isRegistered) {
-					res.json({message: 'OK'});
-					return;
-				}
-
-				getUserData(username).then((data) => {
+			User.isUserRegistered(hUsername).then(() => {
+				User.searchUser(hUsername).then((data) => {
 					signJwt({
-						...data,
 						username: username,
 						password: encrypt(req.body.password),
+						//@ts-ignore
+						secId: data.secId,
+						//@ts-ignore
+						data: data.data,
 						version: JWT_VERSION,
-						type: 'password',
 					}).then((signed) => {
 						res.json({
 							message: 'OK',
@@ -630,9 +507,11 @@ app.get('/getExams', (req, res) => {
 					});
 				});
 
+				const dataObj = JSON.parse(decoded.data);
+
 				const dbPromise = dbQuery(
 					'SELECT subject, room, startTime, endTime FROM klausuren WHERE kurs in (?, ?, ?) and  endTime > now()',
-					[decoded.fachrichtung, decoded.lk, decoded.sonstiges]) as Promise<CustomExam[]>;
+					[dataObj.fr, dataObj.lk, dataObj.so]) as Promise<CustomExam[]>;
 
 				Promise.all([untisPromise, dbPromise]).then((resArr) => {
 					res.json({message: resArr[0].concat(resArr[1]).sort((a, b) => (new Date(a.startTime).getTime() - new Date(b.startTime).getTime()))});
@@ -671,9 +550,11 @@ app.get('/getHomework', (req, res) => {
 						});
 					});
 
+					const dataObj = JSON.parse(decoded.data);
+
 					const dbPromise = dbQuery(
 						'SELECT subject, text, dueDate FROM hausaufgaben WHERE kurs in (?, ?, ?) and  dueDate > (CURDATE() - INTERVAL 1 DAY)',
-						[decoded.fachrichtung, decoded.lk, decoded.sonstiges]).catch((err) => {
+						[dataObj.fr, dataObj.lk, dataObj.sonstiges]).catch((err) => {
 						errorHandler(err);
 						return [];
 					}) as Promise<CustomHomework[]>;
@@ -722,22 +603,40 @@ app.post('/addHomework', express.json(), (req, res) => {
 	});
 });
 
+
+
 app.post('/search', express.json(), (req, res) => {
 	if (
 		!req.body.jwt ||
-		!req.body.date ||
-		!req.body.param ||
-		!req.body.what ||
-		!['room', 'subject', 'teacher', 'courseNr'].includes(req.body.what)
+		!req.body.startTime ||
+		!req.body.endTime ||
+		!req.body.query
 	) {
 		res.status(INVALID_ARGS).json({error: true, message: 'Invalid args'});
 		return;
 	}
 
-	decodeJwt(req.body.jwt as string).then(getUntisSession).then((untis) => {
+	const startTime = dayjs(req.body.startTime);
+	const endTime = dayjs(req.body.endTime);
+
+	if(!startTime.isValid() || !endTime.isValid()){
+		res.status(INVALID_ARGS).json({error: true, message: 'Invalid Date'});
+		return;
+	}
+
+	decodeJwt(req.body.jwt as string).then(getUntisSession).then(async (untis) => {
 		const start = performance.now();
-		searchThing(req.body.what, dayjs(req.body.date as string), req.body.param, untis).then((searchRes) => {
-			res.json({time: Number(performance.now() - start).toFixed(), result: searchRes});
+		const q = req.body.query;
+		(await Lesson.searchLesson(dayjs(req.body.startTime), dayjs(req.body.endTime)))
+			.and('subject').match(q)
+			.or('shortSubject').match(q)
+			.or('teacher').match(q)
+			.or('shortTeacher').match(q)
+			.or('room').match(q)
+			.or('courseName').match(q)
+			.or('courseShortName').match(q)
+			.return.sortAsc('startTime').all().then((searchRes) => {
+			res.json({time: Number(performance.now() - start).toFixed(2), result: searchRes});
 		}).catch((err) => {
 			res.status(INVALID_ARGS).json({error: true, message: errorHandler(err)});
 		});
@@ -754,8 +653,8 @@ if (process.env.USE_STATISTICS === 'TRUE') {
 		}
 
 		decodeJwt(req.query.jwt).then((decoded) => {
-			isUserAdmin(decoded['username']).then(async bool => {
-				if (bool) {
+			User.getUserGroups(hash(decoded.username)).then(async (groups) => {
+				if(groups.includes('moderator')){
 					res.json({
 						stats: await statistics.getStats(),
 						endpoints: ['users', ...routes],
@@ -775,16 +674,7 @@ if (process.env.USE_STATISTICS === 'TRUE') {
 		}
 	});
 
-	statistics.initStatistics(routes, redisClient);
-	setInterval(() => {
-		dbQuery('SELECT COUNT(id) as c FROM user;', []).then((result: { c: number }[]) => {
-			redisClient.HSET('statistics:' + dayjs().format('YYYY-MM-DD'), 'users', result[0].c);
-		}).catch(errorHandler);
-	}, 10 * 60 * 60 * 60);
-}
-
-function hash(str: string): string {
-	return crypto.createHash('sha256').update(str).digest('hex');
+	statistics.initStatistics(routes);
 }
 
 function encrypt(str: string): string {
@@ -795,13 +685,6 @@ function encrypt(str: string): string {
 function decrypt(encrypted: string): string {
 	const decipher = crypto.createDecipheriv('aes128', process.env.ENCRYPT, iv);
 	return decipher.update(encrypted, 'hex', 'utf-8') + decipher.final('utf8');
-}
-
-function isUserAdmin(name: string): Promise<boolean> {
-	return dbQuery('SELECT isadmin FROM user WHERE username = ?', [hash(name)])
-		.then((res: { isadmin: 0 | 1 }[]) => {
-			return res[0].isadmin === 1;
-		});
 }
 
 function addExam(exam: CustomExam, username: string): Promise<void> {
@@ -830,63 +713,6 @@ function addHomework(homework: CustomHomework, username: string): Promise<void> 
 		);
 	});
 }
-
-function isUserRegistered(username: string): Promise<boolean> {
-	return dbQuery('SELECT id FROM user WHERE username = ?', [hash(username)]).then((res: []) => {
-		return res.length > 0;
-	});
-}
-
-function registerUser(userdata: {
-	username: string,
-	lk: number,
-	fachrichtung: number,
-	sonstiges: string[],
-}): number {
-	const others = userdata.sonstiges;
-	const randomid = getRandomInt(100000);
-
-	dbQuery('INSERT INTO user (username, lk, fachrichtung, secureid) VALUES (?, ?, ?, ?,)',
-		[hash(userdata.username), userdata.lk, userdata.fachrichtung, randomid]).then((result: { insertId: number }) => {
-		const id = result.insertId;
-		for (const ele of others) {
-			dbQuery('INSERT INTO fach (user, fach) VALUES (?, ?)', [id, ele]);
-		}
-	});
-
-	return randomid;
-}
-
-function getRandomInt(max: number): number {
-	return Math.floor(Math.random() * max);
-}
-
-function getUserData(username: string): Promise<{
-	lk: number,
-	fachrichtung: number,
-	secureid: number,
-	sonstiges: string[],
-}> {
-	return new Promise((resolve) => {
-		dbQuery('SELECT id, lk, fachrichtung, secureid FROM user WHERE username = ?', [hash(username)])
-			.then(async (res1: {
-				lk: number,
-				fachrichtung: number,
-				secureid: number,
-				id: number,
-			}[]) => {
-				if (!(res1.length > 0)) throw new Error('user not in db');
-				const thisUser = res1[0];
-				resolve({
-					lk: thisUser.lk,
-					fachrichtung: thisUser.fachrichtung,
-					secureid: thisUser.secureid,
-					sonstiges: await dbQuery('SELECT fach FROM fach WHERE user = ?', [res1[0].id]).then((res2: []) => res2.map((elem: { fach: string }) => (elem.fach))),
-				});
-			});
-	});
-}
-
 async function getTargets(lessonNr: string | number) {
 	return dbQuery('SELECT username from user LEFT JOIN fach on user.id = fach.user WHERE ? in (lk, fachrichtung, fach.fach) GROUP BY username;', [lessonNr]).then((res) => {
 		return (res as { username: string }[]).map((e) => e.username);
@@ -905,24 +731,6 @@ function dbQuery(query: string, queryArgs: unknown[]): Promise<unknown> {
 			resolve(result);
 		});
 	});
-}
-
-function convertUntisTimeDateToDate(date: number, startTime: number): Date {
-
-	const year = Math.floor(date / 10000);
-	const month = Math.floor((date - (year * 10000)) / 100);
-	const day = (date - (year * 10000) - month * 100);
-
-	let index;
-	if (startTime >= 100) {
-		index = 2;
-	} else {
-		index = 1;
-	}
-	const hour = Math.floor(startTime / Math.pow(10, index));
-	const minutes = Math.floor(((startTime / 100) - hour) * 100);
-
-	return new Date(year, month - 1, day, hour, minutes);
 }
 
 function convertUntisDateToDate(date: number): Date {
@@ -966,153 +774,4 @@ function decodeJwt(jwtString: string): Promise<Jwt> {
 			resolve((decoded as Jwt));
 		});
 	});
-}
-
-//TODO: Implement caching for all requests
-let latestImportTime = 0;
-let lessonCache: LessonCache = {};
-const courseNameEnum: {
-	[key:string]: {
-		courseShortName: string,
-		courseName: string
-	}
-} = {};
-
-
-async function searchThing(what: 'teacher' | 'room' | 'subject' | 'courseNr', date: Dayjs, param: string, untis: WebUntisLib) {
-	const updateLessonCache = async (): Promise<LessonCache> => {
-		const classIDs = await untis.getClasses().then((klassen) => {
-			return klassen.map((klasse) => {
-				courseNameEnum[klasse.id] = {
-					courseShortName: klasse.name,
-					courseName: klasse.longName,
-				};
-				return klasse.id;
-			});
-		});
-
-		const returnObj: LessonCache = {};
-
-		const newDate = date.add(1, 'day').toDate();
-		await Promise.all(classIDs.map((id) => {
-			return untis.getTimetableForRange(date.toDate(), newDate, id, 1).then((lessons) => {
-				return lessons.map(async (lesson) => {
-					const startTime = dayjs(convertUntisTimeDateToDate(lesson.date, lesson.startTime));
-					const endTime = dayjs(convertUntisTimeDateToDate(lesson.date, lesson.endTime));
-
-					if (typeof returnObj[getDateString(startTime)] !== 'object') {
-						returnObj[getDateString(startTime)] = {};
-					}
-
-
-					if (!Array.isArray(returnObj[getDateString(startTime)][getTimeString(startTime)])) {
-						returnObj[getDateString(startTime)][getTimeString(startTime)] = [];
-					}
-
-					function getCourseNames(id: number){
-						const a = courseNameEnum[id];
-						return {
-							courseShortName: a?.courseShortName,
-							courseName: a?.courseName,
-						};
-					}
-
-					//TODO: Centralize this conversion so we dont get any fuckups
-					returnObj[getDateString(startTime)][getTimeString(startTime)].push({
-						startTime: startTime.toDate(),
-						endTime: endTime.toDate(),
-						code: lesson.code || 'regular',
-						courseNr: id,
-						...getCourseNames(id),
-						shortSubject: lesson.su[0]?.name || 'idk',
-						subject: lesson.su[0]?.longname || 'idk',
-						shortTeacher: lesson.te[0]?.name || 'idk',
-						teacher: lesson.te[0]?.longname || 'idk',
-						room: lesson.ro[0]?.name || 'idk',
-						lstext: lesson.lstext,
-						info: lesson.info,
-						subsText: lesson.substText,
-						sg: lesson.sg,
-						bkRemark: lesson.bkRemark,
-						bkText: lesson.bkText,
-					});
-					return Promise.resolve();
-				});
-			});
-		}));
-		return returnObj;
-	};
-
-	const findTimeKey = async (keys: string[], key: string): Promise<string> => {
-		return new Promise((resolve, reject) => {
-
-			if (keys.includes(key)){
-				resolve(key);
-				return;
-			}
-
-			const timeKeyCompareFunc = (a, b) => {
-				const as = Number(a.substring(0, 2));
-				const bs = Number(b.substring(0, 2));
-				return as !== bs ? as - bs
-					: Number(a.substring(3, 5)) - Number(b.substring(3, 5));
-			};
-
-			keys.sort(timeKeyCompareFunc);
-
-			let outKey;
-			keys.forEach((e) => {
-				if (timeKeyCompareFunc(e, key) < 0) {
-					outKey = e;
-				}
-			});
-			outKey ? resolve(outKey) : reject();
-		});
-	};
-
-	return new Promise((resolve, reject) => {
-		if (!date.isValid()) {
-			reject('Invalid Date');
-			return;
-		}
-		untis.getLatestImportTime().then(async (time) => {
-			if (time > latestImportTime) {
-				lessonCache = await updateLessonCache();
-				latestImportTime = time;
-			}
-			if (!lessonCache[getDateString(date)]) {
-				await updateLessonCache().then((lc) => {
-					lessonCache = {
-						...lessonCache,
-						...lc,
-					};
-				});
-			}
-
-			if (!lessonCache[getDateString(date)]) {
-				resolve([]);
-				return;
-			}
-
-			const outDate = lessonCache[getDateString(date)];
-
-			findTimeKey(Object.keys(outDate), getTimeString(date)).then((key) => {
-				//TODO: write better search algorithm
-				resolve(outDate[key as string].flatMap((e) => {
-					if (e[what] == param) return [e];
-					return [];
-				}));
-			}).catch(() => {
-				reject('Not found');
-			});
-		}).catch(reject);
-	});
-}
-
-function getDateString(date: Dayjs): string {
-	return date.format('YYYY-MM-DD');
-}
-
-function getTimeString(date: Dayjs): string {
-	return date.format('HH:mm');
 }

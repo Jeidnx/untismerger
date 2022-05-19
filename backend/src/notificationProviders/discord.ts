@@ -2,16 +2,13 @@
 
 import {NotificationProps} from '../../types';
 import dm from 'djs-messenger';
-import {errorHandler} from '../errorHandler';
-import {RedisClientType} from 'redis';
+import {errorHandler, hash} from '../utils';
+import Redis from '../redis';
+import User from '../user';
 
-let redisClient: RedisClientType;
-let isRegistered;
-let hash;
-
-export function sendNotification({title, payload, targets}: NotificationProps) {
+function sendNotification({title, payload, targets}: NotificationProps) {
 	targets.forEach((target) => {
-		redisClient.GET('discordForward:' + target).then((res) => {
+		Redis.client.GET('discordForward:' + target).then((res) => {
 			if (typeof res === 'string') {
 				dm.sendMessage(
 					title + '\n' + payload,
@@ -21,10 +18,7 @@ export function sendNotification({title, payload, targets}: NotificationProps) {
 	});
 }
 
-export function initDiscord(discordToken, redis, isUserRegistered, hashFunc) {
-	redisClient = redis;
-	isRegistered = isUserRegistered;
-	hash = hashFunc;
+function initDiscord(discordToken) {
 	dm.login(discordToken).then(client => {
 		console.log('[djs-messenger] Logged in as', client.user.tag);
 	});
@@ -41,12 +35,12 @@ discordBackward: [discordid]: [hashed untis username]
  */
 
 dm.onMessage = async (msg, id, send, waitFor) => {
-	const discordBackward: string | null = await redisClient.GET('discordBackward:' + id).catch((err) => {
+	const discordBackward: string | null = await Redis.client.GET('discordBackward:' + id).catch((err) => {
 		errorHandler(err);
 		return null;
 	});
 
-	const discordForward: string | null = !discordBackward ? null : await redisClient.GET('discordForward:' + discordBackward).catch((err) => {
+	const discordForward: string | null = !discordBackward ? null : await Redis.client.GET('discordForward:' + discordBackward).catch((err) => {
 		errorHandler(err);
 		return null;
 	});
@@ -54,9 +48,9 @@ dm.onMessage = async (msg, id, send, waitFor) => {
 	switch (msg.toLowerCase()) {
 		case 'stop': {
 			if (discordBackward && discordForward) {
-				redisClient.DEL('discordForward:' + discordBackward).then((res) => {
+				Redis.client.DEL('discordForward:' + discordBackward).then((res) => {
 					if (res) {
-						redisClient.DEL('discordBackward:' + discordForward).then((res2) => {
+						Redis.client.DEL('discordBackward:' + discordForward).then((res2) => {
 							if (res2) {
 								send('Erfolgreich entfernt');
 							} else {
@@ -107,11 +101,7 @@ dm.onMessage = async (msg, id, send, waitFor) => {
 				send('Der Name darf keine Zahlen enthalten.');
 				return;
 			}
-			isRegistered(msg.toLowerCase()).then(async (bool) => {
-				if (!bool) {
-					send('`' + msg + '`' + ' ist leider nicht bei Untismerger registriert.\nWenn du hilfe benötigst gib `help` ein');
-					return;
-				}
+			User.isUserRegistered(msg.toLowerCase()).then(async () => {
 				chats[id] = hash(msg.toLowerCase());
 				send('Du musst als nächstes einen Token von der Website anfordern.' +
 					'Gehe dazu auf https://untismerger.hems2.de/settings' +
@@ -119,11 +109,11 @@ dm.onMessage = async (msg, id, send, waitFor) => {
 				await waitFor(120).then((response) => {
 					if (/^\d+$/.test(response)) {
 						if (response === discordAuthObj[chats[id]]?.toString()) {
-							return redisClient.SET('discordForward:' + chats[id], id).then((res) => {
+							return Redis.client.SET('discordForward:' + chats[id], id).then((res) => {
 								if (res === 'OK') {
-									return redisClient.SET('discordBackward:' + id, chats[id]).then((res2) => {
+									return Redis.client.SET('discordBackward:' + id, chats[id]).then((res2) => {
 										if (res2 === 'OK') {
-											send('Dein Discord account mit der ID:`' + id + '` wurde efolgreich mit dem Untis Account mit dem hash `' + chats[id] + '` verbunden.');
+											send('Dein Discord account mit der ID:`' + id + '` wurde erfolgreich mit dem Untis Account mit dem hash `' + chats[id] + '` verbunden.');
 											return;
 										}
 										throw new Error('Fehler');
@@ -146,6 +136,8 @@ dm.onMessage = async (msg, id, send, waitFor) => {
 
 				delete discordAuthObj[chats[id]];
 				delete chats[id];
+			}).catch(() => {
+				send('`' + msg + '`' + ' ist leider nicht bei Untismerger registriert.\nWenn du hilfe benötigst gib `help` ein');
 			});
 		}
 	}
@@ -157,11 +149,11 @@ dm.onUserAdd = (name, id) => {
 		id).catch(errorHandler);
 };
 
-export function getAuthToken(username: string): Promise<number> {
+function getAuthToken(username: string): Promise<number> {
 	return new Promise((resolve, reject) => {
 		const hName = hash(username.toLowerCase());
 
-		redisClient.GET('discordForward:' + hName).then((res) => {
+		Redis.client.GET('discordForward:' + hName).then((res) => {
 			if (typeof res === 'string') {
 				reject('Dieser account ist bereits mit einem Discord Account verknüpft.');
 			}
@@ -177,3 +169,11 @@ export function getAuthToken(username: string): Promise<number> {
 		});
 	});
 }
+
+const Discord = {
+	getAuthToken,
+	initDiscord,
+	sendNotification,
+};
+
+export default Discord;
