@@ -1,10 +1,4 @@
 node_modules
 
-# Config
-data
-
-# Intellij
-.idea/
-
 # Build files
-build/
+out

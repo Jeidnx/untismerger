@@ -28,7 +28,6 @@ const JWT_VERSION = 3;
 // Environment setup
 
 if (
-	!process.env.PORT ||
 	!process.env.SCHOOL_DOMAIN ||
 	!process.env.SCHOOL_NAME ||
 	!process.env.ENCRYPT ||
@@ -112,7 +111,7 @@ app.use((req, res, next) => {
 	statistics.addRequest(req.path);
 });
 
-http.createServer(app).listen(process.env.PORT);
+http.createServer(app).listen(8080);
 
 // Notification Provider specific settings
 const providers = process.env.NOTIFICATION_PROVIDERS ? process.env.NOTIFICATION_PROVIDERS.split(' ').flatMap((provider) => {
