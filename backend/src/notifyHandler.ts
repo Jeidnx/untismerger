@@ -1,7 +1,7 @@
 /* Handles cancelled Lessons and periodically checks for cancelled lessons */
 import * as  WebUntisLib from 'webuntis';
-import {RedisClientType} from 'redis';
 import {NotificationProps} from './types';
+import Redis from './redis';
 
 const startTimes = [
 	800, 945, 1130, 1330, 1515
@@ -22,7 +22,7 @@ const idsToCheck = [
 	2257,
 	2262,
 ];
-let redisClient: RedisClientType;
+const redisClient = Redis.client;
 let providers: ((props: NotificationProps) => void)[] = [];
 let getTargets;
 function initNotifications(checkInterval: number, notificationProviders, getTargetsFromDb) {
