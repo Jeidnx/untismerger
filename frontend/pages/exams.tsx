@@ -8,7 +8,7 @@ import {Add} from '@mui/icons-material';
 import {allSonstigeKurse, fachrichtungen, leistungskurse,} from '../enums';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AddDialog from '../components/AddDialog';
-import {CustomExam} from '../../globalTypes';
+import {CustomExam} from '../types';
 
 export default function Exams() {
 	const theme = useTheme();

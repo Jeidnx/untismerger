@@ -3,7 +3,7 @@ import type {AppProps} from 'next/app';
 import Layout from '../components/Layout';
 import {CustomThemeProvider} from '../components/CustomTheme';
 import {useEffect} from 'react';
-import {DesignDataType} from '../../globalTypes';
+import {DesignDataType} from '../types';
 
 function MyApp({Component, pageProps}: AppProps) {
 

@@ -1,0 +1,15 @@
+**
+
+# Global Data
+!/data/payload.d.ts
+!globalTypes.d.ts
+
+# Backend
+!backend/src/**
+!backend/package.json
+!backend/package-lock.json
+!backend/tsconfig.json
+
+# Frontend
+!frontend/**
+**/node_modules

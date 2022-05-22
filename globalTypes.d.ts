@@ -1,12 +1,18 @@
+import { Dayjs } from "dayjs";
+
+export {Data} from "data/payload";
+
 export interface Jwt {
+    /// Version number to introduce breaking changes
     version: number,
+    /// Untis username
     username: string,
-    lk: number,
-    fachrichtung: number,
-    sonstiges: string[],
-    type: "password",
+    /// Encrypted untis password
     password: string,
-    secureid: number,
+    /// User-defined Data to serve user only needed lessons
+    data: Data,
+    /// Unique ID to invalidate old JWTs
+    secId: number,
 }
 
 export interface DesignDataType {
@@ -27,12 +33,23 @@ export interface DesignDataType {
     alpha: number,
 }
 
-export interface ApiLessonData {
-    date: number,
-    startTime: number,
+export interface WeekData {
+    [key: string]: DayData
+}
+
+export type DayData = Holiday | LessonData[];
+
+export interface LessonData {
+    startTime: Dayjs,
+    endTime: Dayjs,
+    updatedAt: Dayjs,
     code: "regular" | "cancelled" | "irregular",
+    courseNr: number,
+    courseName: string,
+    courseShortName: string,
     shortSubject: string,
     subject: string,
+    shortTeacher: string,
     teacher: string,
     room: string,
     lstext: string,
@@ -66,12 +83,9 @@ export interface CustomHomework {
     course: string,
 }
 
-type Endpoint = string;
-
 export interface Statistic {
-        date: string,
-        requests: {
-            users: number | string,
-            [key: Endpoint]: number | string,
-        }
+    date: string,
+    requests: {
+        [key: string]: number | string,
+    }
 }

@@ -1,3 +1,5 @@
+//TODO: Delete file
+
 interface stringToStringEnum {
 	[key: string]: any,
 }

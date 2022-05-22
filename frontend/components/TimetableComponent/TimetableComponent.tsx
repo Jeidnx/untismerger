@@ -107,45 +107,43 @@ export default function TimetableComponent({timetableData}: { timetableData: Tim
 				</div>
 			</Box>
 			{
-				week.map((day: string, idx: number) =>
-					<Box
-						className={'oneDay'}
-						key={idx}
-						sx={{
-							display: 'flex',
-							flexDirection: 'column',
-							flex: '1',
-							height: '100%',
-							overflow: 'hidden',
-						}}>
-						{getWeekdaySpan(day, idx * 2)}
+				week.map((day: string, idx: number) => {
+					const dayData = timetable[day];
+					return <Box
+							className={'oneDay'}
+							key={idx}
+							sx={{
+								display: 'flex',
+								flexDirection: 'column',
+								flex: '1',
+								height: '100%',
+								overflow: 'hidden',
+							}}>
+							{getWeekdaySpan(day, idx * 2)}
 
-						{
-							//TODO: why does this show a lint error???
-							instanceOfHoliday(timetable[day]) ? <Box
-									sx={{
-										flexGrow: '1',
-										margin: '1px',
-										backgroundColor: alpha(theme.palette.secondary.light, theme.designData.alpha),
-										color: theme.palette.secondary.contrastText,
-										display: 'flex',
-										justifyContent: 'center',
-										alignItems: 'center',
-										fontSize: '2em',
-										writingMode: {desktop: 'horizontal-tb', mobile: 'vertical-rl'},
-									}}
-								>
-									{
-										//@ts-expect-error Idk why
-										timetable[day].name}
-								</Box> :
-								//@ts-expect-error Idk why
-								timetable[day]?.map((lesson: displayedLesson, jdx: number) => {
-									return <Lesson lessons={lesson as (LessonData | undefined)[]} parentIdx={idx}
-												   jdx={jdx} key={idx + '' + jdx}/>;
-								})}
-					</Box>
-				)
+							{
+								instanceOfHoliday(dayData) ? <Box
+										sx={{
+											flexGrow: '1',
+											margin: '1px',
+											backgroundColor: alpha(theme.palette.secondary.light, theme.designData.alpha),
+											color: theme.palette.secondary.contrastText,
+											display: 'flex',
+											justifyContent: 'center',
+											alignItems: 'center',
+											fontSize: '2em',
+											writingMode: {desktop: 'horizontal-tb', mobile: 'vertical-rl'},
+										}}
+									>
+										{
+											dayData.name}
+									</Box> :
+									dayData.map((lesson: displayedLesson, jdx: number) => {
+										return <Lesson lessons={lesson as (LessonData | undefined)[]} parentIdx={idx}
+													   jdx={jdx} key={idx + '' + jdx}/>;
+									})}
+						</Box>
+					})
 			}
 		</Box>
 	);

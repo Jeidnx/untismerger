@@ -4,8 +4,7 @@ import dayjs from 'dayjs';
 import {useEffect, useState} from 'react';
 import {Box} from '@mui/material';
 
-import {LessonData, lsTimetable, TimetableData, WeekData} from '../types';
-import {ApiLessonData, Holiday} from '../../globalTypes';
+import {TimetableData, LessonData, Holiday, DayData} from '../types';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {useCustomTheme} from '../components/CustomTheme';
 import {useLayoutContext} from '../components/Layout';
@@ -17,8 +16,6 @@ import isBetween from 'dayjs/plugin/isBetween';
 dayjs.extend(weekday);
 dayjs.extend(isBetween);
 
-const cacheName = 'timetableDataCache';
-
 const startTimeEnum: any = {
 	'800': 0,
 	'945': 1,
@@ -27,24 +24,8 @@ const startTimeEnum: any = {
 	'1515': 4,
 };
 
-const startTimeLookup: any = {
-	'800': '08:00',
-	'945': '09:45',
-	'1130': '11:30',
-	'1330': '13:30',
-	'1515': '15:15',
-};
-
-const endTimeLookup: any = {
-	'800': '09:30',
-	'945': '11:15',
-	'1130': '13:00',
-	'1330': '15:00',
-	'1515': '16:45',
-};
-
-const createTimeTableObject = (week: string[]): lsTimetable => {
-	const out: lsTimetable = {};
+const createTimeTableObject = (week: string[]) => {
+	const out: {[key: string]: any} = {};
 	week.forEach((day: string) => {
 		out[day] = [
 			[],
@@ -58,10 +39,10 @@ const createTimeTableObject = (week: string[]): lsTimetable => {
 	return out;
 };
 
-const processData = (data: ApiLessonData[], holidays: Holiday[], week: string[]): lsTimetable => {
+const processData = (data: LessonData[], holidays: Holiday[], week: string[]): {[key: string]: DayData} => {
 	//TODO: this could be better
 
-	const returnObj: lsTimetable = createTimeTableObject(week);
+	const returnObj: {[key: string]: DayData} = createTimeTableObject(week);
 
 	for (let i = 0; i < holidays.length; i++) {
 		const holiday = holidays[i];
@@ -80,9 +61,9 @@ const processData = (data: ApiLessonData[], holidays: Holiday[], week: string[])
 	}
 
 	for (let i = 0; i < data.length; i++) {
-		const {date, startTime, ...newLesson} = data[i];
-		(newLesson as LessonData).startDate = dayjs(date + '' + startTimeLookup[startTime]);
-		(newLesson as LessonData).endDate = dayjs(date + '' + endTimeLookup[startTime]);
+		const {endTime, startTime, ...newLesson} = data[i];
+		(newLesson as LessonData).startTime = dayjs(startTime);
+		(newLesson as LessonData).endTime = dayjs(endTime);
 		// @ts-ignore
 		returnObj[date + ''][startTimeEnum[startTime]].push((newLesson as LessonData));
 	}
@@ -102,8 +83,8 @@ function getWeekFromDay(date: Date) {
 
 export default function Timetable() {
 
-	const {apiEndpoint} = useCustomTheme();
 	const {setFabs} = useLayoutContext();
+	const {fetcher} = useCustomTheme();
 
 	const [timetables, setTimetables] = useState<TimetableData[]>([]);
 
@@ -121,23 +102,21 @@ export default function Timetable() {
 			endDate: dayjs(week[4]).format('YYYY-MM-DD'),
 			jwt: localStorage.getItem('jwt') ?? ''
 		});
-		const request = new Request(apiEndpoint + 'timetableWeek?' + query);
 
-		// No caching for now
-		return fetch(request).then((resp) => resp.json()).then((json) => {
-			if(json.error) return Promise.reject('error');
-			const processedData = processData(json.lessons, json.holidays, week);
-			const fullTimeTable: WeekData = ({...processedData, type: 'fetched'} as WeekData);
-
+		return fetcher({
+			endpoint: 'timetableWeek',
+			method: 'GET',
+			query, useCache,
+		}).then((json) => {
+			const processedData = processData((json.lessons as LessonData[]), (json.holidays as Holiday[]), week);
 			setTimetables((prev) => {
 				prev[weekOffset] = {
-					timetable: fullTimeTable,
-					week: week
-				};
+					timetable: processedData,
+					week
+				}
 				return [...prev];
-			});
-			return Promise.resolve();
-		});
+			})
+		})
 	};
 
 	const handleFutureScroll = (element: HTMLDivElement) => {
@@ -159,17 +138,9 @@ export default function Timetable() {
 	}, []);
 
 	const refreshTimeTables = () => {
-
 		setTimetables([]);
-		caches.open(cacheName).then((cache) => {
-			cache.keys().then((entries) => {
-				entries.forEach((entry) => {
-					cache.delete(entry);
-				});
-			});
-		});
-
 		fetchTimetable({weekOffset: 0});
+		fetchTimetable({weekOffset: 1})
 	};
 
 	return (

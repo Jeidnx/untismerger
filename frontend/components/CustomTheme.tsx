@@ -1,8 +1,6 @@
 import {createContext, useCallback, useContext, useEffect, useMemo, useState} from 'react';
-import {customThemeType, fetcherParams, JwtObject} from '../types';
+import {customThemeType, FetcherParams, JwtObject, DesignDataType} from '../types';
 import {Box, createTheme, ThemeProvider} from '@mui/material';
-
-import {DesignDataType} from '../../globalTypes';
 
 import dayjs from 'dayjs';
 import Setup from './Setup';
@@ -92,7 +90,24 @@ export function CustomThemeProvider({children}: any) {
 		Buffer.from(rawJwt.split('.')[1], 'base64').toString('utf-8')
 	) : {}, [rawJwt])
 
-	const fetcher = useCallback(({endpoint, query, useCache, method}: fetcherParams): Promise<unknown> => {
+	const jwt: JwtObject = useMemo(() => ({
+		set: (newJwt: string) => {
+			localStorage.setItem('jwt', newJwt);
+			setRawJwt(newJwt);
+		},
+		raw: rawJwt || '',
+		get: {
+			version: parsedJwt.version,
+			iat: parsedJwt.iat,
+			username: parsedJwt.username,
+			type: parsedJwt.type,
+			password: parsedJwt.password,
+			data: parsedJwt.data,
+			secId: parsedJwt.secId,
+		}
+	}), [parsedJwt, rawJwt]);
+
+	const fetcher = useCallback(({endpoint, query, useCache, method}: FetcherParams): Promise<{[key: string]: unknown}> => {
 		return new Promise((resolve, reject) => {
 
 			const mQuery = {
@@ -119,40 +134,17 @@ export function CustomThemeProvider({children}: any) {
 				}
 				return res.json();
 			}).then((json) => {
+				if (json.upgradedJwt) {
+					jwt.set(json.upgradedJwt);
+					return fetcher({endpoint, query, useCache, method});
+				}
 				if (json.error) throw new Error(json.message);
 				resolve(json);
 			}).catch((err) => {
 				reject('Fehler: ' + (err.message || err));
 			});
 		});
-	}, [apiEndpoint, rawJwt])
-
-	const jwt: JwtObject = useMemo(() => ({
-		set: (newJwt: string) => {
-			localStorage.setItem('jwt', newJwt);
-			setRawJwt(newJwt);
-		},
-		validate: (): Promise<void> => (fetcher({
-			endpoint: 'validateJwt',
-			query: {},
-			method: 'GET',
-			useCache: false,
-		}).then((json) => {
-			if (!(json as { valid: boolean }).valid) throw new Error("Invalid JWT");
-		})),
-		raw: rawJwt || '',
-		get: {
-			version: parsedJwt.version,
-			iat: parsedJwt.iat,
-			username: parsedJwt.username,
-			type: parsedJwt.type,
-			password: parsedJwt.password,
-			lk: parsedJwt.lk,
-			fachrichtung: parsedJwt.fachrichtung,
-			sonstiges: parsedJwt.sonstiges,
-			secureid: parsedJwt.secureid,
-		}
-	}), [fetcher, parsedJwt, rawJwt]);
+	}, [apiEndpoint, rawJwt, jwt])
 
 	const theme = getTheme();
 
@@ -160,7 +152,7 @@ export function CustomThemeProvider({children}: any) {
 		return (
 			<ThemeProvider theme={theme}>
 				<CustomThemeContext.Provider
-					value={{apiEndpoint, dayjs, fetcher, jwt, setDesignData, setLessonColorEnum}}>
+					value={{dayjs, fetcher, jwt, setDesignData, setLessonColorEnum}}>
 					<Box
 						component={'main'}
 						sx={{
@@ -205,7 +197,7 @@ export function CustomThemeProvider({children}: any) {
 
 	return (
 		<ThemeProvider theme={theme}>
-			<CustomThemeContext.Provider value={{apiEndpoint, dayjs, fetcher, jwt, setDesignData, setLessonColorEnum}}>
+			<CustomThemeContext.Provider value={{dayjs, fetcher, jwt, setDesignData, setLessonColorEnum}}>
 				{children}
 			</CustomThemeContext.Provider>
 		</ThemeProvider>

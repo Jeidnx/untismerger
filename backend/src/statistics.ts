@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import {RedisClientType } from 'redis';
-import {Statistic} from '../../globalTypes';
+import {Statistic} from './types';
 import {errorHandler} from './utils';
 import Redis from './redis';
 

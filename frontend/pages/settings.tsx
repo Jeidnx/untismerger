@@ -13,7 +13,7 @@ import Head from 'next/head';
 import {useEffect, useState} from 'react';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {useCustomTheme} from '../components/CustomTheme';
-import {DesignDataType} from '../../globalTypes';
+import {DesignDataType} from '../types';
 import {useLayoutContext} from '../components/Layout';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 

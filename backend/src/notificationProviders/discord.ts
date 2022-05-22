@@ -27,13 +27,11 @@ function initDiscord(discordToken, isUserRegistered) {
 	});
 }
 
-type UntisName = string;
-type DiscordID = string;
 /// Key: UntisName, Value: Authentication code
-const discordAuthObj: { [key: UntisName]: number } = {};
+const discordAuthObj: { [key: string]: number } = {};
 
 /// Key: discordID; value: hashed untis name
-const chats: { [key: DiscordID]: UntisName } = {};
+const chats: { [key: string]: string } = {};
 /*
 discordForward: [hashed untis username]: [discordid]
 discordBackward: [discordid]: [hashed untis username]

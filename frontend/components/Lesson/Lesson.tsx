@@ -101,7 +101,7 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: displayedLesson, parentIdx
 						justifyContent: "space-between",
 					}}
                 >
-					{lessons[0]?.startDate.format("DD.MM HH:mm")}
+					{lessons[0]?.startTime.format("DD.MM HH:mm")}
                     <IconButton
                         size={"large"}
                         onClick={() => {
@@ -159,7 +159,7 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: displayedLesson, parentIdx
 						const color = colors[idx];
 						const textColor = theme.palette.getContrastText(color);
 
-						if (lesson.endDate.isBefore(undefined)) {
+						if (lesson.endTime.isBefore(undefined)) {
 							setTimeout(() => {
 								if (!rootDiv.current) return;
 								rootDiv.current.style.filter = "grayscale(100%)";

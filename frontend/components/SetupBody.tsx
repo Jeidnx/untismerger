@@ -14,10 +14,8 @@ import {
 
 import {FormEvent, useState} from 'react';
 import {useCustomTheme} from './CustomTheme';
-import {setupData} from '../types';
+import {setupData, Jwt} from '../types';
 import {ethikKurse, fachrichtungen, leistungskurse, naturwissenschaften, sonstigesKurse, sportKurse} from '../enums';
-import {Jwt} from "../../globalTypes";
-
 
 const formStyle = {
 	height: 'max-content',
@@ -47,7 +45,7 @@ const SetupBody = ({
 	const [buttonColor, setButtonColor] = useState<'primary' | 'success' | 'error'>('primary');
 	const [autoValue, setAutoValue] = useState<{ label: string, value: string }[]>([]);
 
-	const {apiEndpoint, fetcher, jwt} = useCustomTheme();
+	const {fetcher, jwt} = useCustomTheme();
 
 	const checkLoginCredentials = (e: FormEvent) => {
 		e.preventDefault();
@@ -135,33 +133,17 @@ const SetupBody = ({
 				<h1>Fächer wählen</h1>
 				<form onSubmit={(e) => {
 					e.preventDefault();
-					//TODO: use new fetcher
-					fetch(apiEndpoint + 'register', {
-						method: 'post',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify(data)
-					}).then(async (response) => {
-						let json;
-
-						try {
-							json = await response.json();
-						} catch (e) {
-							throw new Error(response.statusText);
-						}
-
-						if (!response.ok) {
-							if (json?.error) {
-								throw new Error(json?.message);
-							}
-							throw new Error('Server konnte nicht erreicht werden.');
-						}
+					fetcher({
+						method: 'POST',
+						query: data,
+						useCache: false,
+						endpoint: 'register',
+					}).then((json) => {
 						jwt.set(json.jwt);
 					}).catch((e) => {
+						//TODO: Handle
 						console.error(e);
-					});
-
+					})
 				}}>
 					<Stack {...stackProps}>
 						<FormControl

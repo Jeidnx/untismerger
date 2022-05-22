@@ -5,7 +5,7 @@ import {alpha, Box, Button, ButtonGroup, Checkbox, FormControlLabel, useTheme} f
 import React from 'react';
 import {useCustomTheme} from '../components/CustomTheme';
 import LoadingSpinner from '../components/LoadingSpinner';
-import {Statistic} from "../../globalTypes";
+import {Statistic} from "../types";
 
 interface statisticsDataType {
 	[key: string]: {

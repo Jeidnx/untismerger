@@ -1,27 +1,9 @@
-import {Dayjs} from 'dayjs';
-import {Jwt} from '../globalTypes';
+import {Jwt, LessonData} from '../globalTypes';
 
-
-// Format for the individual lessons
-export interface LessonData {
-	startDate: Dayjs,
-	endDate: Dayjs,
-	code: 'regular' | 'cancelled' | 'irregular',
-	shortSubject: string,
-	subject: string,
-	teacher: string,
-	room: string,
-	lstext: string,
-	info: string,
-	subsText: string,
-	sg: string,
-	bkRemark: string,
-	bkText: string
-}
+export * from '../globalTypes';
 
 export interface JwtObject {
 	set: (newJwt: string) => void,
-	validate: () => Promise<void>,
 	raw: string,
 	get: Jwt,
 }
@@ -34,24 +16,20 @@ export interface HolidayData {
 //Data for one class of one day
 export type displayedLesson = (LessonData | undefined)[]
 
-export interface WeekData extends lsTimetable {
-	type: 'local' | 'fetched'
-}
-
-export interface lsTimetable {
-	[key: string]: displayedLesson[] | HolidayData,
-}
+export type DayData = displayedLesson[] | HolidayData;
 
 export interface TimetableData {
 	week: string[],
-	timetable: WeekData
+	timetable: {
+		[key: string]: DayData,
+	}
 }
 
 export interface stringToNumberEnum {
 	[key: string]: number,
 }
 
-export interface fetcherParams {
+export interface FetcherParams {
 	endpoint: string,
 	query: any,
 	useCache: boolean,
@@ -59,13 +37,11 @@ export interface fetcherParams {
 }
 
 export interface customThemeType {
-	apiEndpoint: string,
 	dayjs: typeof dayjs,
 	setDesignData: Function,
 	setLessonColorEnum: Function,
 	jwt: JWT,
-
-	fetcher({endpoint, query, useCache, method}: fetcherParams): Promise<unknown>,
+	fetcher({endpoint, query, useCache, method}: FetcherParams): Promise<{[key: string]: unknown}>,
 }
 
 export interface setupData {

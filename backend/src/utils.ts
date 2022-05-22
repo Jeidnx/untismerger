@@ -16,6 +16,8 @@ function errorHandler(error: unknown): string {
 		}
 		case 'object': {
 			//TODO: improve
+			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+			// @ts-ignore
 			const msg = error.message;
 			if(typeof msg === 'string'){
 				return msg;

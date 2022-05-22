@@ -1,3 +1,5 @@
+export * from '../../globalTypes';
+
 export type NotificationProviders = 'Discord' | 'Webpush' | 'Mail'
 
 export interface NotificationProps {
