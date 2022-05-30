@@ -73,15 +73,15 @@ async function cancelHandler(elem: WebUntisLib.Lesson, lessonNr: string | number
 	if (!elem['su'][0] || !elem['su'][0]['name']) {
 		return;
 	}
-	redisClient.GET('sentNotifications:' + elem.id).then((res) => {
+	(await redisClient()).GET('sentNotifications:' + elem.id).then(async (res) => {
 		if(res === 'sent'){
 			return;
 		}
 
 		const date = convertUntisTimeDateToDate(elem.date, elem.startTime);
 		if(date > new Date()){
-			sendNotification(elem,lessonNr, date);
-			redisClient.SET('sentNotifications:' + elem.id, 'sent');
+			await sendNotification(elem,lessonNr, date);
+			(await redisClient()).SET('sentNotifications:' + elem.id, 'sent');
 		}
 	});
 }

@@ -1,15 +1,13 @@
 import dayjs from 'dayjs';
-import {RedisClientType } from 'redis';
 import {Statistic} from '../../globalTypes';
 import {errorHandler} from './utils';
 import Redis from './redis';
 
-let redisClient: RedisClientType;
 let routes: string[] = [];
 
-const addRequest = (endpoint: string) => {
+const addRequest = async (endpoint: string) => {
 	if(routes.includes(endpoint)){
-		redisClient.HINCRBY('statistics:' + dayjs().format('YYYY-MM-DD'), endpoint, 1);
+		(await Redis.client()).HINCRBY('statistics:' + dayjs().format('YYYY-MM-DD'), endpoint, 1);
 	}
 };
 
@@ -20,7 +18,7 @@ const getStats = async (): Promise<Statistic[]> => {
 	let cursor = 0;
 	const keys = [];
 	do{
-		await redisClient.SCAN(cursor, {
+		await (await Redis.client()).SCAN(cursor, {
 			MATCH: 'statistics:*',
 		}).then((data) => {
 			cursor = data.cursor;
@@ -34,7 +32,7 @@ const getStats = async (): Promise<Statistic[]> => {
 
 	return await Promise.all(keys.map(async (key) => {
 		const date = key.substring(11);
-		return redisClient.HGETALL(key).then((data) => {
+		return (await Redis.client()).HGETALL(key).then((data) => {
 				return {
 					date: date,
 					requests: data as {users: string, [key: string]: string},
@@ -57,8 +55,8 @@ function initStatistics(routesIn: string[], countUsers: () => Promise<number>) {
 	});
 
 	setInterval(() => {
-		countUsers().then((users) => {
-			Redis.client.HSET('statistics:' + dayjs().format('YYYY-MM-DD'), {users});
+		countUsers().then(async (users) => {
+			(await Redis.client()).HSET('statistics:' + dayjs().format('YYYY-MM-DD'), {users});
 		});
 	}, 10 * 60 * 60 * 60);
 }

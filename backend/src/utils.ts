@@ -16,6 +16,8 @@ function errorHandler(error: unknown): string {
 		}
 		case 'object': {
 			//TODO: improve
+			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+			// @ts-ignore
 			const msg = error.message;
 			if(typeof msg === 'string'){
 				return msg;
@@ -59,4 +61,12 @@ function hash(str: string): string {
 	return crypto.createHash('sha256').update(str).digest('hex');
 }
 
-export {errorHandler, convertUntisTimeDateToDate, convertUntisDateToDate, hash};
+async function wait(ms: number){
+	return new Promise<void>((resolve) => {
+		setTimeout(() => {
+			resolve();
+		}, ms);
+	});
+}
+
+export {errorHandler, convertUntisTimeDateToDate, convertUntisDateToDate, hash, wait};
