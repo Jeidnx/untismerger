@@ -1,2 +1,7 @@
 # IntelliJ
 .idea/*
+
+data/*
+!data/redis.conf
+
+docker-compose.yaml

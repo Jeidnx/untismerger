@@ -69,4 +69,9 @@ async function wait(ms: number){
 	});
 }
 
-export {errorHandler, convertUntisTimeDateToDate, convertUntisDateToDate, hash, wait};
+function randomInt(digits: number){
+	const factor = Math.pow(10, digits - 1);
+	return Math.floor(Math.random() * factor * 9) + factor;
+}
+
+export {errorHandler, convertUntisTimeDateToDate, convertUntisDateToDate, hash, wait, randomInt};

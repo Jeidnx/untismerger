@@ -1,16 +1,16 @@
 /* Used to send notifications via Discord */
-import {hash} from '../utils';
+import {hash, randomInt} from '../utils';
 import {NotificationProps} from '../types';
 import dm from 'djs-messenger';
 import {errorHandler} from '../utils';
-import {RedisClientType} from 'redis';
+import Redis from '../redis';
 
-let redisClient: RedisClientType;
+const redisClient = Redis.client();
 let isRegistered;
 
 function sendNotification({title, payload, targets}: NotificationProps) {
-	targets.forEach((target) => {
-		redisClient.GET('discordForward:' + target).then((res) => {
+	targets.forEach(async (target) => {
+		(await redisClient).GET('discordForward:' + target).then((res) => {
 			if (typeof res === 'string') {
 				dm.sendMessage(
 					title + '\n' + payload,
@@ -40,12 +40,12 @@ discordBackward: [discordid]: [hashed untis username]
  */
 
 dm.onMessage = async (msg, id, send, waitFor) => {
-	const discordBackward: string | null = await redisClient.GET('discordBackward:' + id).catch((err) => {
+	const discordBackward: string | null = await (await redisClient).GET('discordBackward:' + id).catch((err) => {
 		errorHandler(err);
 		return null;
 	});
 
-	const discordForward: string | null = !discordBackward ? null : await redisClient.GET('discordForward:' + discordBackward).catch((err) => {
+	const discordForward: string | null = !discordBackward ? null : await (await redisClient).GET('discordForward:' + discordBackward).catch((err) => {
 		errorHandler(err);
 		return null;
 	});
@@ -53,9 +53,9 @@ dm.onMessage = async (msg, id, send, waitFor) => {
 	switch (msg.toLowerCase()) {
 		case 'stop': {
 			if (discordBackward && discordForward) {
-				redisClient.DEL('discordForward:' + discordBackward).then((res) => {
+				(await redisClient).DEL('discordForward:' + discordBackward).then(async (res) => {
 					if (res) {
-						redisClient.DEL('discordBackward:' + discordForward).then((res2) => {
+						(await redisClient).DEL('discordBackward:' + discordForward).then((res2) => {
 							if (res2) {
 								send('Erfolgreich entfernt');
 							} else {
@@ -115,12 +115,12 @@ dm.onMessage = async (msg, id, send, waitFor) => {
 				send('Du musst als nächstes einen Token von der Website anfordern.' +
 					'Gehe dazu auf https://untismerger.hems2.de/settings' +
 					'\nAnschließend kannst du den Token einfach hier einfügen.');
-				await waitFor(120).then((response) => {
+				await waitFor(120).then(async (response) => {
 					if (/^\d+$/.test(response)) {
 						if (response === discordAuthObj[chats[id]]?.toString()) {
-							return redisClient.SET('discordForward:' + chats[id], id).then((res) => {
+							return (await redisClient).SET('discordForward:' + chats[id], id).then(async (res) => {
 								if (res === 'OK') {
-									return redisClient.SET('discordBackward:' + id, chats[id]).then((res2) => {
+									return (await redisClient).SET('discordBackward:' + id, chats[id]).then((res2) => {
 										if (res2 === 'OK') {
 											send('Dein Discord account mit der ID:`' + id + '` wurde efolgreich mit dem Untis Account mit dem hash `' + chats[id] + '` verbunden.');
 											return;
@@ -160,19 +160,21 @@ function getAuthToken(username: string): Promise<number> {
 	return new Promise((resolve, reject) => {
 		const hName = hash(username.toLowerCase());
 
-		redisClient.GET('discordForward:' + hName).then((res) => {
-			if (typeof res === 'string') {
-				reject('Dieser account ist bereits mit einem Discord Account verknüpft.');
-			}
-			if (!Object.values(chats).includes(hName)) {
-				reject('Du musst zuerst dem Discord Server beitreten, und den Anweisungen des bots folgen.');
-			}
+		redisClient.then((client) => {
+			client.GET('discordForward:' + hName).then((res) => {
+				if (typeof res === 'string') {
+					reject('Dieser account ist bereits mit einem Discord Account verknüpft.');
+				}
+				if (!Object.values(chats).includes(hName)) {
+					reject('Du musst zuerst dem Discord Server beitreten, und den Anweisungen des bots folgen.');
+				}
 
-			if (discordAuthObj[hName]) resolve(discordAuthObj[hName]);
+				if (discordAuthObj[hName]) resolve(discordAuthObj[hName]);
 
-			const code = Math.floor(Math.random() * 900000) + 100000;
-			discordAuthObj[hName] = code;
-			resolve(code);
+				const code = randomInt(6);
+				discordAuthObj[hName] = code;
+				resolve(code);
+			});
 		});
 	});
 }

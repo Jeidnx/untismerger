@@ -24,8 +24,9 @@ const idsToCheck = [
 ];
 const redisClient = Redis.client;
 let providers: ((props: NotificationProps) => void)[] = [];
-let getTargets;
-function initNotifications(checkInterval: number, notificationProviders, getTargetsFromDb) {
+type GetTargets = (param1: string | number) => Promise<string[]>;
+let getTargets: GetTargets;
+function initNotifications(checkInterval: number, notificationProviders, getTargetsFromDb: GetTargets) {
 	getTargets = getTargetsFromDb;
 	providers = notificationProviders;
 	setInterval(() => {
@@ -33,6 +34,8 @@ function initNotifications(checkInterval: number, notificationProviders, getTarg
 		date.setDate(date.getDate() + 7);
 		checkCancelled(new Date(), date);
 	}, checkInterval * 60 * 60);
+
+	console.log('[Notifications] Initialized');
 }
 
 function checkCancelled(startDate: Date, endDate: Date) {
@@ -88,11 +91,11 @@ async function cancelHandler(elem: WebUntisLib.Lesson, lessonNr: string | number
 
 async function sendNotification(elem: WebUntisLib.Lesson,lessonNr: string | number, date: Date) {
 	return new Promise((resolve, reject) => {
-		getTargets(lessonNr).then((res) => {
+		getTargets(lessonNr).then((targets) => {
 			const notify: NotificationProps = {
 				title: 'Unterricht entfällt:',
 				payload: getNotificationBody(elem.su[0].longname, date),
-				targets: res,
+				targets,
 			};
 
 			providers.forEach((provider) => {
