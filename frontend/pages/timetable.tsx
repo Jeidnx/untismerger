@@ -159,17 +159,10 @@ export default function Timetable() {
 	}, []);
 
 	const refreshTimeTables = () => {
-
 		setTimetables([]);
-		caches.open(cacheName).then((cache) => {
-			cache.keys().then((entries) => {
-				entries.forEach((entry) => {
-					cache.delete(entry);
-				});
-			});
+		fetchTimetable({weekOffset: 0}).then(() => {
+			fetchTimetable({weekOffset: 1});
 		});
-
-		fetchTimetable({weekOffset: 0});
 	};
 
 	return (
