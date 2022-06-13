@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
     "forceConsistentCasingInFileNames": true,
-    "module": "CommonJS",
+    "module": "ESNext",
     "esModuleInterop": true,
-    "rootDir": "./",
+    "rootDir": "../",
     "target": "ESNext",
     "skipLibCheck": true,
     "strict": false,
@@ -11,7 +11,10 @@
     "alwaysStrict": true,
     "moduleResolution": "node",
     "removeComments": true,
-    "resolveJsonModule": true
+    "rootDirs": [
+      "src",
+      "../"
+    ]
   },
   "include": [
     "src/"

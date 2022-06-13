@@ -75,3 +75,40 @@ export interface Statistic {
             [key: Endpoint]: number | string,
         }
 }
+
+export interface Config {
+    /// The Untis name of your school
+    schoolName: string,
+    /// The Untis domain for your school
+    schoolDomain: string,
+    /// Secret used for encrypting the user passwords
+    encryptSecret: string,
+    /// Secret used to sign the JWTs
+    jwtSecret: string,
+    /// Server address for your sql server
+    msqlHost: string,
+    /// Username for your sql server
+    msqlUser: string,
+    /// Password for the user on your sql server
+    msqlPass: string,
+    /// Database to use for your sql server
+    msqlDb: string,
+    /// Port to use for your sql server
+    msqlPort?: number,
+    /// Server address for your Redis server
+    redisHost: string,
+    /// Username for your Redis server
+    redisUser?: string,
+    /// Password for your Redis server
+    redisPass?: string,
+    /// Port for your Redis Server
+    redisPort?: number,
+
+    /// List of Notification providers to send your users Notifications
+    notificationProviders?: ('discord' | 'webpush' | 'mail')[],
+    /// The token for your Discord bot
+    discordToken?: string,
+
+    // Should statistic collection be enabled?
+    useStatistics?: boolean,
+}

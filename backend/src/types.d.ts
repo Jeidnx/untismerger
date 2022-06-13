@@ -1,5 +1,3 @@
-export type NotificationProviders = 'Discord' | 'Webpush' | 'Mail'
-
 export interface NotificationProps {
 	/// The title of the notification
 	title: string,
