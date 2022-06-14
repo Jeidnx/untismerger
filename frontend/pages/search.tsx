@@ -1,4 +1,15 @@
-import {alpha, Box, Stack, TextField, useTheme} from "@mui/material";
+import {
+    alpha,
+    Box,
+    Checkbox,
+    FormControlLabel,
+    FormGroup,
+    MenuItem,
+    Select,
+    Stack,
+    TextField,
+    useTheme
+} from "@mui/material";
 import {useEffect, useMemo, useState} from "react";
 import dayjs from "dayjs";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -19,12 +30,9 @@ export default function Search() {
     const [results, setResults] = useState<SearchResult[]>([]);
     const [lastTime, setLastTime] = useState(-1);
 
-    const [subject, setSubject] = useState('');
-    const [teacher, setTeacher] = useState('');
-    const [room, setRoom] = useState('');
-
-    //TODO: make a gui switch for this
+    const [query, setQuery] = useState('');
     const [showCancelled, setShowCancelled] = useState(true);
+    const [sortBy, setSortBy] = useState('dateAsc');
     const [startTime, setStartTime] = useState(dayjs());
     const [endTime, setEndTime] = useState(dayjs().add(1, "hour"));
 
@@ -34,7 +42,7 @@ export default function Search() {
     useEffect(() => {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
-            if (subject.length + teacher.length + room.length === 0) return;
+            if (query.length < 3) return;
             setError(undefined);
             setLoading(true);
             setResults([]);
@@ -45,7 +53,7 @@ export default function Search() {
                 query: {
                     startTime: startTime.toDate(),
                     endTime: endTime.toDate(),
-                    subject, teacher, room, showCancelled
+                    query, showCancelled, sortBy
                 }
             }).then((json) => {
                 if (!((obj): obj is { result: SearchResult[], time: number } => {
@@ -66,7 +74,7 @@ export default function Search() {
                 setLoading(false);
             })
         }, 300);
-    }, [startTime, endTime, subject, teacher, room, fetcher, showCancelled]);
+    }, [startTime, endTime, query, fetcher, showCancelled, sortBy]);
 
 
     const calculatedStartTime = useMemo(() => {
@@ -102,24 +110,12 @@ export default function Search() {
         >
             <h1>Suche</h1>
             <TextField
-                label={"Fach"}
-                value={subject}
+                label={"Anfrage"}
+                value={query}
                 onChange={(e) => {
-                    setSubject(e.target.value);
+                    setQuery(e.target.value);
                 }}
-            /><TextField
-            label={"Lehrer"}
-            value={teacher}
-            onChange={(e) => {
-                setTeacher(e.target.value);
-            }}
-        /><TextField
-            label={"Raum"}
-            value={room}
-            onChange={(e) => {
-                setRoom(e.target.value);
-            }}
-        />
+            />
             <TextField
                 label={"Von"}
                 type={"datetime-local"}
@@ -138,6 +134,19 @@ export default function Search() {
                 }}
 
             />
+            <FormGroup
+
+            >
+                <FormControlLabel control={
+                    <Checkbox checked={showCancelled} onChange={(e) => {
+                        setShowCancelled(e.target.checked);
+                    }}/>
+                } label={"Entfallende Stunden anzeigen"} />
+                <FormControlLabel control={<Select value={sortBy} displayEmpty onChange={(e) => {setSortBy(e.target.value)}}>
+                    <MenuItem value={"dateAsc"}>Startzeit Aufsteigend</MenuItem>
+                    <MenuItem value={"dateDesc"}>Startzeit Absteigend</MenuItem>
+                </Select>} label={"Sortieren nach"} />
+            </FormGroup>
         </Stack>
 
         {

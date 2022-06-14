@@ -24,7 +24,6 @@ export function updateUntisForRange(untis: WebUntisLib, startDate: Dayjs, endDat
         });
         const outdatedDays = dates.flatMap((key) => {
             const value = knownImportTimes[key];
-            console.log(value, time);
             if (value < time) return [key];
             return [];
         });
@@ -67,7 +66,7 @@ async function fetchNewUntisData(untis: WebUntisLib, lessonNr: number, startDate
                 shortSubject: element['su'][0] ? element['su'][0]['name'] : '🤷',
                 subject: element['su'][0] ? element['su'][0]['longname'] : '🤷',
                 teacher: element['te'][0] ? element['te'][0]['longname'] : '🤷',
-                shortTeacher: element.su[0] ? element.su[0].longname : '🤷‍',
+                shortTeacher: element.te[0] ? element.te[0].name : '🤷‍',
                 room: element['ro'][0] ? element['ro'][0]['name'] : '🤷‍',
                 lstext: element['lstext'] || '',
                 info: element['info'] || '',

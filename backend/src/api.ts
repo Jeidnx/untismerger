@@ -271,11 +271,7 @@ app.get('/nextLesson', (req, res) => {
     });
 });
 app.get('/search', (req, res) => {
-    if (!req.query['jwt'] || !req.query['startTime'] || !req.query['endTime'] ||
-        typeof req.query['subject'] !== 'string' ||
-        typeof req.query['teacher'] !== 'string' ||
-        typeof req.query['room'] !== 'string'
-    ) {
+    if (!req.query['jwt'] || !req.query['startTime'] || !req.query['endTime'] || typeof req.query['query'] !== 'string') {
         res.status(INVALID_ARGS).send({error: true, message: 'Missing args'});
         return;
     }
@@ -287,8 +283,9 @@ app.get('/search', (req, res) => {
     const startTime = dayjs(req.query.startTime as string);
     const endTime = dayjs(req.query.endTime as string);
 
-    const showCancelled = typeof req.query.showCancelled !== 'undefined' ? Boolean(req.query.showCancelled) : true;
+    const showCancelled = typeof req.query.showCancelled !== 'undefined' ? req.query.showCancelled === 'true' : true;
 
+    const sortBy = req.query.sortBy === 'dateDesc' ? 'DESC' : 'ASC';
     if (!startTime.isValid() || !endTime.isValid()) {
         res.status(INVALID_ARGS).json({error: true, message: 'Invalid Date'});
         return;
@@ -297,23 +294,22 @@ app.get('/search', (req, res) => {
     decodeJwt(req.query.jwt as string).then(getUntisSession).then(async (untis) => {
         await updateUntisForRange(untis, startTime, endTime);
         const start = performance.now();
-        const su = req.query.subject as string;
-        const te = req.query.teacher as string;
-        const ro = req.query.teacher as string;
+        const q = req.query.query as string;
         searchLesson(startTime, endTime)
-            .and('subject').match(su)
-            .or('shortSubject').match(su)
-            .or('courseName').match(su)
-            .or('courseShortName').match(su)
+            .and('subject').match(q)
+            .or('shortSubject').match(q)
+            .or('courseName').match(q)
+            .or('courseShortName').match(q)
 
-            .or('teacher').match(te)
-            .or('shortTeacher').match(te)
+            .or('teacher').match(q)
+            .or('shortTeacher').match(q)
 
-            .or('room').match(ro)
-            .or('shortRoom').match(ro)
+            .or('room').match(q)
+            .or('shortRoom').match(q)
 
             .and('code').not.eq(showCancelled ? 'a' : 'cancelled')
-            .return.sortAsc('startTime').all().then((searchRes) => {
+            .return.sortBy('startTime', sortBy)
+            .all().then((searchRes) => {
             res.json({time: Number(performance.now() - start).toFixed(2), result: searchRes});
         }).catch((err) => {
             res.status(INVALID_ARGS).json({error: true, message: errorHandler(err)});
@@ -378,123 +374,6 @@ app.post('/deleteUser', express.urlencoded({extended: true}), (req, res) => {
         });
     }).catch((err) => {
         res.status(INVALID_ARGS).json({error: true, message: errorHandler(err)});
-    });
-});
-app.post('/rawRequest', express.urlencoded({extended: true}), (req, res) => {
-    if (!req.body['jwt'] ||
-        !req.body['requestType'] ||
-        !req.body['requestData']
-    ) {
-        res.status(400).send({error: true, message: 'Missing args'});
-        return;
-    }
-
-    decodeJwt(req.body.jwt).then((decoded) => {
-        const requestData = JSON.parse(req.body['requestData']);
-
-        switch (req.body['requestType']) {
-            case 'getTimeTableFor': {
-                // Check if requestBody contains data for this request, if yes login and make it
-                if (!requestData['date'] || !requestData['id']) {
-                    res.status(400).send({error: true, message: 'Invalid parameters'});
-                    return;
-                }
-                getUntisSession(decoded).then((untis) => {
-                    untis.getTimetableFor(new Date(requestData['date']), requestData['id'], 1).then((value) => {
-                        res.send(value);
-                        untis.logout().then();
-                    }).catch((err) => {
-                        res.status(400).send({error: true, message: errorHandler(err)});
-                    });
-                }).catch((err) => {
-                    res.status(400).send({error: true, message: errorHandler(err)});
-                });
-                return;
-            }
-            case 'getOwnTimeTableFor': {
-                if (!requestData['date']) {
-                    res.status(400).send({error: true, message: 'Invalid parameters'});
-                    return;
-                }
-                getUntisSession(decoded).then((untis) => {
-                    untis.getOwnTimetableFor(new Date(requestData['date'])).then((value) => {
-                        res.send(value);
-                        untis.logout().then();
-                    }).catch((err) => {
-                        res.status(400).send({error: true, message: errorHandler(err)});
-                    });
-                }).catch((err) => {
-                    res.status(400).send({error: true, message: errorHandler(err)});
-                });
-                return;
-            }
-            case 'getTimeTableForRange': {
-                // Check if requestBody contains data for this request, if yes login and make it
-                if (!requestData['id'] || !requestData['rangeStart'] || !requestData['rangeEnd']) {
-                    res.status(400).send({error: true, message: 'Invalid parameters'});
-                    return;
-                }
-                getUntisSession(decoded).then((untis) => {
-                    untis.getTimetableForRange(new Date(requestData['rangeStart']), new Date(requestData['rangeEnd']), requestData['id'], 1).then(value => {
-                        res.send(value);
-                        untis.logout().then();
-                    });
-                }).catch(err => {
-                    res.status(400).send({error: true, message: errorHandler(err)});
-                });
-                return;
-            }
-            case 'getRooms': {
-                getUntisSession(decoded).then((untis) => {
-                    untis.getRooms().then(value => {
-                        res.status(200).send(value);
-                        untis.logout().then();
-                    });
-                }).catch((err) => {
-                    res.status(400).send({error: true, message: errorHandler(err)});
-                });
-                return;
-            }
-            case 'getSubjects': {
-                getUntisSession(decoded).then((untis) => {
-                    untis.getSubjects().then(value => {
-                        res.status(200).send(value);
-                        untis.logout().then();
-                    });
-                }).catch((err) => {
-                    res.status(400).send({error: true, message: errorHandler(err)});
-                });
-                return;
-            }
-            case 'getClasses': {
-                getUntisSession(decoded).then((untis) => {
-                    untis.getClasses().then(value => {
-                        res.status(200).send(value);
-                        untis.logout().then();
-                    });
-                }).catch((err) => {
-                    res.status(400).send({error: true, message: errorHandler(err)});
-                });
-                return;
-            }
-            case 'getHolidays': {
-                getUntisSession(decoded).then((untis) => {
-                    untis.getHolidays().then(value => {
-                        res.status(200).send(value);
-                        untis.logout().then();
-                    });
-                }).catch((err) => {
-                    res.status(400).send({error: true, message: errorHandler(err)});
-                });
-                return;
-            }
-            // Write cases for applicable requests.
-            default: {
-                res.status(400).send({error: true, message: 'Invalid requestType'});
-            }
-        }
-    }).catch((err) => {
-        res.status(400).send({error: true, message: errorHandler(err)});
     });
 });
 app.post('/checkCredentials', express.json(), (req, res) => {
