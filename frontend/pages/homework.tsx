@@ -16,13 +16,14 @@ export default function Exams() {
 
 	const [homework, setHomework] = useState<CustomHomework[]>([]);
 	const [dialogOpen, setDialogOpen] = useState(false);
-	const [errorMessage, setErrorMessage] = useState('');
 	const [isPosting, setIsPosting] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
+	const [error, setError] = useState<undefined | string>(undefined);
 
 	//Form
 	const [subject, setSubject] = useState('');
 	const [text, setText] = useState('');
+	const [errorMessage, setErrorMessage] = useState('');
 	const [dueDate, setDueDate] = useState(dayjs().format('YYYY-MM-DD'));
 	const [course, setCourse] = useState('');
 
@@ -30,20 +31,26 @@ export default function Exams() {
 
 	const fetchHomework = () => {
 		setIsLoading(true);
+		setError(undefined);
 		fetcher({
 			endpoint: 'getHomework',
 			method: 'GET',
 			query: {},
 			useCache: false,
 		}).then((json) => {
-			setHomework((json as { message: CustomHomework[] }).message);
+			if(!((obj): obj is {message: CustomHomework[]} => {
+				const test = obj.message;
+				return (
+					Array.isArray(test) &&
+					test.length > 0 ?
+						test[0].hasOwnProperty('dueDate') : true
+				);
+			})(json)) throw new Error('Server returned invalid Data');
+			setHomework(json.message);
 			setIsLoading(false);
 		}).catch((err) => {
-			setSnackbar({
-				text: err,
-				type: 'error',
-				open: true,
-			});
+			setIsLoading(false);
+			setError(err.message);
 		});
 	};
 
@@ -194,7 +201,7 @@ export default function Exams() {
 					</Stack>
 				</AddDialog>
 				{
-					!isLoading ? homework.length > 0 ? homework.map((homework: CustomHomework, idx) => (
+					!isLoading && (typeof error !== 'string') ? homework?.length > 0 ? homework.map((homework: CustomHomework, idx) => (
 						<Box
 							key={idx}
 							sx={{
@@ -215,7 +222,7 @@ export default function Exams() {
 							<span>Text: {homework.text}</span>
 							<span>Abgabe: {dayjs(homework.dueDate).format('DD.MM.YYYY')}</span>
 						</Box>
-					)) : <h1>Keine Hausaufgaben</h1> : <LoadingSpinner/>
+					)) : <h1>Keine Hausaufgaben</h1> : <LoadingSpinner error={error}/>
 				}
 			</Box>
 		</>

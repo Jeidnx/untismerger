@@ -1,3 +1,5 @@
+//TODO: Delete this
+
 interface stringToStringEnum {
 	[key: string]: any,
 }
@@ -12,7 +14,6 @@ export const leistungskurse: stringToStringEnum = {
 };
 
 export const fachrichtungen: stringToStringEnum = {
-	//TODO: find names
 	'2232': 'BG12-1',
 	'2237': 'BG12-2',
 	'2242': 'BG12-3',

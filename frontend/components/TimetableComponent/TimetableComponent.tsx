@@ -1,10 +1,10 @@
 import dayjs from 'dayjs';
 import Lesson from '../Lesson';
 import {alpha, Box, useTheme} from '@mui/material';
-import {displayedLesson, HolidayData, LessonData, TimetableData} from '../../types';
 
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import de from 'dayjs/locale/de';
+import {Holiday, WeekData} from "../../../globalTypes";
 
 dayjs.extend(customParseFormat);
 
@@ -26,11 +26,11 @@ const endTimeLookup: any = {
 	'1515': '16:45',
 };
 
-function instanceOfHoliday(object: any): object is HolidayData {
+function instanceOfHoliday(object: any): object is Holiday {
 	return object.hasOwnProperty('shortName');
 }
 
-export default function TimetableComponent({timetableData}: { timetableData: TimetableData, }) {
+export default function TimetableComponent({timetableData}: { timetableData: WeekData, }) {
 
 	const {week, timetable} = timetableData;
 	const firstDay = dayjs(week[0]).format('DD.MM');
@@ -107,8 +107,9 @@ export default function TimetableComponent({timetableData}: { timetableData: Tim
 				</div>
 			</Box>
 			{
-				week.map((day: string, idx: number) =>
-					<Box
+				week.map((day: string, idx: number) => {
+					const thisDay = timetable[day];
+					return <Box
 						className={'oneDay'}
 						key={idx}
 						sx={{
@@ -121,8 +122,7 @@ export default function TimetableComponent({timetableData}: { timetableData: Tim
 						{getWeekdaySpan(day, idx * 2)}
 
 						{
-							//TODO: why does this show a lint error???
-							instanceOfHoliday(timetable[day]) ? <Box
+							instanceOfHoliday(thisDay) ? <Box
 									sx={{
 										flexGrow: '1',
 										margin: '1px',
@@ -135,17 +135,15 @@ export default function TimetableComponent({timetableData}: { timetableData: Tim
 										writingMode: {desktop: 'horizontal-tb', mobile: 'vertical-rl'},
 									}}
 								>
-									{
-										//@ts-expect-error Idk why
-										timetable[day].name}
+									{thisDay.name}
 								</Box> :
 								//@ts-expect-error Idk why
-								timetable[day]?.map((lesson: displayedLesson, jdx: number) => {
-									return <Lesson lessons={lesson as (LessonData | undefined)[]} parentIdx={idx}
+								timetable[day]?.map((lesson, jdx) => {
+									return <Lesson lessons={lesson} parentIdx={idx}
 												   jdx={jdx} key={idx + '' + jdx}/>;
 								})}
 					</Box>
-				)
+				})
 			}
 		</Box>
 	);

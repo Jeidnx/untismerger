@@ -1,15 +1,14 @@
 import dayjs from 'dayjs';
-import {RedisClientType } from 'redis';
 import {Statistic} from '../../globalTypes';
-import {errorHandler} from './utils';
-import Redis from './redis';
+import {errorHandler} from './utils.js';
+import {getRedisData} from './redis.js';
 
-let redisClient: RedisClientType;
+const Redis = getRedisData();
 let routes: string[] = [];
 
 const addRequest = (endpoint: string) => {
 	if(routes.includes(endpoint)){
-		redisClient.HINCRBY('statistics:' + dayjs().format('YYYY-MM-DD'), endpoint, 1);
+		Redis.client.HINCRBY('statistics:' + dayjs().format('YYYY-MM-DD'), endpoint, 1);
 	}
 };
 
@@ -20,7 +19,7 @@ const getStats = async (): Promise<Statistic[]> => {
 	let cursor = 0;
 	const keys = [];
 	do{
-		await redisClient.SCAN(cursor, {
+		await Redis.client.SCAN(cursor, {
 			MATCH: 'statistics:*',
 		}).then((data) => {
 			cursor = data.cursor;
@@ -34,7 +33,7 @@ const getStats = async (): Promise<Statistic[]> => {
 
 	return await Promise.all(keys.map(async (key) => {
 		const date = key.substring(11);
-		return redisClient.HGETALL(key).then((data) => {
+		return Redis.client.HGETALL(key).then((data) => {
 				return {
 					date: date,
 					requests: data as {users: string, [key: string]: string},

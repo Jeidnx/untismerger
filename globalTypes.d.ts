@@ -1,3 +1,6 @@
+import {Dayjs} from "dayjs";
+import Lesson from "./frontend/components/Lesson";
+
 export interface Jwt {
     version: number,
     username: string,
@@ -27,14 +30,33 @@ export interface DesignDataType {
     alpha: number,
 }
 
-export interface ApiLessonData {
-    date: number,
-    startTime: number,
+
+
+export interface WeekData {
+    timetable: {
+        [key: string]: DayData
+    },
+    week: string[],
+}
+
+export type DayData = Holiday | LessonSlot[];
+
+export type LessonSlot = Lesson[] | undefined;
+
+export interface LessonData {
+    startTime: Dayjs,
+    endTime: Dajys,
+    updatedAt: Dayjs,
     code: "regular" | "cancelled" | "irregular",
+    courseNr: number,
+    courseName: string,
+    courseShortName: string,
     shortSubject: string,
     subject: string,
+    shortTeacher: string,
     teacher: string,
     room: string,
+    shortRoom: string,
     lstext: string,
     info: string,
     subsText: string,

@@ -4,8 +4,6 @@ import dayjs from 'dayjs';
 import {useEffect, useState} from 'react';
 import {Box} from '@mui/material';
 
-import {LessonData, lsTimetable, TimetableData, WeekData} from '../types';
-import {ApiLessonData, Holiday} from '../../globalTypes';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {useCustomTheme} from '../components/CustomTheme';
 import {useLayoutContext} from '../components/Layout';
@@ -13,81 +11,10 @@ import LoadingSpinner from '../components/LoadingSpinner';
 
 import weekday from 'dayjs/plugin/weekday';
 import isBetween from 'dayjs/plugin/isBetween';
+import {DayData, WeekData} from "../../globalTypes";
 
 dayjs.extend(weekday);
 dayjs.extend(isBetween);
-
-const cacheName = 'timetableDataCache';
-
-const startTimeEnum: any = {
-	'800': 0,
-	'945': 1,
-	'1130': 2,
-	'1330': 3,
-	'1515': 4,
-};
-
-const startTimeLookup: any = {
-	'800': '08:00',
-	'945': '09:45',
-	'1130': '11:30',
-	'1330': '13:30',
-	'1515': '15:15',
-};
-
-const endTimeLookup: any = {
-	'800': '09:30',
-	'945': '11:15',
-	'1130': '13:00',
-	'1330': '15:00',
-	'1515': '16:45',
-};
-
-const createTimeTableObject = (week: string[]): lsTimetable => {
-	const out: lsTimetable = {};
-	week.forEach((day: string) => {
-		out[day] = [
-			[],
-			[],
-			[],
-			[],
-			[]
-		];
-	});
-
-	return out;
-};
-
-const processData = (data: ApiLessonData[], holidays: Holiday[], week: string[]): lsTimetable => {
-	//TODO: this could be better
-
-	const returnObj: lsTimetable = createTimeTableObject(week);
-
-	for (let i = 0; i < holidays.length; i++) {
-		const holiday = holidays[i];
-		const start = dayjs(holiday.startDate + '00:00');
-		const end = dayjs(holiday.endDate + '24:00');
-
-		const arr: string[] = [];
-
-		for (let dt = start; end.isAfter(dt, 'day'); dt = dt.add(1, 'day')) {
-			if (dt.isBetween(start, end, 'day', '[)')) arr.push(dt.format('YYYYMMDD'));
-		}
-		arr.forEach((day) => {
-			returnObj[day] = holiday;
-		});
-
-	}
-
-	for (let i = 0; i < data.length; i++) {
-		const {date, startTime, ...newLesson} = data[i];
-		(newLesson as LessonData).startDate = dayjs(date + '' + startTimeLookup[startTime]);
-		(newLesson as LessonData).endDate = dayjs(date + '' + endTimeLookup[startTime]);
-		// @ts-ignore
-		returnObj[date + ''][startTimeEnum[startTime]].push((newLesson as LessonData));
-	}
-	return returnObj;
-};
 
 function getWeekFromDay(date: Date) {
 
@@ -102,10 +29,11 @@ function getWeekFromDay(date: Date) {
 
 export default function Timetable() {
 
-	const {apiEndpoint} = useCustomTheme();
-	const {setFabs} = useLayoutContext();
+	const {fetcher} = useCustomTheme();
+	const {setFabs, showError} = useLayoutContext();
 
-	const [timetables, setTimetables] = useState<TimetableData[]>([]);
+	const [timetables, setTimetables] = useState<WeekData[]>([]);
+	const [fullError, setFullError] = useState<undefined | string>(undefined);
 
 	const fetchNextPage = () => {
 		fetchTimetable({weekOffset: timetables.length});
@@ -115,29 +43,48 @@ export default function Timetable() {
 								useCache = true,
 								weekOffset = 0
 							}: { useCache?: boolean, weekOffset?: number }): Promise<void> => {
+		setFullError(undefined);
 		const week = getWeekFromDay(dayjs().add(weekOffset, 'week').toDate());
-		const query = new URLSearchParams({
-			startDate: dayjs(week[0]).format('YYYY-MM-DD'),
-			endDate: dayjs(week[4]).format('YYYY-MM-DD'),
-			jwt: localStorage.getItem('jwt') ?? ''
-		});
-		const request = new Request(apiEndpoint + 'timetableWeek?' + query);
 
-		// No caching for now
-		return fetch(request).then((resp) => resp.json()).then((json) => {
-			if(json.error) return Promise.reject('error');
-			const processedData = processData(json.lessons, json.holidays, week);
-			const fullTimeTable: WeekData = ({...processedData, type: 'fetched'} as WeekData);
-
+		return fetcher({
+			method: "GET",
+			endpoint: 'timetable',
+			query: {
+				startDate: dayjs(week[0]).format('YYYY-MM-DD'),
+				endDate: dayjs(week[4]).format('YYYY-MM-DD'),
+			}, useCache
+		}).then((json) => {
+			if(!((obj): obj is {timetable: {[key: string]: DayData}} => {
+				return (
+					obj !== null &&
+						typeof obj === 'object' &&
+						Object.keys(obj).some((element) => {
+							const thisElement = obj[element];
+							return (
+								thisElement === null ||
+								typeof thisElement !== 'object' ||
+								!(
+									thisElement.hasOwnProperty('shortName') ||
+									Array.isArray(thisElement)
+								)
+							)
+						})
+				);
+			})(json)) throw new Error('Server returned invalid Data');
 			setTimetables((prev) => {
 				prev[weekOffset] = {
-					timetable: fullTimeTable,
-					week: week
-				};
+					timetable: json.timetable,
+					week
+				}
 				return [...prev];
-			});
-			return Promise.resolve();
-		});
+			})
+		}).catch((err) => {
+			if(typeof err.message === 'string'){
+				err = err.message;
+			}
+			timetables.length === 0 ?
+				setFullError(err) : showError(err);
+		})
 	};
 
 	const handleFutureScroll = (element: HTMLDivElement) => {
@@ -192,13 +139,13 @@ export default function Timetable() {
 						scrollSnapType: 'y mandatory',
 					}}>
 					{
-						timetables.length > 0 ?
+						timetables.length > 0 && typeof fullError === 'undefined' ?
 							timetables.map((page, idx) => {
 								return <TimetableComponent
 									key={idx}
 									timetableData={page}
 								/>;
-							}) : <LoadingSpinner/>
+							}) : <LoadingSpinner error={fullError}/>
 					}
 				</Box>
 			</div>

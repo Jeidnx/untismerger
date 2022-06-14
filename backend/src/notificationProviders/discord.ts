@@ -1,12 +1,11 @@
 /* Used to send notifications via Discord */
-import {hash} from '../utils';
+import {hash} from '../utils.js';
 import {NotificationProps} from '../types';
 import dm from 'djs-messenger';
-import {errorHandler} from '../utils';
-import {RedisClientType} from 'redis';
-
-let redisClient: RedisClientType;
+import {errorHandler} from '../utils.js';
+import {getRedisData} from '../redis.js';
 let isRegistered;
+const {client: redisClient} = getRedisData();
 
 function sendNotification({title, payload, targets}: NotificationProps) {
 	targets.forEach((target) => {

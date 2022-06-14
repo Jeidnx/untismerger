@@ -13,14 +13,14 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import {MutableRefObject, useEffect, useMemo, useRef, useState} from 'react';
 
-import {displayedLesson, LessonData} from "../../types";
+import {LessonData,} from "../../../globalTypes";
 import {useCustomTheme} from "../CustomTheme";
 import style from './Lesson.module.css';
 // @ts-ignore
 import randomColor from 'randomcolor'
 
 function checkOverflow(el: HTMLDivElement | undefined) {
-	if (el === undefined) return false;
+	if (el === undefined || el === null) return false;
 	let width = 0;
 	for (let i = 0; i < el.children.length; i++) {
 		let crEl = el.children[i]
@@ -31,7 +31,7 @@ function checkOverflow(el: HTMLDivElement | undefined) {
 	return el.clientWidth < (width + 12);
 }
 
-const Lesson = ({lessons, parentIdx, jdx}: { lessons: displayedLesson, parentIdx: number, jdx: number }) => {
+const Lesson = ({lessons, parentIdx, jdx}: { lessons: LessonData[], parentIdx: number, jdx: number }) => {
 
 	const rootDiv = useRef<HTMLDivElement>();
 	const [nameIsOverflowing, setNameIsOverflowing] = useState(false);
@@ -68,7 +68,7 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: displayedLesson, parentIdx
 	}, [])
 
 	const colors = useMemo(() => {
-		return lessons.flatMap((lesson: LessonData | undefined) => {
+		return lessons.flatMap((lesson) => {
 			if (!lesson) return [];
 			if (colorEnum[lesson.subject]) return [colorEnum[lesson.subject]];
 
@@ -101,7 +101,7 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: displayedLesson, parentIdx
 						justifyContent: "space-between",
 					}}
                 >
-					{lessons[0]?.startDate.format("DD.MM HH:mm")}
+					{lessons[0]?.startTime.format("DD.MM HH:mm")}
                     <IconButton
                         size={"large"}
                         onClick={() => {
@@ -136,7 +136,7 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: displayedLesson, parentIdx
 						}}
                     >
 						{
-							//TODO: Do this better
+							//TODO: Show start and end Times, show not empty remarks and maybe more
 						}
                         <p>Fach: {selectedLesson?.subject}</p>
                         <p>Lehrer: {selectedLesson?.teacher}</p>
@@ -159,7 +159,7 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: displayedLesson, parentIdx
 						const color = colors[idx];
 						const textColor = theme.palette.getContrastText(color);
 
-						if (lesson.endDate.isBefore(undefined)) {
+						if (lesson.endTime.isBefore(undefined)) {
 							setTimeout(() => {
 								if (!rootDiv.current) return;
 								rootDiv.current.style.filter = "grayscale(100%)";

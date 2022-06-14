@@ -39,8 +39,11 @@ export default function Statistics() {
 			query: {},
 			useCache: false,
 		}).then((json) => {
-			const a = json as { endpoints: string[], stats: Statistic[] };
-			setData(processData(a));
+			if(!((obj): obj is {endpoints: string[], stats: Statistic[]} => {
+				//TODO: implement
+				return false;
+			})(json)) throw new Error('Server returned invalid Data');
+			setData(processData(json));
 			//TODO: figure out why this doesn't work
 			//setIndices(a.endpoints);
 		}).catch((err) => {

@@ -20,14 +20,16 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CreateIcon from '@mui/icons-material/Create';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import SearchIcon from '@mui/icons-material/Search';
 
 import {stringToNumberEnum} from '../types';
 
 const urlToValue: stringToNumberEnum = {
-	'/timetable': 0,
-	'/homework': 1,
-	'/exams': 2,
-	'/settings': 3,
+	'/homework': 0,
+	'/exams': 1,
+	'/timetable': 2,
+	'/search': 3,
+	'/settings': 4,
 };
 
 interface SnackbarOptions {
@@ -48,14 +50,9 @@ interface navigationProps {
 	icon: any
 }
 
-const LayoutContext = createContext(({} as { setFabs: (fabs: fabProps[]) => void, setSnackbar: (options: SnackbarOptions) => void }));
+const LayoutContext = createContext(({} as { setFabs: (fabs: fabProps[]) => void, setSnackbar: (options: SnackbarOptions) => void, showError: (error: string) => void }));
 
 const pages: navigationProps[] = [
-	{
-		text: 'Stundenplan',
-		path: '/timetable',
-		icon: <AccessTimeIcon/>,
-	},
 	{
 		text: 'Hausaufgaben',
 		path: '/homework',
@@ -65,6 +62,16 @@ const pages: navigationProps[] = [
 		text: 'Klausuren',
 		path: '/exams',
 		icon: <CreateIcon/>,
+	},
+	{
+		text: 'Stundenplan',
+		path: '/timetable',
+		icon: <AccessTimeIcon/>,
+	},
+	{
+		text: 'Suchen',
+		path: '/search',
+		icon: <SearchIcon/>
 	},
 	{
 		text: 'Einstellungen',
@@ -102,6 +109,16 @@ export default function Layout({children}: { children: any }) {
 	});
 
 	const [fabs, setFabs] = React.useState<fabProps[]>([]);
+
+	const showError = (error: string) => {
+
+
+		setSnackbarOptions({
+			open: true,
+			text: error,
+			type: 'error',
+		})
+	}
 
 	return (
 		<>
@@ -156,6 +173,9 @@ export default function Layout({children}: { children: any }) {
 							display: 'flex',
 							alignItems: 'center',
 							flexDirection: 'column',
+						}}
+						onClick={() => {
+							Router.push('/')
 						}}
 					>
 						{ /* Next/Image is not supported for static export */}
@@ -227,7 +247,7 @@ export default function Layout({children}: { children: any }) {
 					{snackbarOptions.text}
 				</Alert>
 			</Snackbar>
-			<LayoutContext.Provider value={{setFabs: setFabs, setSnackbar: setSnackbarOptions}}>
+			<LayoutContext.Provider value={{setFabs: setFabs, setSnackbar: setSnackbarOptions, showError}}>
 				<Box
 					component={'main'}
 					sx={{

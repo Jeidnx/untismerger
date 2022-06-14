@@ -204,10 +204,13 @@ const Settings = () => {
 											method: 'GET',
 											query: {},
 										}).then((res) => {
-											setDiscordAuthCode((res as {token: string}).token);
+											if(!((obj): obj is {token: string} => {
+												return typeof obj.token === 'string';
+											})(res)) throw new Error('Server returned invalid Data');
+											setDiscordAuthCode(res.token);
 										}).catch((err) => {
 											setSnackbar({
-												text: err,
+												text: err.message,
 												type: 'error',
 												open: true,
 											});
@@ -258,13 +261,17 @@ const Settings = () => {
 										method: 'POST',
 										query: {},
 									}).then((json) => {
+										if(!((obj): obj is {data: string} => {
+											return typeof obj.data === 'string';
+										})(json)) throw new Error('Server returned invalid Data');
+										const data = JSON.parse(json.data);
 										setDesignData({
 											...theme.designData,
-											...JSON.parse((json as { data: string }).data)
+											...data,
 										});
 										setTheme(renderTheme({
 											...theme.designData,
-											...JSON.parse((json as { data: string }).data),
+											...data,
 										}));
 										setSnackbar({
 											text: 'Erfolgreich geladen',
@@ -273,7 +280,7 @@ const Settings = () => {
 										});
 									}).catch((err) => {
 										setSnackbar({
-											text: err,
+											text: err.message,
 											type: 'error',
 											open: true,
 										});
@@ -302,7 +309,7 @@ const Settings = () => {
 										})
 										.catch((err) => {
 											setSnackbar({
-												text: err,
+												text: err.message,
 												type: 'error',
 												open: true,
 											});

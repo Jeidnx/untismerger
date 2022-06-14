@@ -3,9 +3,10 @@
   "version": "3.3.0",
   "description": "Untismerger Server",
   "scripts": {
-    "dev": "npm run build && node out/src/api.js",
+    "dev": "npm run build && node out/backend/src/api.js",
     "build": "rm -rf out/ && tsc"
   },
+  "type": "module",
   "author": "Jeidnx",
   "dependencies": {
     "cors": "^2.8.5",

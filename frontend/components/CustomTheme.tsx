@@ -1,5 +1,5 @@
 import {createContext, useCallback, useContext, useEffect, useMemo, useState} from 'react';
-import {customThemeType, fetcherParams, JwtObject} from '../types';
+import {customThemeType, FetcherParams,JwtObject} from '../types';
 import {Box, createTheme, ThemeProvider} from '@mui/material';
 
 import {DesignDataType} from '../../globalTypes';
@@ -15,7 +15,7 @@ dayjs.tz.setDefault('Europe/Berlin');
 
 const CustomThemeContext = createContext(({} as customThemeType));
 
-const useDevApi = false;
+const useDevApi = true;
 let debounceSave: NodeJS.Timeout;
 
 // Provider
@@ -92,15 +92,14 @@ export function CustomThemeProvider({children}: any) {
 		Buffer.from(rawJwt.split('.')[1], 'base64').toString('utf-8')
 	) : {}, [rawJwt])
 
-	const fetcher = useCallback(({endpoint, query, useCache, method}: fetcherParams): Promise<unknown> => {
-		return new Promise((resolve, reject) => {
 
+	const fetcher = useCallback(({endpoint, query, useCache, method}: FetcherParams): Promise<{ [key: string]: unknown; }> => {
 			const mQuery = {
-				jwt: rawJwt,
+				jwt: rawJwt || "",
 				...query,
 			};
 
-			fetch(apiEndpoint + endpoint + ((method === 'GET') ? `?${new URLSearchParams(mQuery)}` : ''), {
+			return fetch(apiEndpoint + endpoint + ((method === 'GET') ? `?${new URLSearchParams(mQuery)}` : ''), {
 				method: method,
 				cache: useCache ? 'default' : 'no-cache',
 				body: method === 'POST' ? JSON.stringify(mQuery) : undefined,
@@ -112,19 +111,30 @@ export function CustomThemeProvider({children}: any) {
 					let json;
 					try {
 						json = await res.json();
-					} catch (e) {
+					}catch(e) {
 						throw new Error(res.statusText);
 					}
-					throw new Error(json.message || res.statusText);
+					if(json.error && typeof json.message === 'string'){
+						throw new Error(json.message);
+					}
+					throw new Error(res.statusText);
+				}else{
+					return res.json();
 				}
-				return res.json();
-			}).then((json) => {
-				if (json.error) throw new Error(json.message);
-				resolve(json);
+			}).then((json: unknown) => {
+				if(!((obj: unknown): obj is {[key: string]: unknown} => {
+					return obj !== null && typeof obj === 'object' && Object.keys(obj).length > 0;
+				})(json)) throw new Error('Server hat eine ungültige Antwort gesendet.');
+				if(json.error){
+					if(typeof json.message === 'string') throw new Error(json.message);
+					throw new Error('Ein unbekannter Fehler ist aufgetreten.');
+				}
+				return json;
 			}).catch((err) => {
-				reject('Fehler: ' + (err.message || err));
-			});
-		});
+				if(typeof err === 'string') throw new Error(err);
+				if(typeof err !== 'object') throw new Error('Ein unbekannter Fehler ist aufgetreten');
+				throw err;
+			})
 	}, [apiEndpoint, rawJwt])
 
 	const jwt: JwtObject = useMemo(() => ({

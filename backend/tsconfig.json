@@ -4,17 +4,13 @@
     "module": "ESNext",
     "esModuleInterop": true,
     "rootDir": "../",
-    "target": "ESNext",
+    "target": "ES2017",
     "skipLibCheck": true,
     "strict": false,
     "outDir": "./out",
     "alwaysStrict": true,
     "moduleResolution": "node",
     "removeComments": true,
-    "rootDirs": [
-      "src",
-      "../"
-    ]
   },
   "include": [
     "src/"

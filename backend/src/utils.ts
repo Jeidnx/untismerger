@@ -1,30 +1,46 @@
 import crypto from 'crypto';
 
+function isObject(obj: unknown): obj is object {
+	return typeof obj === 'object' && obj !== null;
+}
+
+function hasMessage(obj: unknown): obj is {message: unknown} {
+	return isObject(obj) ? 'message' in obj : false;
+}
+
+function hasToString(obj: unknown): obj is {toString: () => string} {
+	return isObject(obj) ? 'toString' in obj && typeof obj.toString === 'function' : false;
+}
+
 function errorHandler(error: unknown): string {
 	switch (typeof error) {
 		case 'undefined': {
-			return 'Undefined Error';
+			return 'An unknown error occurred';
 		}
 		case 'string': {
-			return error;
+			return 'An error occured: ' + error;
 		}
 		case 'number': {
-			return 'Error code: ' + error;
+			return 'An error occurred. Error code: ' + error;
 		}
 		case 'bigint': {
-			return 'Error code: ' + error;
+			return 'An error occurred. Error code: ' + error;
 		}
 		case 'object': {
-			//TODO: improve
-			const msg = error.message;
-			if(typeof msg === 'string'){
-				return msg;
+			if(hasMessage(error)){
+				if(typeof error.message === 'string'){
+					return error.message;
+				}
+			}
+
+			if(hasToString(error)){
+				return error.toString();
 			}
 		}
 		// We want cases to fall through here, so that we always return something
 		// eslint-disable-next-line no-fallthrough
 		default: {
-			return 'An error occurred. Additionally, while trying to handle the error, another error occurred: ' + error;
+			return 'An error occurred: ' + error;
 		}
 	}
 }
@@ -59,4 +75,12 @@ function hash(str: string): string {
 	return crypto.createHash('sha256').update(str).digest('hex');
 }
 
-export {errorHandler, convertUntisTimeDateToDate, convertUntisDateToDate, hash};
+async function wait(ms: number): Promise<void>{
+	return new Promise((resolve) => {
+		setTimeout(() => {
+			resolve();
+		}, ms);
+	});
+}
+
+export {errorHandler, convertUntisTimeDateToDate, convertUntisDateToDate, hash, wait};

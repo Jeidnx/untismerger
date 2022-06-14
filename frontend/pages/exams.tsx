@@ -16,13 +16,14 @@ export default function Exams() {
 
 	const [klausuren, setKlausuren] = useState<CustomExam[]>([]);
 	const [dialogOpen, setDialogOpen] = useState(false);
-	const [errorMessage, setErrorMessage] = useState('');
+	const [error, setError] = useState<undefined | string>(undefined);
 	const [isPosting, setIsPosting] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
 
 	//Form
 	const [subject, setSubject] = useState('');
 	const [room, setRoom] = useState('');
+	const [errorMessage, setErrorMessage] = useState('');
 	const [startTime, setStartTime] = useState(dayjs().format('YYYY-MM-DDTHH:mm'));
 	const [endTime, setEndTime] = useState(dayjs().format('HH:mm'));
 	const [kurs, setKurs] = useState('');
@@ -31,20 +32,26 @@ export default function Exams() {
 
 	const fetchExams = () => {
 		setIsLoading(true);
+		setError(undefined)
 		fetcher({
 			endpoint: 'getExams',
 			method: 'GET',
 			query: {},
 			useCache: false,
 		}).then((json) => {
-			setKlausuren((json as { message: CustomExam[] }).message);
+			if(!((obj): obj is {message: CustomExam[]} => {
+				const test = obj.message;
+				return (
+					Array.isArray(test) &&
+					test.length > 0 ?
+						test[0].hasOwnProperty('room') : true
+				);
+			})(json)) throw new Error('Server returned invalid Data');
+			setKlausuren(json.message);
 			setIsLoading(false);
 		}).catch((err) => {
-			setSnackbar({
-				text: err,
-				type: 'error',
-				open: true,
-			});
+			setError(err.message);
+			setIsLoading(false);
 		});
 	};
 
@@ -212,7 +219,7 @@ export default function Exams() {
 				</AddDialog>
 
 				{
-					!isLoading ? klausuren.length > 0 ? klausuren.map((klausur: CustomExam, idx) => (
+					!isLoading && (typeof error !== 'string') ? klausuren?.length > 0 ? klausuren.map((klausur: CustomExam, idx) => (
 						<Box
 							key={idx}
 							sx={{
@@ -233,7 +240,7 @@ export default function Exams() {
 							<span>Raum: {klausur.room}</span>
 							<span>Datum: {dayjs.tz(klausur.startTime).format('DD.MM.YYYY HH:mm')} - {dayjs.tz(klausur.endTime).format('HH:mm')}</span>
 						</Box>
-					)) : <h1>Keine Klausuren</h1> : <LoadingSpinner/>
+					)) : <h1>Keine Klausuren</h1> : <LoadingSpinner error={error}/>
 				}
 			</Box>
 		</>

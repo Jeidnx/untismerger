@@ -1,7 +1,8 @@
 /* Handles cancelled Lessons and periodically checks for cancelled lessons */
 import * as  WebUntisLib from 'webuntis';
 import {NotificationProps} from './types';
-import Redis from './redis';
+import {getRedisData} from './redis.js';
+import {convertUntisTimeDateToDate} from './utils.js';
 
 const startTimes = [
 	800, 945, 1130, 1330, 1515
@@ -22,10 +23,10 @@ const idsToCheck = [
 	2257,
 	2262,
 ];
-const redisClient = Redis.client;
 let providers: ((props: NotificationProps) => void)[] = [];
 let getTargets;
-function initNotifications(checkInterval: number, notificationProviders, getTargetsFromDb) {
+const Redis = getRedisData();
+export default function initNotifications(checkInterval: number, notificationProviders, getTargetsFromDb) {
 	getTargets = getTargetsFromDb;
 	providers = notificationProviders;
 	setInterval(() => {
@@ -73,7 +74,7 @@ async function cancelHandler(elem: WebUntisLib.Lesson, lessonNr: string | number
 	if (!elem['su'][0] || !elem['su'][0]['name']) {
 		return;
 	}
-	redisClient.GET('sentNotifications:' + elem.id).then((res) => {
+	Redis.client.GET('sentNotifications:' + elem.id).then((res) => {
 		if(res === 'sent'){
 			return;
 		}
@@ -81,7 +82,7 @@ async function cancelHandler(elem: WebUntisLib.Lesson, lessonNr: string | number
 		const date = convertUntisTimeDateToDate(elem.date, elem.startTime);
 		if(date > new Date()){
 			sendNotification(elem,lessonNr, date);
-			redisClient.SET('sentNotifications:' + elem.id, 'sent');
+			Redis.client.SET('sentNotifications:' + elem.id, 'sent');
 		}
 	});
 }
@@ -125,23 +126,4 @@ function getNotificationBody(lesson: string, date: Date): string {
 	}
 	return `${lesson} am ${String(date.getDate() + '.' + (date.getMonth() + 1))} entfällt.`;
 }
-
-function convertUntisTimeDateToDate(date: number, startTime: number): Date {
-
-	const year = Math.floor(date / 10000);
-	const month = Math.floor((date - (year * 10000)) / 100);
-	const day = (date - (year * 10000) - month * 100);
-
-	let index;
-	if (startTime >= 100) {
-		index = 2;
-	} else {
-		index = 1;
-	}
-	const hour = Math.floor(startTime / Math.pow(10, index));
-	const minutes = Math.floor(((startTime / 100) - hour) * 100);
-
-	return new Date(year, month - 1, day, hour, minutes);
-}
-
 export {initNotifications, cancelHandler};
