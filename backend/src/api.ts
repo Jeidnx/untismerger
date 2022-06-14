@@ -312,7 +312,7 @@ app.get('/search', (req, res) => {
             .or('room').match(ro)
             .or('shortRoom').match(ro)
 
-            .and('code').not.eq(showCancelled ? '' : 'cancelled')
+            .and('code').not.eq(showCancelled ? 'a' : 'cancelled')
             .return.sortAsc('startTime').all().then((searchRes) => {
             res.json({time: Number(performance.now() - start).toFixed(2), result: searchRes});
         }).catch((err) => {
