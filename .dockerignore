@@ -8,6 +8,7 @@
 !backend/package.json
 !backend/package-lock.json
 !backend/tsconfig.json
+!config.ts
 
 # Frontend
 !frontend/**

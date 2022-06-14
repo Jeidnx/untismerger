@@ -13,6 +13,7 @@ WORKDIR /app/backend
 COPY --from=deps /app/node_modules ./node_modules
 COPY backend .
 COPY globalTypes.d.ts /app
+COPY config.ts /app
 
 RUN npm run build
 
@@ -24,4 +25,4 @@ COPY --from=builder /app/backend ./
 
 EXPOSE 8080
 
-CMD ["node", "./out/src/api.js"]
+CMD ["node", "./out/backend/src/api.js"]
