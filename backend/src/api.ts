@@ -12,14 +12,14 @@ import {convertUntisDateToDate, convertUntisTimeDateToDate, errorHandler, hash} 
 import * as Notify from './notifyHandler.js';
 import * as statistics from './statistics.js';
 
-import {CustomExam, CustomHomework, Jwt} from '../../globalTypes';
+import {CustomExam, CustomHomework, DayData, Jwt} from '../../globalTypes';
 
 // Notification Providers
 import {sendNotification as sendNotificationMail} from './notificationProviders/mail.js';
 import {sendNotification as sendNotificationWebpush} from './notificationProviders/webpush.js';
 import {NotificationProps} from './types';
 import Discord from './notificationProviders/discord.js';
-import {getSearch, searchLesson, updateUntisForRange} from './lesson.js';
+import {getSearch, updateUntisForRange, lessonRepository} from './lesson.js';
 
 // Constants
 const INVALID_ARGS = 418;
@@ -58,7 +58,7 @@ try {
 const iv = Buffer.alloc(16, schoolName);
 
 const app = express();
-
+let untisApiProbablyDown = false;
 // Enable CORS
 app.use(cors());
 
@@ -210,22 +210,28 @@ app.get('/timetable', (req, res) => {
                     const startDate = dayjs(req.query.startDate as string);
                     const endDate = dayjs(req.query.endDate as string);
 
-                    await updateUntisForRange(untis, startDate, endDate);
+                    if(!untisApiProbablyDown) await updateUntisForRange(untis, startDate, endDate);
 
-                    await getSearch().where('startTime').between(startDate.toDate(), endDate.toDate())
+                    lessonRepository.searchRaw(
+                        //TODO: add sonstiges
+                        `@startTime:[${startDate.unix()} ${endDate.unix()}] (@courseNr:[${decoded.lk} ${decoded.lk}] | @courseNr:[${decoded.fachrichtung} ${decoded.fachrichtung}])`)
+                        .returnAll().then((lessons) => {
+                            throw new Error(JSON.stringify(lessons));
+                            const timetable: {[key: string]: DayData | undefined} = {[startDate.format('YYYY-MM-DD')]: undefined};
+                            let curr = startDate;
+                            while (!curr.isSame(endDate, 'day')) {
+                                curr = curr.add(1, 'day');
+                                timetable[curr.format('YYYY-MM-DD')] = undefined;
+                            }
 
-                        .and(search => search
-                            .where('courseNr').eq(decoded.lk)
-                            .or('courseNr').eq(decoded.fachrichtung)
-                            .or('shortSubject').match(decoded.sonstiges.join(' | '))
-                        ).returnAll()
-                        .then((lessons) => {
-                            throw new Error('//TODO: implement');
+                            Object.keys(timetable).forEach((key) => {
+                                //TODO: figure out what is happening on this specific day and add here
+                                timetable[key] = ({} as DayData);
+                            });
 
 
-                            //TODO: Sort lessons and stuff
+                        throw new Error('//TODO: implement');
 
-                            const timetable = {};
                             res.json({timetable});
                         }).catch((err) => {
                             res.status(SERVER_ERROR).json({error: true, message: errorHandler(err)});
@@ -252,18 +258,11 @@ app.get('/nextLesson', (req, res) => {
         return;
     }
 
-    decodeJwt(req.query.jwt).then((jwt) => {
-        getSearch()
-            .where('startTime').after(startTime.toDate())
-
-            .and(search => search
-                .where('courseNr').eq(jwt.lk)
-                .or('courseNr').eq(jwt.fachrichtung)
-                //                        TODO: Fix this
-                .or('shortSubject').match(jwt.sonstiges.join(' ')))
-
-            .and('code').not.eq('cancelled')
-            .returnFirst().then((lesson) => {
+    decodeJwt(req.query.jwt).then((decoded) => {
+        lessonRepository.searchRaw(
+            //TODO: add sonstiges
+            `@startTime:[${dayjs().unix()} +inf] (@courseNr:[${decoded.lk} ${decoded.lk}] | @courseNr:[${decoded.fachrichtung} ${decoded.fachrichtung}])`
+        ).sortAsc('startTime').returnFirst().then((lesson) => {
             res.json({lesson});
         }).catch((err) => {
             res.status(SERVER_ERROR).json({error: true, message: errorHandler(err)});
@@ -280,36 +279,23 @@ app.get('/search', (req, res) => {
         res.status(INVALID_ARGS).json({error: true, message: 'Invalid Args'});
         return;
     }
+
     const startTime = dayjs(req.query.startTime as string);
     const endTime = dayjs(req.query.endTime as string);
-
-    const showCancelled = typeof req.query.showCancelled !== 'undefined' ? req.query.showCancelled === 'true' : true;
-
-    const sortBy = req.query.sortBy === 'dateDesc' ? 'DESC' : 'ASC';
     if (!startTime.isValid() || !endTime.isValid()) {
         res.status(INVALID_ARGS).json({error: true, message: 'Invalid Date'});
         return;
     }
 
     decodeJwt(req.query.jwt as string).then(getUntisSession).then(async (untis) => {
-        await updateUntisForRange(untis, startTime, endTime);
+        if(!untisApiProbablyDown) await updateUntisForRange(untis, startTime, endTime);
         const start = performance.now();
         const q = req.query.query as string;
-        searchLesson(startTime, endTime)
-            .and('subject').match(q)
-            .or('shortSubject').match(q)
-            .or('courseName').match(q)
-            .or('courseShortName').match(q)
 
-            .or('teacher').match(q)
-            .or('shortTeacher').match(q)
-
-            .or('room').match(q)
-            .or('shortRoom').match(q)
-
-            .and('code').not.eq(showCancelled ? 'a' : 'cancelled')
-            .return.sortBy('startTime', sortBy)
-            .all().then((searchRes) => {
+        //TODO: figure out if this should be sanitized or not
+        lessonRepository.searchRaw(
+            `@startTime:[${startTime.unix()} ${endTime.unix()}] ` + q).return.all()
+            .then((searchRes) => {
             res.json({time: Number(performance.now() - start).toFixed(2), result: searchRes});
         }).catch((err) => {
             res.status(INVALID_ARGS).json({error: true, message: errorHandler(err)});
@@ -739,24 +725,29 @@ function getUntisSession(loginData: {
     username: string,
     password: string
 }, decryptPassword = true): Promise<WebUntisLib> {
-    return new Promise((resolve, reject) => {
         const untis = new WebUntisLib(
             schoolName,
             loginData.username,
             decryptPassword ? decrypt(loginData.password) : loginData.password,
             schoolDomain,
         );
-        untis.login().then(() => {
-            resolve(untis);
-        }).catch(reject);
-    });
+
+        return untis.login().then(() => {
+            untisApiProbablyDown = false;
+            return untis;
+        }).catch((err) => {
+            if(untisApiProbablyDown) return untis;
+            console.log(err);
+            untisApiProbablyDown = true;
+            throw new Error(err);
+        });
 }
 
 function decodeJwt(jwtString: string): Promise<Jwt> {
     return new Promise((resolve, reject) => {
         jwt.verify(jwtString, jwtSecret, (err, decoded) => {
             if (err) {
-                reject();
+                reject(err);
                 return;
             }
             resolve((decoded as Jwt));

@@ -3,7 +3,7 @@ import {
     Box,
     Checkbox,
     FormControlLabel,
-    FormGroup,
+    FormGroup, InputAdornment,
     MenuItem,
     Select,
     Stack,
@@ -32,7 +32,8 @@ export default function Search() {
 
     const [query, setQuery] = useState('');
     const [showCancelled, setShowCancelled] = useState(true);
-    const [sortBy, setSortBy] = useState('dateAsc');
+
+    const [sortBy, setSortBy] = useState<[string, string]>(['startTime', 'ASC']);
     const [startTime, setStartTime] = useState(dayjs());
     const [endTime, setEndTime] = useState(dayjs().add(1, "hour"));
 
@@ -51,9 +52,8 @@ export default function Search() {
                 endpoint: "search",
                 useCache: false,
                 query: {
-                    startTime: startTime.toDate(),
-                    endTime: endTime.toDate(),
-                    query, showCancelled, sortBy
+                    //query: `@startTime:[${startTime.unix()} ${endTime.unix()}] "${query}" ${showCancelled ? '' :/* TODO: Figure out why this doesn't work*/ '-@code:cancelled'} SORTBY ${sortBy.join(' ')}`,
+                    startTime, endTime, query
                 }
             }).then((json) => {
                 if (!((obj): obj is { result: SearchResult[], time: number } => {
@@ -112,6 +112,13 @@ export default function Search() {
             <TextField
                 label={"Anfrage"}
                 value={query}
+                multiline
+                InputProps={{
+                    endAdornment: <InputAdornment position={"end"}>{
+                        ` @startTime:[${startTime.unix()} ${endTime.unix()}]` +
+                        (showCancelled ? '' : ' -@code:"cancelled"') + ' SORTBY ' + sortBy.join(' ')
+                    }</InputAdornment>
+                }}
                 onChange={(e) => {
                     setQuery(e.target.value);
                 }}
@@ -142,9 +149,9 @@ export default function Search() {
                         setShowCancelled(e.target.checked);
                     }}/>
                 } label={"Entfallende Stunden anzeigen"} />
-                <FormControlLabel control={<Select value={sortBy} displayEmpty onChange={(e) => {setSortBy(e.target.value)}}>
-                    <MenuItem value={"dateAsc"}>Startzeit Aufsteigend</MenuItem>
-                    <MenuItem value={"dateDesc"}>Startzeit Absteigend</MenuItem>
+                <FormControlLabel control={<Select value={sortBy.join(' ')} displayEmpty onChange={(e) => {setSortBy(e.target.value.split(' ') as [string, string])}}>
+                    <MenuItem value={"startTime ASC"}>Startzeit Aufsteigend</MenuItem>
+                    <MenuItem value={"startTime DESC"}>Startzeit Absteigend</MenuItem>
                 </Select>} label={"Sortieren nach"} />
             </FormGroup>
         </Stack>

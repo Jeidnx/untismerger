@@ -32,11 +32,6 @@ export function updateUntisForRange(untis: WebUntisLib, startDate: Dayjs, endDat
         console.log('Updating dates: ', outdatedDays);
         return untis.getClasses().then((classes) => {
             return Promise.all(classes.map((klasse) => {
-                const thisCourse = new Course(courseSchema, String(klasse.id), {
-                    shortName: klasse.name,
-                    name: klasse.longName,
-                });
-                courseRepository.save(thisCourse);
                 return fetchNewUntisData(
                     untis, klasse.id,
                     new Date(outdatedDays[0]), new Date(outdatedDays[outdatedDays.length - 1]),
@@ -57,26 +52,25 @@ export function updateUntisForRange(untis: WebUntisLib, startDate: Dayjs, endDat
 async function fetchNewUntisData(untis: WebUntisLib, lessonNr: number, startDate: Date, endDate: Date, courseName, courseShortName) {
     return untis.getTimetableForRange(startDate, endDate, lessonNr, 1).then((lessons) => {
         return Promise.all(lessons.map(async (element) => {
-            const test = new LessonClass(lessonSchema, String(element.id), {
+            return lessonRepository.save(new LessonClass(lessonSchema, String(element.id), {
                 startTime: convertUntisTimeDateToDate(element.date, element.startTime),
                 endTime: convertUntisTimeDateToDate(element.date, element.endTime),
                 code: element['code'] || 'regular',
                 courseNr: lessonNr,
                 courseShortName, courseName,
                 shortSubject: element['su'][0] ? element['su'][0]['name'] : '🤷',
-                subject: element['su'][0] ? element['su'][0]['longname'] : '🤷',
-                teacher: element['te'][0] ? element['te'][0]['longname'] : '🤷',
+                subject: element['su'][0] ? element['su'][0]['longname'] : 'no subject',
+                teacher: element['te'][0] ? element['te'][0]['longname'] : 'no teacher',
                 shortTeacher: element.te[0] ? element.te[0].name : '🤷‍',
-                room: element['ro'][0] ? element['ro'][0]['name'] : '🤷‍',
+                room: element.ro[0] ? element.ro[0].longname : 'no room',
+                shortRoom: element.ro[0] ? element.ro[0].name : '🤷',
                 lstext: element['lstext'] || '',
                 info: element['info'] || '',
                 subsText: element['substText'] || '',
                 sg: element['sg'] || '',
                 bkRemark: element['bkRemark'] || '',
                 bkText: element['bkText'] || '',
-            });
-
-            return lessonRepository.save(test);
+            }));
         }));
     });
 }
@@ -110,21 +104,7 @@ const lessonSchema = new Schema(
     }
 );
 
-class Course extends Entity {
-}
-
-const courseSchema = new Schema(
-    Course, {
-        shortName: {type: 'string'},
-        name: {type: 'string'},
-    },
-    {
-        dataStructure: 'HASH',
-    }
-);
-
 const lessonRepository = await registerRepository(lessonSchema);
-const courseRepository = await registerRepository(courseSchema);
 
 export function searchLesson(startTime: Dayjs, endTime: Dayjs): Search<LessonClass> {
     return lessonRepository.search()
@@ -134,3 +114,7 @@ export function searchLesson(startTime: Dayjs, endTime: Dayjs): Search<LessonCla
 export function getSearch(): Search<LessonClass> {
     return lessonRepository.search();
 }
+
+export {
+    lessonRepository,
+};
