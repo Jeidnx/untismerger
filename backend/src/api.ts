@@ -58,7 +58,6 @@ try {
 const iv = Buffer.alloc(16, schoolName);
 
 const app = express();
-let untisApiProbablyDown = false;
 // Enable CORS
 app.use(cors());
 
@@ -210,7 +209,7 @@ app.get('/timetable', (req, res) => {
                     const startDate = dayjs(req.query.startDate as string);
                     const endDate = dayjs(req.query.endDate as string);
 
-                    if(!untisApiProbablyDown) await updateUntisForRange(untis, startDate, endDate);
+                    if(typeof untis !== 'undefined') await updateUntisForRange(untis, startDate, endDate);
 
                     lessonRepository.searchRaw(
                         //TODO: add sonstiges
@@ -288,7 +287,7 @@ app.get('/search', (req, res) => {
     }
 
     decodeJwt(req.query.jwt as string).then(getUntisSession).then(async (untis) => {
-        if(!untisApiProbablyDown) await updateUntisForRange(untis, startTime, endTime);
+        if(typeof untis !== 'undefined') await updateUntisForRange(untis, startTime, endTime);
         const start = performance.now();
         const q = req.query.query as string;
 
@@ -368,11 +367,8 @@ app.post('/checkCredentials', express.json(), (req, res) => {
         return;
     }
 
-    getUntisSession({
-        password: req.body.password,
-        username: req.body.username,
-    }, false)
-        .then((untis) => {
+    const untis = new  WebUntisLib(schoolName, req.body.username, req.body.password, schoolDomain);
+    untis.login().then(() => {
             const username: string = req.body.username.toLowerCase();
 
             isUserRegistered(username).then((isRegistered) => {
@@ -724,22 +720,18 @@ function signJwt(userObj: Jwt): Promise<string> {
 function getUntisSession(loginData: {
     username: string,
     password: string
-}, decryptPassword = true): Promise<WebUntisLib> {
+}): Promise<WebUntisLib | undefined> {
         const untis = new WebUntisLib(
             schoolName,
             loginData.username,
-            decryptPassword ? decrypt(loginData.password) : loginData.password,
+            decrypt(loginData.password),
             schoolDomain,
         );
 
         return untis.login().then(() => {
-            untisApiProbablyDown = false;
             return untis;
-        }).catch((err) => {
-            if(untisApiProbablyDown) return untis;
-            console.log(err);
-            untisApiProbablyDown = true;
-            throw new Error(err);
+        }).catch(() => {
+            return undefined;
         });
 }
 
