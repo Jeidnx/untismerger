@@ -7,7 +7,6 @@ export interface Jwt {
     lk: number,
     fachrichtung: number,
     sonstiges: string[],
-    type: "password",
     password: string,
     secureid: number,
 }
@@ -31,17 +30,24 @@ export interface DesignDataType {
 }
 
 
+export interface Timegrid {
+    [key: number]: number
+}
 
 export interface WeekData {
     timetable: {
         [key: string]: DayData
     },
     week: string[],
+    timeDisplay: {
+        startTime: number,
+        endTime: number
+    }[],
 }
 
 export type DayData = Holiday | LessonSlot[];
 
-export type LessonSlot = Lesson[] | undefined;
+export type LessonSlot = Lesson[];
 
 export interface LessonData {
     startTime: Dayjs,

@@ -12,14 +12,14 @@ import {convertUntisDateToDate, convertUntisTimeDateToDate, errorHandler, hash} 
 import * as Notify from './notifyHandler.js';
 import * as statistics from './statistics.js';
 
-import {CustomExam, CustomHomework, DayData, Jwt} from '../../globalTypes';
+import {CustomExam, CustomHomework, Holiday, Jwt} from '../../globalTypes';
 
 // Notification Providers
 import {sendNotification as sendNotificationMail} from './notificationProviders/mail.js';
 import {sendNotification as sendNotificationWebpush} from './notificationProviders/webpush.js';
 import {NotificationProps} from './types';
 import Discord from './notificationProviders/discord.js';
-import {getSearch, updateUntisForRange, lessonRepository} from './lesson.js';
+import {updateUntisForRange, lessonRepository} from './lesson.js';
 
 // Constants
 const INVALID_ARGS = 418;
@@ -209,29 +209,55 @@ app.get('/timetable', (req, res) => {
                     const startDate = dayjs(req.query.startDate as string);
                     const endDate = dayjs(req.query.endDate as string);
 
-                    if(typeof untis !== 'undefined') await updateUntisForRange(untis, startDate, endDate);
+                    let timegrid = new Promise((resolve) => {resolve([]);});
+                    let mappedHolidays = new Promise((resolve) => {resolve([]);});
+
+                    if(typeof untis !== 'undefined') {
+                        await updateUntisForRange(untis, startDate, endDate);
+                        timegrid = untis.getTimegrid().then((tg) => {
+                            return tg[0].timeUnits;
+                        });
+                        mappedHolidays = untis.getHolidays().then((holidays): Holiday[] => {
+                            return holidays.flatMap((holiday) => {
+
+                                const reqStartDateAsUntisTime = Number(dayjs(req.query.startDate as string).format('YYYYMMDD'));
+                                const reqEndDateAsUntisTime = Number(dayjs(req.query.endDate as string).format('YYYYMMDD'));
+
+                                //TODO: figure this out properly instead of sending everything everytime
+                                if (
+                                    // eslint-disable-next-line no-constant-condition
+                                    reqStartDateAsUntisTime >= (holiday.startDate as unknown as number) &&
+                                    reqEndDateAsUntisTime <= (holiday.endDate as unknown as number) || true
+                                ) {
+                                    return [{
+                                        startDate: holiday.startDate,
+                                        endDate: holiday.endDate,
+                                        name: holiday.longName,
+                                        shortName: holiday.name,
+                                    }];
+                                }
+                                return [];
+                            });
+                        }).catch((err) => {
+                            console.log(err);
+                            return [];
+                        });
+
+                    }
 
                     lessonRepository.searchRaw(
                         //TODO: add sonstiges
-                        `@startTime:[${startDate.unix()} ${endDate.unix()}] (@courseNr:[${decoded.lk} ${decoded.lk}] | @courseNr:[${decoded.fachrichtung} ${decoded.fachrichtung}])`)
-                        .returnAll().then((lessons) => {
-                            throw new Error(JSON.stringify(lessons));
-                            const timetable: {[key: string]: DayData | undefined} = {[startDate.format('YYYY-MM-DD')]: undefined};
-                            let curr = startDate;
-                            while (!curr.isSame(endDate, 'day')) {
-                                curr = curr.add(1, 'day');
-                                timetable[curr.format('YYYY-MM-DD')] = undefined;
-                            }
-
-                            Object.keys(timetable).forEach((key) => {
-                                //TODO: figure out what is happening on this specific day and add here
-                                timetable[key] = ({} as DayData);
+                        `@startTime:[${startDate.unix()} ${endDate.add(1, 'day').unix()}]
+                         (@courseNr:[${decoded.lk} ${decoded.lk}] | @courseNr:[${decoded.fachrichtung} ${decoded.fachrichtung}] | (
+                            @shortSubject:(${decoded.sonstiges.join(' | ')}) @courseNr:[2232 2232]
+                         ))
+                         `)
+                        .returnAll().then(async (lessons) => {
+                            res.json({
+                                timetable: lessons,
+                                timegrid: await timegrid,
+                                holidays: await mappedHolidays
                             });
-
-
-                        throw new Error('//TODO: implement');
-
-                            res.json({timetable});
                         }).catch((err) => {
                             res.status(SERVER_ERROR).json({error: true, message: errorHandler(err)});
                         });
@@ -259,9 +285,10 @@ app.get('/nextLesson', (req, res) => {
 
     decodeJwt(req.query.jwt).then((decoded) => {
         lessonRepository.searchRaw(
-            //TODO: add sonstiges
-            `@startTime:[${dayjs().unix()} +inf] (@courseNr:[${decoded.lk} ${decoded.lk}] | @courseNr:[${decoded.fachrichtung} ${decoded.fachrichtung}])`
-        ).sortAsc('startTime').returnFirst().then((lesson) => {
+            `@startTime:[${dayjs().unix()} +inf] 
+            (@courseNr:[${decoded.lk} ${decoded.lk}] | @courseNr:[${decoded.fachrichtung} ${decoded.fachrichtung}] | (
+            @shortSubject:(${decoded.sonstiges.join(' | ')}) @courseNr:[2232 2232]))`
+    ).sortAsc('startTime').returnFirst().then((lesson) => {
             res.json({lesson});
         }).catch((err) => {
             res.status(SERVER_ERROR).json({error: true, message: errorHandler(err)});
@@ -383,7 +410,6 @@ app.post('/checkCredentials', express.json(), (req, res) => {
                         username: username,
                         password: encrypt(req.body.password),
                         version: JWT_VERSION,
-                        type: 'password',
                     }).then((signed) => {
                         res.json({
                             message: 'OK',

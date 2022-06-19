@@ -10,29 +10,14 @@ dayjs.extend(customParseFormat);
 
 dayjs.locale(de);
 
-const startTimeLookup: any = {
-	'800': '08:00',
-	'945': '09:45',
-	'1130': '11:30',
-	'1330': '13:30',
-	'1515': '15:15',
-};
-
-const endTimeLookup: any = {
-	'800': '09:30',
-	'945': '11:15',
-	'1130': '13:00',
-	'1330': '15:00',
-	'1515': '16:45',
-};
-
 function instanceOfHoliday(object: any): object is Holiday {
-	return object.hasOwnProperty('shortName');
+	return typeof object === 'object' && object.hasOwnProperty('shortName');
 }
 
 export default function TimetableComponent({timetableData}: { timetableData: WeekData, }) {
 
-	const {week, timetable} = timetableData;
+	//TODO: Show proper times on left hand side
+	const {week, timetable, timeDisplay} = timetableData;
 	const firstDay = dayjs(week[0]).format('DD.MM');
 	const lastDay = dayjs(week[4]).format('DD.MM');
 
@@ -92,7 +77,7 @@ export default function TimetableComponent({timetableData}: { timetableData: Wee
 					{`${firstDay} - ${lastDay}`}
 				</span>
 				<div style={{height: '85%', display: 'flex', flexDirection: 'column', width: '100%',}}>
-					{Object.keys(startTimeLookup).map((key: string, idx: number) => {
+					{timeDisplay.map((time, idx) => {
 						return (<span key={idx} style={{
 							height: '100%',
 							width: '100%',
@@ -102,7 +87,7 @@ export default function TimetableComponent({timetableData}: { timetableData: Wee
 							justifyContent: 'center',
 							textAlign: 'center',
 							backgroundColor: alpha(theme.palette.background.default, theme.designData.alpha),
-						}}>{startTimeLookup[key]} - {endTimeLookup[key]}</span>);
+						}}>{time.startTime}. Stunde </span>);
 					})}
 				</div>
 			</Box>
@@ -121,8 +106,7 @@ export default function TimetableComponent({timetableData}: { timetableData: Wee
 						}}>
 						{getWeekdaySpan(day, idx * 2)}
 
-						{
-							instanceOfHoliday(thisDay) ? <Box
+						{ (typeof thisDay !== 'undefined') && (instanceOfHoliday(thisDay) ? <Box
 									sx={{
 										flexGrow: '1',
 										margin: '1px',
@@ -137,11 +121,10 @@ export default function TimetableComponent({timetableData}: { timetableData: Wee
 								>
 									{thisDay.name}
 								</Box> :
-								//@ts-expect-error Idk why
-								timetable[day]?.map((lesson, jdx) => {
+								thisDay.map((lesson, jdx) => {
 									return <Lesson lessons={lesson} parentIdx={idx}
 												   jdx={jdx} key={idx + '' + jdx}/>;
-								})}
+								}))}
 					</Box>
 				})
 			}

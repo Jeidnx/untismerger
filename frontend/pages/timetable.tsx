@@ -11,7 +11,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 
 import weekday from 'dayjs/plugin/weekday';
 import isBetween from 'dayjs/plugin/isBetween';
-import {DayData, WeekData} from "../../globalTypes";
+import {DayData, Holiday, LessonData, LessonSlot, Timegrid, WeekData} from "../../globalTypes";
 
 dayjs.extend(weekday);
 dayjs.extend(isBetween);
@@ -26,6 +26,81 @@ function getWeekFromDay(date: Date) {
 	}
 	return week;
 }
+
+const createTimeTableObject = (week: string[], lessonsPerDay: number) => {
+	const out: {[key: string]: any} = {};
+	week.forEach((day: string) => {
+		out[day] = [...Array(lessonsPerDay)].map(() => []);
+	});
+
+	return out;
+};
+
+const processData = (data: LessonData[], holidays: Holiday[], week: string[], timegrid: Timegrid, endTimegrid: Timegrid): [{[key: string]: DayData}, {startTime: number, endTime: number}[]] => {
+	//TODO: this could be better
+
+	if(data.length < 1) return [{}, []];
+
+	let earliest: number  = 2400
+	let latest: number = 0
+
+	const parsedData = data.map((lesson) => {
+		const startTime = dayjs(lesson.startTime);
+		const endTime = dayjs(lesson.endTime);
+
+		const formattedStart = Number(startTime.format('Hmm'));
+		const formattedEnd = Number(endTime.format('Hmm'));
+
+		if(formattedStart < earliest) earliest = formattedStart;
+		if(formattedEnd > latest) latest = formattedEnd;
+
+		return {...lesson, startTime, endTime}
+
+	})
+
+
+	const startIndex = timegrid[earliest];
+	const endIndex = endTimegrid[latest];
+	const lessonsPerDay = endIndex + 1 - startIndex;
+
+	const returnObj: {[key: string]: DayData} = createTimeTableObject(week, lessonsPerDay);
+
+	for (let i = 0; i < holidays.length; i++) {
+		const holiday = holidays[i];
+		const start = dayjs(holiday.startDate + '00:00');
+		const end = dayjs(holiday.endDate + '24:00');
+
+		const arr: string[] = [];
+
+		for (let dt = start; end.isAfter(dt, 'day'); dt = dt.add(1, 'day')) {
+			if (dt.isBetween(start, end, 'day', '[)')) arr.push(dt.format('YYYYMMDD'));
+		}
+		arr.forEach((day) => {
+			returnObj[day] = holiday;
+		});
+
+	}
+
+	parsedData.forEach((lesson) => {
+		const day = lesson.startTime.format('YYYYMMDD');
+		const begin: number | undefined = timegrid[Number(lesson.startTime.format('HHmm'))] - startIndex;
+		if(typeof begin !== 'undefined') {
+			(returnObj[day] as LessonSlot[])[begin].push(lesson);
+		}
+
+	})
+	const timeDisplay = [];
+	let i = startIndex;
+	while(i <= endIndex) {
+		timeDisplay.push({
+			startTime: i,
+			endTime: 1,
+		});
+		i++;
+	}
+	return [returnObj, timeDisplay];
+};
+
 
 export default function Timetable() {
 
@@ -54,27 +129,32 @@ export default function Timetable() {
 				endDate: dayjs(week[4]).format('YYYY-MM-DD'),
 			}, useCache
 		}).then((json) => {
-			if(!((obj): obj is {timetable: {[key: string]: DayData}} => {
+			if(!((obj): obj is {
+				holidays: Holiday[];
+				timetable: LessonData[],
+				timegrid: {name: string, startTime: number, endTime: number}[]} => {
+
 				return (
 					obj !== null &&
-						typeof obj === 'object' &&
-						Object.keys(obj).some((element) => {
-							const thisElement = obj[element];
-							return (
-								thisElement === null ||
-								typeof thisElement !== 'object' ||
-								!(
-									thisElement.hasOwnProperty('shortName') ||
-									Array.isArray(thisElement)
-								)
-							)
-						})
+					Array.isArray(obj.timetable) &&
+						Array.isArray(obj.holidays) &&
+						Array.isArray(obj.timegrid)
 				);
+
 			})(json)) throw new Error('Server returned invalid Data');
+
+			const timegrid: Timegrid = {};
+			const endTimegrid: Timegrid = {};
+			json.timegrid.forEach((obj) => {
+				timegrid[obj.startTime] = Number(obj.name);
+			})
+			json.timegrid.forEach((obj) => {
+				endTimegrid[obj.endTime] = Number(obj.name);
+			})
+			const [timetable, timeDisplay] = processData(json.timetable, json.holidays, week, timegrid, endTimegrid)
 			setTimetables((prev) => {
 				prev[weekOffset] = {
-					timetable: json.timetable,
-					week
+					timetable, week, timeDisplay
 				}
 				return [...prev];
 			})

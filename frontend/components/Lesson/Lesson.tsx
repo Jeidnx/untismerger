@@ -13,7 +13,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import {MutableRefObject, useEffect, useMemo, useRef, useState} from 'react';
 
-import {LessonData,} from "../../../globalTypes";
+import {LessonSlot,} from "../../../globalTypes";
 import {useCustomTheme} from "../CustomTheme";
 import style from './Lesson.module.css';
 // @ts-ignore
@@ -24,14 +24,12 @@ function checkOverflow(el: HTMLDivElement | undefined) {
 	let width = 0;
 	for (let i = 0; i < el.children.length; i++) {
 		let crEl = el.children[i]
-		//Add width of p to cumulative width
 		width += crEl.children[0].scrollWidth;
 	}
-	//Compare parent width to child scroll, add offset to compensate for padding / border
 	return el.clientWidth < (width + 12);
 }
 
-const Lesson = ({lessons, parentIdx, jdx}: { lessons: LessonData[], parentIdx: number, jdx: number }) => {
+const Lesson = ({lessons, parentIdx, jdx}: { lessons: LessonSlot, parentIdx: number, jdx: number }) => {
 
 	const rootDiv = useRef<HTMLDivElement>();
 	const [nameIsOverflowing, setNameIsOverflowing] = useState(false);
@@ -101,7 +99,7 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: LessonData[], parentIdx: n
 						justifyContent: "space-between",
 					}}
                 >
-					{lessons[0]?.startTime.format("DD.MM HH:mm")}
+					{lessons[0].startTime.format("DD.MM HH:mm")} - {lessons[0].endTime.format('HH:mm')}
                     <IconButton
                         size={"large"}
                         onClick={() => {
@@ -138,9 +136,10 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: LessonData[], parentIdx: n
 						{
 							//TODO: Show start and end Times, show not empty remarks and maybe more
 						}
+						<p>id: {selectedLesson?.entityId}</p>
                         <p>Fach: {selectedLesson?.subject}</p>
                         <p>Lehrer: {selectedLesson?.teacher}</p>
-                        <p>Raum: {selectedLesson?.room}</p>
+                        <p>Raum: {selectedLesson?.shortRoom}</p>
                         <p>Status: {selectedLesson?.code}</p>
                     </Paper>
                 </DialogContent>
@@ -154,8 +153,7 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: LessonData[], parentIdx: n
 					borderRadius: `${theme.designData.lesson.edges}px`,
 				}} ref={rootDiv as any as MutableRefObject<HTMLDivElement>}>
 				{
-					lessons.map((lesson: (LessonData | undefined), idx: number) => {
-						if (!lesson) return null;
+					lessons.map((lesson, idx) => {
 						const color = colors[idx];
 						const textColor = theme.palette.getContrastText(color);
 
@@ -187,7 +185,7 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: LessonData[], parentIdx: n
 							>{nameIsOverflowing ? lesson.shortSubject : lesson.subject}</p>
 							<p
 								className={style.infos}
-							>{lesson.room + " - " + lesson.teacher}</p>
+							>{lesson.shortRoom + " - " + lesson.teacher}</p>
 						</Box>)
 					})
 				}

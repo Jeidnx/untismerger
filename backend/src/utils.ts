@@ -55,8 +55,8 @@ function convertUntisDateToDate(date: number): Date {
 
 function convertUntisTimeDateToDate(date: number, startTime: number): Date {
 
-	const year = Math.floor(date / 10000);
-	const month = Math.floor((date - (year * 10000)) / 100);
+	const year = Math.round(date / 10000);
+	const month = Math.round((date - (year * 10000)) / 100);
 	const day = (date - (year * 10000) - month * 100);
 
 	let index;
@@ -65,10 +65,11 @@ function convertUntisTimeDateToDate(date: number, startTime: number): Date {
 	} else {
 		index = 1;
 	}
-	const hour = Math.floor(startTime / Math.pow(10, index));
-	const minutes = Math.floor(((startTime / 100) - hour) * 100);
+	const hour = Math.round(startTime / Math.pow(10, index));
+	const minutes = Math.round(((startTime / 100) - hour) * 100);
 
-	return new Date(year, month - 1, day, hour, minutes);
+	//TODO: find a better solution for timezone issues
+	return new Date(year, month - 1, day, hour + 2, minutes);
 }
 
 function hash(str: string): string {

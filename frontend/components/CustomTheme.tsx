@@ -133,7 +133,7 @@ export function CustomThemeProvider({children}: any) {
 			}).catch((err) => {
 				if(typeof err === 'string') throw new Error(err);
 				if(typeof err !== 'object') throw new Error('Ein unbekannter Fehler ist aufgetreten');
-				throw err;
+				throw new Error(err);
 			})
 	}, [apiEndpoint, rawJwt])
 

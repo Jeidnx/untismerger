@@ -72,6 +72,9 @@ async function fetchNewUntisData(untis: WebUntisLib, lessonNr: number, startDate
                 bkText: element['bkText'] || '',
             }));
         }));
+    }).catch((err) => {
+        // If the server returns an empty result, for some reason it throws an error.
+        if(err.message !== 'Server didn\'t return any result.') throw new Error(err);
     });
 }
 
@@ -82,7 +85,7 @@ const lessonSchema = new Schema(
     LessonClass, {
         startTime: {type: 'date', sortable: true},
         endTime: {type: 'date'},
-        code: {type: 'string'},
+        code: {type: 'text'},
         courseNr: {type: 'number'},
         courseName: {type: 'text'},
         courseShortName: {type: 'text'},
@@ -92,12 +95,12 @@ const lessonSchema = new Schema(
         teacher: {type: 'text'},
         room: {type: 'text'},
         shortRoom: {type: 'text'},
-        lstext: {type: 'string'},
-        info: {type: 'string'},
-        subsText: {type: 'string'},
-        sg: {type: 'string'},
-        bkRemark: {type: 'string'},
-        bkText: {type: 'string'},
+        lstext: {type: 'text'},
+        info: {type: 'text'},
+        subsText: {type: 'text'},
+        sg: {type: 'text'},
+        bkRemark: {type: 'text'},
+        bkText: {type: 'text'},
     },
     {
         dataStructure: 'HASH',
