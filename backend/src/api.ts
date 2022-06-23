@@ -204,7 +204,6 @@ app.get('/timetable', (req, res) => {
     decodeJwt(req.query.jwt)
         .then((decoded) => {
             getUntisSession(decoded)
-
                 .then(async (untis) => {
                     const startDate = dayjs(req.query.startDate as string);
                     const endDate = dayjs(req.query.endDate as string);
@@ -238,8 +237,7 @@ app.get('/timetable', (req, res) => {
                                 }
                                 return [];
                             });
-                        }).catch((err) => {
-                            console.log(err);
+                        }).catch(() => {
                             return [];
                         });
 
@@ -260,6 +258,7 @@ app.get('/timetable', (req, res) => {
                             });
                         }).catch((err) => {
                             res.status(SERVER_ERROR).json({error: true, message: errorHandler(err)});
+                            untis.logout();
                         });
                     return untis.logout();
                 }).catch((err) => {
@@ -323,8 +322,10 @@ app.get('/search', (req, res) => {
             `@startTime:[${startTime.unix()} ${endTime.unix()}] ` + q).return.all()
             .then((searchRes) => {
             res.json({time: Number(performance.now() - start).toFixed(2), result: searchRes});
+            untis.logout();
         }).catch((err) => {
             res.status(INVALID_ARGS).json({error: true, message: errorHandler(err)});
+            untis.logout();
         });
     }).catch((err) => {
         res.status(INVALID_ARGS).json({error: true, message: errorHandler(err)});

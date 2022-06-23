@@ -11,10 +11,12 @@ import LoadingSpinner from '../components/LoadingSpinner';
 
 import weekday from 'dayjs/plugin/weekday';
 import isBetween from 'dayjs/plugin/isBetween';
+import utc from 'dayjs/plugin/utc';
 import {DayData, Holiday, LessonData, LessonSlot, Timegrid, WeekData} from "../../globalTypes";
 
 dayjs.extend(weekday);
 dayjs.extend(isBetween);
+dayjs.extend(utc);
 
 function getWeekFromDay(date: Date) {
 
@@ -28,6 +30,7 @@ function getWeekFromDay(date: Date) {
 }
 
 const createTimeTableObject = (week: string[], lessonsPerDay: number) => {
+	if(lessonsPerDay < 1) throw new Error('Failed to get start times');
 	const out: {[key: string]: any} = {};
 	week.forEach((day: string) => {
 		out[day] = [...Array(lessonsPerDay)].map(() => []);
@@ -45,8 +48,8 @@ const processData = (data: LessonData[], holidays: Holiday[], week: string[], ti
 	let latest: number = 0
 
 	const parsedData = data.map((lesson) => {
-		const startTime = dayjs(lesson.startTime);
-		const endTime = dayjs(lesson.endTime);
+		const startTime = dayjs.utc(lesson.startTime);
+		const endTime = dayjs.utc(lesson.endTime);
 
 		const formattedStart = Number(startTime.format('Hmm'));
 		const formattedEnd = Number(endTime.format('Hmm'));
@@ -84,7 +87,8 @@ const processData = (data: LessonData[], holidays: Holiday[], week: string[], ti
 	parsedData.forEach((lesson) => {
 		const day = lesson.startTime.format('YYYYMMDD');
 		const begin: number | undefined = timegrid[Number(lesson.startTime.format('HHmm'))] - startIndex;
-		if(typeof begin !== 'undefined') {
+		if(typeof begin !== 'undefined' && begin >= 0) {
+			if(typeof (returnObj[day] as LessonSlot[])[begin] === 'undefined') (returnObj[day] as LessonSlot[])[begin] = [];
 			(returnObj[day] as LessonSlot[])[begin].push(lesson);
 		}
 
