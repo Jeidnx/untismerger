@@ -1,13 +1,15 @@
 import {
     alpha,
     Box,
-    Checkbox,
-    FormControlLabel,
-    FormGroup, InputAdornment,
-    MenuItem,
-    Select,
+    Dialog,
+    DialogContent,
+    DialogTitle,
+    IconButton,
+    InputAdornment,
+    Link,
     Stack,
     TextField,
+    useMediaQuery,
     useTheme
 } from "@mui/material";
 import {useEffect, useMemo, useState} from "react";
@@ -16,6 +18,9 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import {LessonData} from "../../globalTypes";
 import {useCustomTheme} from "../components/CustomTheme";
 import Lesson from "../components/Lesson";
+import Head from "next/head";
+import CloseIcon from "@mui/icons-material/Close";
+import HelpIcon from '@mui/icons-material/Help';
 
 let debounceTimer: NodeJS.Timeout;
 
@@ -29,11 +34,10 @@ export default function Search() {
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState<SearchResult[]>([]);
     const [lastTime, setLastTime] = useState(-1);
+    const [modalOpen, setModalOpen] = useState(false);
 
     const [query, setQuery] = useState('');
-    const [showCancelled, setShowCancelled] = useState(true);
 
-    const [sortBy, setSortBy] = useState<[string, string]>(['startTime', 'ASC']);
     const [startTime, setStartTime] = useState(dayjs());
     const [endTime, setEndTime] = useState(dayjs().add(1, "hour"));
 
@@ -52,7 +56,6 @@ export default function Search() {
                 endpoint: "search",
                 useCache: false,
                 query: {
-                    //query: `@startTime:[${startTime.unix()} ${endTime.unix()}] "${query}" ${showCancelled ? '' :/* TODO: Figure out why this doesn't work*/ '-@code:cancelled'} SORTBY ${sortBy.join(' ')}`,
                     startTime, endTime, query
                 }
             }).then((json) => {
@@ -74,111 +77,137 @@ export default function Search() {
                 setLoading(false);
             })
         }, 300);
-    }, [startTime, endTime, query, fetcher, showCancelled, sortBy]);
+    }, [startTime, endTime, query, fetcher]);
 
 
     const calculatedStartTime = useMemo(() => {
         const tDate = startTime.toDate();
-        tDate.setMinutes(tDate.getMinutes() - tDate.getTimezoneOffset());
         return tDate.toISOString().slice(0, 16);
     }, [startTime])
 
     const calculatedEndTime = useMemo(() => {
         const tDate = endTime.toDate();
-        tDate.setMinutes(tDate.getMinutes() - tDate.getTimezoneOffset());
         return tDate.toISOString().slice(0, 16);
     }, [endTime])
 
-    return (<Box
-        sx={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            overflowY: "scroll",
-            flexShrink: 0,
-            flexBasis: 1,
-        }}
-    >
-        <Stack
-            spacing={3}
+    const isMobile = useMediaQuery(theme.breakpoints.down('desktop'));
+
+    return (<>
+        <Head>
+            <title>Suche</title>
+        </Head>
+        <Dialog
+            open={modalOpen}
+            onClose={() => {
+                setModalOpen(false);
+            }}
+            fullScreen={isMobile}
+        >
+            <DialogTitle
+                sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                }}
+            >Anleitung
+                <IconButton
+                    size={"large"}
+                    onClick={() => {
+                        setModalOpen(false)
+                    }}><CloseIcon/></IconButton>
+            </DialogTitle>
+            <DialogContent>
+                <Link href={"https://redis.io/docs/stack/search/reference/query_syntax/"} target={"_blank"}
+                      rel="noopener noreferrer">Syntax</Link>
+                <p>Felder:</p>
+                {
+                    //TODO add  Fields and description
+                }
+            </DialogContent>
+        </Dialog>
+        <Box
             sx={{
-                width: "50%",
-                backgroundColor: alpha(theme.palette.background.default, theme.designData.alpha),
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                overflowY: "scroll",
+                flexShrink: 0,
+                flexBasis: 1,
             }}
         >
-            <h1>Suche</h1>
-            <TextField
-                label={"Anfrage"}
-                value={query}
-                multiline
-                InputProps={{
-                    endAdornment: <InputAdornment position={"end"}>{
-                        ` @startTime:[${startTime.unix()} ${endTime.unix()}]` +
-                        (showCancelled ? '' : ' -@code:"cancelled"') + ' SORTBY ' + sortBy.join(' ')
-                    }</InputAdornment>
+            <Stack
+                spacing={3}
+                sx={{
+                    width: {mobile: "95%", desktop: "80%"},
+                    backgroundColor: alpha(theme.palette.background.default, theme.designData.alpha),
                 }}
-                onChange={(e) => {
-                    setQuery(e.target.value);
-                }}
-            />
-            <TextField
-                label={"Von"}
-                type={"datetime-local"}
-                value={calculatedStartTime}
-                onChange={(e) => {
-                    setStartTime(dayjs(e.target.value));
-                }}
-
-            />
-            <TextField
-                label={"Bis"}
-                type={"datetime-local"}
-                value={calculatedEndTime}
-                onChange={(e) => {
-                    setEndTime(dayjs(e.target.value));
-                }}
-
-            />
-            <FormGroup
-
             >
-                <FormControlLabel control={
-                    <Checkbox checked={showCancelled} onChange={(e) => {
-                        setShowCancelled(e.target.checked);
-                    }}/>
-                } label={"Entfallende Stunden anzeigen"} />
-                <FormControlLabel control={<Select value={sortBy.join(' ')} displayEmpty onChange={(e) => {setSortBy(e.target.value.split(' ') as [string, string])}}>
-                    <MenuItem value={"startTime ASC"}>Startzeit Aufsteigend</MenuItem>
-                    <MenuItem value={"startTime DESC"}>Startzeit Absteigend</MenuItem>
-                </Select>} label={"Sortieren nach"} />
-            </FormGroup>
-        </Stack>
-
-        {
-            (typeof error !== 'undefined') || loading ? <LoadingSpinner error={error} text={"Laden..."}/> : (
-                <><h2
-                    style={{
-                        backgroundColor: alpha(theme.palette.background.default, theme.designData.alpha),
-                        padding: "2px",
+                <h1>Suche</h1>
+                <TextField
+                    label={"Anfrage"}
+                    value={query}
+                    multiline
+                    InputProps={{
+                        endAdornment: <InputAdornment position={"end"}>
+                            <IconButton
+                                size={"small"}
+                                onClick={() => {
+                                    setModalOpen(true)
+                                }}><HelpIcon/></IconButton>
+                        </InputAdornment>
                     }}
-                >
-                    {results.length} Ergebnisse in {lastTime} ms</h2>
-                    <Box
-                        sx={{
-                            width: "80%",
-                            height: "max-content",
+                    onChange={(e) => {
+                        setQuery(e.target.value);
+                    }}
+                />
+                <TextField
+                    label={"Von"}
+                    type={"datetime-local"}
+                    value={calculatedStartTime}
+                    onChange={(e) => {
+                        const start = dayjs(e.target.value);
+                        if (start.isValid()) setStartTime(start);
+                    }}
+
+                />
+                <TextField
+                    label={"Bis"}
+                    type={"datetime-local"}
+                    value={calculatedEndTime}
+                    onChange={(e) => {
+                        const end = dayjs(e.target.value);
+                        if (end.isValid()) setEndTime(end);
+                    }}
+
+                />
+            </Stack>
+
+            {
+                (typeof error !== 'undefined') || loading ? <LoadingSpinner error={error} text={"Laden..."}/> : (
+                    <><h2
+                        style={{
+                            backgroundColor: alpha(theme.palette.background.default, theme.designData.alpha),
+                            padding: "2px",
                         }}
                     >
-                        {
-                            results.map((result) => {
-                                return <Lesson key={result.entityId} lessons={[result]} parentIdx={0} jdx={0}/>;
-                            })
-                        }
-                    </Box>
-                </>
-            )
-        }
-    </Box>)
+                        {results.length} Ergebnisse in {lastTime} ms</h2>
+                        <Box
+                            sx={{
+                                width: "80%",
+                                height: "max-content",
+                            }}
+                        >
+                            {
+                                results.map((result) => {
+                                    return <Lesson key={result.entityId} lessons={[result]} parentIdx={0} jdx={0}/>;
+                                })
+                            }
+                        </Box>
+                    </>
+                )
+            }
+        </Box>
+    </>)
 }
