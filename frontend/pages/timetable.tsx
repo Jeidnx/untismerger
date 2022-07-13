@@ -225,6 +225,7 @@ export default function Timetable() {
 					{
 						timetables.length > 0 && typeof fullError === 'undefined' ?
 							timetables.map((page, idx) => {
+								if(typeof page === 'undefined') return null;
 								return <TimetableComponent
 									key={idx}
 									timetableData={page}
