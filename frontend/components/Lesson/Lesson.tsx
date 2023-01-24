@@ -13,8 +13,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import {MutableRefObject, useEffect, useMemo, useRef, useState} from 'react';
 
-import {displayedLesson, LessonData} from "../../types";
-import {useCustomTheme} from "../CustomTheme";
+import {Lessons, LessonData} from "../../types";
 import style from './Lesson.module.css';
 // @ts-ignore
 import randomColor from 'randomcolor'
@@ -31,16 +30,13 @@ function checkOverflow(el: HTMLDivElement | undefined) {
 	return el.clientWidth < (width + 12);
 }
 
-const Lesson = ({lessons, parentIdx, jdx}: { lessons: displayedLesson, parentIdx: number, jdx: number }) => {
+const Lesson = ({lessons, parentIdx, jdx}: { lessons: Lessons, parentIdx: number, jdx: number }) => {
 
 	const rootDiv = useRef<HTMLDivElement>();
 	const [nameIsOverflowing, setNameIsOverflowing] = useState(false);
 	const theme = useTheme();
-	const {setLessonColorEnum} = useCustomTheme()
 	const [modalOpen, setModalOpen] = useState(false);
 	const [modalSelected, setModalSelected] = useState(0);
-
-	const colorEnum = theme.designData.lesson.colorEnum;
 
 	let timeOut: NodeJS.Timeout;
 	const checkOverflowHandler = () => {
@@ -70,19 +66,13 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: displayedLesson, parentIdx
 	const colors = useMemo(() => {
 		return lessons.flatMap((lesson: LessonData | undefined) => {
 			if (!lesson) return [];
-			if (colorEnum[lesson.subject]) return [colorEnum[lesson.subject]];
 
-			let thisColor: string;
-			do {
-				thisColor = randomColor({
+			const thisColor: string = randomColor({
 					luminosity: "light",
-					format: "hex",
-				});
-			} while (Object.values(colorEnum).includes(thisColor))
-			setLessonColorEnum(lesson.subject, thisColor);
+					format: "hex",})
 			return [thisColor]
 		})
-	}, [colorEnum])
+	}, [])
 	const isMobile = useMediaQuery(theme.breakpoints.down('desktop'));
 	const selectedLesson = lessons[modalSelected];
 	return (
@@ -101,7 +91,7 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: displayedLesson, parentIdx
 						justifyContent: "space-between",
 					}}
                 >
-					{lessons[0]?.startTime.format("DD.MM HH:mm")}
+					{/* lessons[0]?.startTime.format("DD.MM HH:mm") */}
                     <IconButton
                         size={"large"}
                         onClick={() => {
@@ -126,7 +116,7 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: displayedLesson, parentIdx
 									setModalSelected(idx);
 								}}
 							>
-								{lesson.subject}</Button>
+								{lesson.su[0]?.longname}</Button>
 						})}
                     </ButtonGroup>}
                     <Paper
@@ -138,9 +128,9 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: displayedLesson, parentIdx
 						{
 							//TODO: Do this better
 						}
-                        <p>Fach: {selectedLesson?.subject}</p>
-                        <p>Lehrer: {selectedLesson?.teacher}</p>
-                        <p>Raum: {selectedLesson?.room}</p>
+                        <p>Fach: {selectedLesson?.su[0]?.longname}</p>
+                        <p>Lehrer: {selectedLesson?.te[0]?.longname}</p>
+                        <p>Raum: {selectedLesson?.ro[0]?.name}</p>
                         <p>Status: {selectedLesson?.code}</p>
                     </Paper>
                 </DialogContent>
@@ -151,21 +141,20 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: displayedLesson, parentIdx
 					if (lessons.length > 0) setModalOpen(prevState => !prevState);
 				}}
 				sx={{
-					borderRadius: `${theme.designData.lesson.edges}px`,
 				}} ref={rootDiv as any as MutableRefObject<HTMLDivElement>}>
 				{
 					lessons.map((lesson: (LessonData | undefined), idx: number) => {
 						if (!lesson) return null;
 						const color = colors[idx];
 						const textColor = theme.palette.getContrastText(color);
-
+					/*
 						if (lesson.endTime.isBefore(undefined)) {
 							setTimeout(() => {
 								if (!rootDiv.current) return;
 								rootDiv.current.style.filter = "grayscale(100%)";
 							}, ((parentIdx + 1) * (jdx + 1)) * 100)
 
-						}
+						}*/
 
 						return (<Box
 							key={idx}
@@ -184,10 +173,10 @@ const Lesson = ({lessons, parentIdx, jdx}: { lessons: displayedLesson, parentIdx
 						>
 							<p
 								className={style.subject}
-							>{nameIsOverflowing ? lesson.shortSubject : lesson.subject}</p>
+							>{nameIsOverflowing ? lesson.su[0]?.name : lesson.su[0]?.longname}</p>
 							<p
 								className={style.infos}
-							>{lesson.room + " - " + lesson.teacher}</p>
+							>{lesson.ro[0]?.name + " - " + lesson.te[0]?.longname}</p>
 						</Box>)
 					})
 				}

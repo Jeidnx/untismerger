@@ -235,12 +235,12 @@ export default function Layout({children}: { children: any }) {
 						height: {desktop: '100vh', mobile: `calc(100vh - ${bottomNavigationHeight}px)`},
 						backgroundColor: theme.palette.background.default,
 						color: theme.palette.text.primary,
-						backgroundImage: 'url(\'' + theme.designData.backgroundUrl + '\')',
+						backgroundImage: 'url(\'' + theme.designData?.backgroundUrl || "" + '\')',
 						backgroundRepeat: 'no-repeat',
 						backgroundPosition: 'center',
 						backgroundSize: 'cover',
-						fontFamily: theme.designData.font || '',
-						fontSize: theme.designData.fontSize + 'px'
+						fontFamily: theme.designData?.font || '',
+						fontSize: theme.designData?.fontSize + 'px'
 					}}
 				>
 					{children}

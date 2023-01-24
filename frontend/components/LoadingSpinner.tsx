@@ -6,7 +6,7 @@ export default function LoadingSpinner({text = 'Lade Daten...'}: { text?: string
 
 	return (<Box
 		sx={{
-			backgroundColor: alpha(theme.palette.background.default, theme.designData.alpha),
+			backgroundColor: theme.palette.background.default,
 			display: 'flex',
 			flexDirection: 'column',
 			justifyContent: 'center',

@@ -13,68 +13,34 @@ dayjs.tz.setDefault('Europe/Berlin');
 
 const CustomThemeContext = createContext(({} as customThemeType));
 
-const useDevApi = false;
-let debounceSave: NodeJS.Timeout;
-
 // Provider
 export function CustomThemeProvider({children}: any) {
 
-	const getDesignData = (): DesignDataType => {
-		const ls = localStorage.getItem('designData');
-		if (ls) return JSON.parse(ls);
+	const [rawJwt, setRawJwt] = useState<string>("");
 
-		//Default design
-		return {
-			iat: new Date().getTime(),
-			version: 0,
-			mode: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
-			primary: '#3266cc',
-			secondary: '#e91e63',
-			backgroundUrl: '',
-			lesson: {
-				colorEnum: {},
-				edges: 0
-			},
-			font: '',
-			alpha: 1,
-			fontSize: 16
-		};
-	};
+	const apiEndpoint = 'http://localhost:8080/';
 
-	const [designData, setDesignData] = useState<DesignDataType>(getDesignData());
-	const [rawJwt, setRawJwt] = useState(localStorage.getItem('jwt'));
-
-	const apiEndpoint = useDevApi ? 'http://localhost:8080/' : 'https://api.untismerger.hems2.de/';
-
-	useEffect(() => {
-		clearTimeout(debounceSave);
-		debounceSave = setTimeout(() => {
-			console.log('saving data');
-			const data = {...designData, iat: new Date().getTime()};
-			localStorage.setItem('designData', JSON.stringify(data));
-		}, 2000);
-	}, [designData]);
-
-	const setLessonColorEnum = (key: string, value: string) => {
-		setDesignData({
-			...designData,
-			lesson: {
-				colorEnum: {...designData.lesson.colorEnum, [key]: value},
-				edges: designData.lesson.edges,
-			}
-		});
-	};
+	useEffect(() => setRawJwt(localStorage.getItem('jwt') || ""), []);
 
 	const getTheme = () => {
 		return (createTheme({
 				palette: {
-					mode: designData.mode,
+					mode: 'dark',
 					primary: {
-						main: designData.primary,
+						main: "#6272a4",
 					},
 					secondary: {
-						main: designData.secondary,
+						main: "#bd93f9",
 					},
+				background: {
+					default: "#282a36",
+					paper: "#44475a"
+				},
+				text: {
+					primary: "#f8f8f2",
+					secondary: "#f1fa8c",
+					disabled: "#ff5555",
+				}
 				},
 				breakpoints: {
 					values: {
@@ -82,13 +48,18 @@ export function CustomThemeProvider({children}: any) {
 						desktop: 1200,
 					},
 				},
-				designData: designData,
 			})
 		);
 	};
-	const parsedJwt = useMemo(() => rawJwt ? JSON.parse(
-		Buffer.from(rawJwt.split('.')[1], 'base64').toString('utf-8')
-	) : {}, [rawJwt])
+
+	const parsedJwt = useMemo(() => {
+		if (!rawJwt) return {};
+		const split = rawJwt.split('.');
+		if(split.length != 2) return {};
+		const converted = Buffer.from(split[1], 'base64').toString('utf-8');
+		if(!converted) return {};
+		return JSON.parse(converted);
+	}, [rawJwt])
 
 	const jwt: JwtObject = useMemo(() => ({
 		set: (newJwt: string) => {
@@ -97,23 +68,21 @@ export function CustomThemeProvider({children}: any) {
 		},
 		raw: rawJwt || '',
 		get: {
-			version: parsedJwt.version,
 			iat: parsedJwt.iat,
 			username: parsedJwt.username,
-			type: parsedJwt.type,
-			password: parsedJwt.password,
-			data: parsedJwt.data,
-			secId: parsedJwt.secId,
+			secret: parsedJwt.secret,
+			secureid: parsedJwt.secureid,
 		}
 	}), [parsedJwt, rawJwt]);
 
 	const fetcher = useCallback(({endpoint, query, useCache, method}: FetcherParams): Promise<{[key: string]: unknown}> => {
 		return new Promise((resolve, reject) => {
-
+			console.log("query:", query);
 			const mQuery = {
 				jwt: rawJwt,
 				...query,
 			};
+			console.log("mquery:", mQuery);
 
 			fetch(apiEndpoint + endpoint + ((method === 'GET') ? `?${new URLSearchParams(mQuery)}` : ''), {
 				method: method,
@@ -134,10 +103,6 @@ export function CustomThemeProvider({children}: any) {
 				}
 				return res.json();
 			}).then((json) => {
-				if (json.upgradedJwt) {
-					jwt.set(json.upgradedJwt);
-					return fetcher({endpoint, query, useCache, method});
-				}
 				if (json.error) throw new Error(json.message);
 				resolve(json);
 			}).catch((err) => {
@@ -152,7 +117,7 @@ export function CustomThemeProvider({children}: any) {
 		return (
 			<ThemeProvider theme={theme}>
 				<CustomThemeContext.Provider
-					value={{dayjs, fetcher, jwt, setDesignData, setLessonColorEnum}}>
+					value={{dayjs, fetcher, jwt}}>
 					<Box
 						component={'main'}
 						sx={{
@@ -160,13 +125,11 @@ export function CustomThemeProvider({children}: any) {
 							height: '100vh',
 							backgroundColor: theme.palette.background.default,
 							color: theme.palette.text.primary,
-							backgroundImage: 'url(\'' + theme.designData.backgroundUrl + '\')',
 							backgroundRepeat: 'no-repeat',
 							backgroundPosition: 'center',
 							backgroundSize: 'cover',
 							overflowY: 'auto',
-							fontFamily: theme.designData.font || '',
-							fontSize: theme.designData.fontSize + 'px'
+							fontSize: '12px'
 						}}
 					>
 						<Box
@@ -197,7 +160,7 @@ export function CustomThemeProvider({children}: any) {
 
 	return (
 		<ThemeProvider theme={theme}>
-			<CustomThemeContext.Provider value={{dayjs, fetcher, jwt, setDesignData, setLessonColorEnum}}>
+			<CustomThemeContext.Provider value={{dayjs, fetcher, jwt}}>
 				{children}
 			</CustomThemeContext.Provider>
 		</ThemeProvider>

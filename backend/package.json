@@ -10,14 +10,14 @@
   "dependencies": {
     "cors": "^2.8.5",
     "dayjs": "^1.11.1",
-    "djs-messenger": "^1.0.5",
     "express": "^4.17.1",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "mysql2": "^2.3.2",
+    "otplib": "^12.0.1",
     "redis": "^4.0.6",
     "redis-om": "^0.3.3",
-    "typescript": "^4.6.4",
-    "webuntis": "^1.18.0"
+    "tslib": "^2.4.1",
+    "webuntis": "^2.0.3"
   },
   "devDependencies": {
     "@types/cors": "^2.8.12",

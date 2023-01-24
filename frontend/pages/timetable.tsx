@@ -1,13 +1,13 @@
 import Head from 'next/head';
 import TimetableComponent from '../components/TimetableComponent';
 import dayjs from 'dayjs';
-import {useEffect, useState} from 'react';
-import {Box} from '@mui/material';
+import { useEffect, useState } from 'react';
+import { Box } from '@mui/material';
 
-import {TimetableData, LessonData, Holiday, DayData} from '../types';
+import { TimetableData, LessonData, Holiday, DayData } from '../types';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import {useCustomTheme} from '../components/CustomTheme';
-import {useLayoutContext} from '../components/Layout';
+import { useCustomTheme } from '../components/CustomTheme';
+import { useLayoutContext } from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 import weekday from 'dayjs/plugin/weekday';
@@ -24,52 +24,6 @@ const startTimeEnum: any = {
 	'1515': 4,
 };
 
-const createTimeTableObject = (week: string[]) => {
-	const out: {[key: string]: any} = {};
-	week.forEach((day: string) => {
-		out[day] = [
-			[],
-			[],
-			[],
-			[],
-			[]
-		];
-	});
-
-	return out;
-};
-
-const processData = (data: LessonData[], holidays: Holiday[], week: string[]): {[key: string]: DayData} => {
-	//TODO: this could be better
-
-	const returnObj: {[key: string]: DayData} = createTimeTableObject(week);
-
-	for (let i = 0; i < holidays.length; i++) {
-		const holiday = holidays[i];
-		const start = dayjs(holiday.startDate + '00:00');
-		const end = dayjs(holiday.endDate + '24:00');
-
-		const arr: string[] = [];
-
-		for (let dt = start; end.isAfter(dt, 'day'); dt = dt.add(1, 'day')) {
-			if (dt.isBetween(start, end, 'day', '[)')) arr.push(dt.format('YYYYMMDD'));
-		}
-		arr.forEach((day) => {
-			returnObj[day] = holiday;
-		});
-
-	}
-
-	for (let i = 0; i < data.length; i++) {
-		const {endTime, startTime, ...newLesson} = data[i];
-		(newLesson as LessonData).startTime = dayjs(startTime);
-		(newLesson as LessonData).endTime = dayjs(endTime);
-		// @ts-ignore
-		returnObj[date + ''][startTimeEnum[startTime]].push((newLesson as LessonData));
-	}
-	return returnObj;
-};
-
 function getWeekFromDay(date: Date) {
 
 	const week = [];
@@ -83,37 +37,33 @@ function getWeekFromDay(date: Date) {
 
 export default function Timetable() {
 
-	const {setFabs} = useLayoutContext();
-	const {fetcher} = useCustomTheme();
+	const { setFabs } = useLayoutContext();
+	const { fetcher } = useCustomTheme();
 
 	const [timetables, setTimetables] = useState<TimetableData[]>([]);
 
 	const fetchNextPage = () => {
-		fetchTimetable({weekOffset: timetables.length});
+		fetchTimetable({ weekOffset: timetables.length });
 	};
 
 	const fetchTimetable = ({
-								useCache = true,
-								weekOffset = 0
-							}: { useCache?: boolean, weekOffset?: number }): Promise<void> => {
+		useCache = true,
+		weekOffset = 0
+	}: { useCache?: boolean, weekOffset?: number }): Promise<void> => {
 		const week = getWeekFromDay(dayjs().add(weekOffset, 'week').toDate());
-		const query = new URLSearchParams({
+		const query = {
 			startDate: dayjs(week[0]).format('YYYY-MM-DD'),
 			endDate: dayjs(week[4]).format('YYYY-MM-DD'),
-			jwt: localStorage.getItem('jwt') ?? ''
-		});
+		};
 
 		return fetcher({
 			endpoint: 'timetableWeek',
 			method: 'GET',
 			query, useCache,
 		}).then((json) => {
-			const processedData = processData((json.lessons as LessonData[]), (json.holidays as Holiday[]), week);
 			setTimetables((prev) => {
-				prev[weekOffset] = {
-					timetable: processedData,
-					week
-				}
+				//@ts-ignore
+				prev[weekOffset] = json.lessons;
 				return [...prev];
 			})
 		})
@@ -127,10 +77,10 @@ export default function Timetable() {
 
 	useEffect(() => {
 		setFabs([
-			{icon: <RefreshIcon/>, color: 'primary', callback: refreshTimeTables}
+			{ icon: <RefreshIcon />, color: 'primary', callback: refreshTimeTables }
 		]);
-		fetchTimetable({useCache: true, weekOffset: 0}).then(() => {
-			fetchTimetable({weekOffset: 1});
+		fetchTimetable({ useCache: true, weekOffset: 0 }).then(() => {
+			fetchTimetable({ weekOffset: 1 });
 		});
 		return () => {
 			setFabs([]);
@@ -139,8 +89,8 @@ export default function Timetable() {
 
 	const refreshTimeTables = () => {
 		setTimetables([]);
-		fetchTimetable({weekOffset: 0});
-		fetchTimetable({weekOffset: 1})
+		fetchTimetable({ weekOffset: 0 });
+		fetchTimetable({ weekOffset: 1 })
 	};
 
 	return (
@@ -172,11 +122,12 @@ export default function Timetable() {
 					{
 						timetables.length > 0 ?
 							timetables.map((page, idx) => {
+								if(typeof page == 'undefined') return;
 								return <TimetableComponent
 									key={idx}
 									timetableData={page}
 								/>;
-							}) : <LoadingSpinner/>
+							}) : <LoadingSpinner />
 					}
 				</Box>
 			</div>

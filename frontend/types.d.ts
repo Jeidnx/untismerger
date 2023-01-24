@@ -1,6 +1,11 @@
-import {Jwt, LessonData} from '../globalTypes';
-
-export * from '../globalTypes';
+export interface Jwt {
+	/// Untis username
+	username: string,
+	/// Encrypted untis secret
+	secret: string,
+	/// Unique ID to invalidate old JWTs	
+	secureid: number,
+}
 
 export interface JwtObject {
 	set: (newJwt: string) => void,
@@ -12,11 +17,27 @@ export interface HolidayData {
 	name: string,
 	shortName: string,
 }
+export type shortUntisData = {
+	id: number,
+	name: string,
+	longname: string,
+}
+
+export type LessonData = {
+	"id": 724405,
+	"code": "regular" | "cancelled" | "irregular",
+	"kl": shortUntisData[],
+	"te": shortUntisData[],
+	"su": shortUntisData[],
+	"ro": shortUntisData[],
+	"lsnumber": number,
+	"activityType": "Unterricht"
+}
 
 //Data for one class of one day
-export type displayedLesson = (LessonData | undefined)[]
+export type Lessons = (LessonData | undefined)[]
 
-export type DayData = displayedLesson[] | HolidayData;
+export type DayData = Lessons[] | HolidayData;
 
 export interface TimetableData {
 	week: string[],
@@ -38,22 +59,11 @@ export interface FetcherParams {
 
 export interface customThemeType {
 	dayjs: typeof dayjs,
-	setDesignData: Function,
-	setLessonColorEnum: Function,
 	jwt: JWT,
-	fetcher({endpoint, query, useCache, method}: FetcherParams): Promise<{[key: string]: unknown}>,
+	fetcher({ endpoint, query, useCache, method }: FetcherParams): Promise<{ [key: string]: unknown }>,
 }
 
 export interface setupData {
-	loginMethod?: string,
 	username?: string,
-	password?: string,
 	secret?: string,
-	disableButton: boolean,
-	lk?: string,
-	fachrichtung?: string,
-	nawi?: string,
-	ek?: string,
-	sp?: string,
-	sonstiges: string[],
 }

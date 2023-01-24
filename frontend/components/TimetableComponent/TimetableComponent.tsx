@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import Lesson from '../Lesson';
 import {alpha, Box, useTheme} from '@mui/material';
-import {displayedLesson, HolidayData, LessonData, TimetableData} from '../../types';
+import { Lessons,HolidayData, LessonData, TimetableData} from '../../types';
 
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import de from 'dayjs/locale/de';
@@ -32,9 +32,10 @@ function instanceOfHoliday(object: any): object is HolidayData {
 
 export default function TimetableComponent({timetableData}: { timetableData: TimetableData, }) {
 
+	console.log(timetableData);
 	const {week, timetable} = timetableData;
-	const firstDay = dayjs(week[0]).format('DD.MM');
-	const lastDay = dayjs(week[4]).format('DD.MM');
+	const firstDay = week[0];
+	const lastDay = week[4];
 
 	const theme = useTheme();
 
@@ -53,7 +54,7 @@ export default function TimetableComponent({timetableData}: { timetableData: Tim
 					fontSize: '1.0em',
 					fontWeight: currDay ? 'bold' : '',
 					textDecoration: currDay ? 'underline' : '',
-					backgroundColor: alpha(theme.palette.background.default, theme.designData.alpha),
+					backgroundColor: theme.palette.background.default,
 					margin: 'auto',
 
 				}}>
@@ -86,8 +87,7 @@ export default function TimetableComponent({timetableData}: { timetableData: Tim
 					textAlign: 'center',
 					padding: '1vw',
 					lineHeight: '1.0em',
-					backgroundColor: alpha(theme.palette.background.default, theme.designData.alpha),
-
+					backgroundColor: theme.palette.background.default,
 				}}>
 					{`${firstDay} - ${lastDay}`}
 				</span>
@@ -101,7 +101,7 @@ export default function TimetableComponent({timetableData}: { timetableData: Tim
 							alignItems: 'center',
 							justifyContent: 'center',
 							textAlign: 'center',
-							backgroundColor: alpha(theme.palette.background.default, theme.designData.alpha),
+							backgroundColor: theme.palette.background.default,
 						}}>{startTimeLookup[key]} - {endTimeLookup[key]}</span>);
 					})}
 				</div>
@@ -126,7 +126,7 @@ export default function TimetableComponent({timetableData}: { timetableData: Tim
 										sx={{
 											flexGrow: '1',
 											margin: '1px',
-											backgroundColor: alpha(theme.palette.secondary.light, theme.designData.alpha),
+											backgroundColor: theme.palette.secondary.light,
 											color: theme.palette.secondary.contrastText,
 											display: 'flex',
 											justifyContent: 'center',
@@ -138,8 +138,8 @@ export default function TimetableComponent({timetableData}: { timetableData: Tim
 										{
 											dayData.name}
 									</Box> :
-									dayData.map((lesson: displayedLesson, jdx: number) => {
-										return <Lesson lessons={lesson as (LessonData | undefined)[]} parentIdx={idx}
+									dayData.map((lessons: Lessons, jdx: number) => {
+										return <Lesson lessons={lessons} parentIdx={idx}
 													   jdx={jdx} key={idx + '' + jdx}/>;
 									})}
 						</Box>
